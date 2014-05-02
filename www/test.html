@@ -1,17 +1,42 @@
-<!doctype html>
-<html ng-app>
-  <head>
-    <script src="http://code.angularjs.org/1.2.0rc1/angular.min.js"></script>
-  </head>
-  <body>
-    <button ng-click="count = count + 1" ng-init="count=0">
-      Increment
-    </button>
-    count: {{count}}
-  </body>
-</html>
-<div ng-controller="testCtrl">
-	<form>
-		<input
-	
-</div> <!-- /testCtrl -->
+<div id="insertTest"></div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+ 
+<script>
+var wikipediaHTMLResult = function(data) {
+    var readData = $('<div>' + data.parse.text["*"] + '</div>');
+ 
+    // handle redirects
+    var redirect = readData.find('li:contains("REDIRECT") a').text();
+    if(redirect != '') {
+    	callWikipediaAPI(redirect);
+        return;
+    }
+    
+    var box = readData.find('.infobox');
+    
+    var binomialName    = box.find('.binomial').text();
+    var fishName        = box.find('th').first().text();
+    var imageURL        = null;
+ 
+    // Check if page has images
+    if(data.parse.images.length >= 1) {
+        imageURL        = box.find('img').first().attr('src');
+    }
+    
+    $('#insertTest').append();
+};
+ 
+function callWikipediaAPI(wikipediaPage) {
+	// http://www.mediawiki.org/wiki/API:Parsing_wikitext#parse
+    $.getJSON("http://en.wikipedia.org/w/api.php?format=jsonfm&action=query&titles=Main%20Page&prop=revisions&rvprop=content");
+    $.ajax({
+        url: 'http://en.wikipedia.org/w/api.php?format=jsonfm&action=query&titles=Main%20Page&prop=revisions&rvprop=content',
+        dataType: 'jsonp',
+        timeout: 10000,
+        xhrFields: { withCredentials: true },
+        success: wikipediaHTMLResult
+    });
+}
+ 
+callWikipediaAPI('Aholehole');
+</script>

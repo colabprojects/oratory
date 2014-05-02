@@ -1,0 +1,11 @@
+{
+	"name": "webapp",
+		"description": "some webapp",
+		"version": "0.0.0",
+		"private": true,
+		"dependencies": {
+			"express": "*",
+			"mongojs": "*",
+			"jsdom": "*"
+		}
+}

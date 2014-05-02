@@ -1,78 +1,117 @@
 <!DOCTYPE html>
-<html lang="en" ng-app>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
-    <meta name="author" content="">
-    <!-- <link rel="shortcut icon" href="../../assets/ico/favicon.png"> -->
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!--><html lang="en"> <!--<![endif]-->
+<head>
 
-    <title>Inventory</title>
-    
-    <script src="js/lib/jquery.js"></script>
-	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js"></script>
-	<script src="js/lib/jquery-ui-1.10.2.custom.min.js"></script>
-	<script src="bootstrap/js/bootstrap.js"></script>
+	<!-- Basic Page Needs
+  ================================================== -->
+	<meta charset="utf-8">
+	<title>Inventory</title>
+	<meta name="description" content="inventory for stuff on the Land">
+	<meta name="author" content="freedom foundation">
 
-    
-    <!-- The CSS 
-    ================================================== -->
-    <link href="bootstrap/css/bootstrap.css" rel="stylesheet">
-    	
-	<!-- Custom styles for this template -->
-    <link href="css/navbar-fixed-top.css" rel="stylesheet">
+	<!-- Mobile Specific Metas
+  ================================================== -->
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-      <script src="../../assets/js/html5shiv.js"></script>
-      <script src="../../assets/js/respond.min.js"></script>
-    <![endif]-->
-  </head>
+	<!-- CSS
+  ================================================== -->
+	<link rel="stylesheet" href="stylesheets/base.css">
+	<link rel="stylesheet" href="stylesheets/skeleton.css">
+	<link rel="stylesheet" href="stylesheets/layout.css">
 
-  <body>
-  
-    <div ng-controller="navCtrl">
-	    <div class="navbar navbar-inverse navbar-fixed-top">
-	      <div class="navbar-inner">
-	        <div class="container">
-	          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-	            <span class="icon-bar" ng-repeat="template in templates"></span>
-	          </button>
-	          <a class="brand" href="#">inventory</a>
-	          <div class="nav-collapse collapse">
-	            <ul class="nav">
-	              <li ng-repeat="template in templates" id="link_{{template.name}}" class="{{template.active}}">
-		              <a href="" ng-click="navChange(templates.indexOf(template))">{{template.name}}</a>
-	              </li> <!-- end ng-repeat -->
-	            </ul>
-	          </div><!--/.nav-collapse         <i class="icon-plus"></i></a>   class="active" -->
-	        </div>
-	      </div>
-	    </div>
+	<!-- angularJS (manipulates some CSS..)
+  ================================================== -->
+    <script type="text/javascript" src="js/angular.min.js"></script>
 
-	    <div class="container">
-		  
-		  <!-- set up new angularjs control to "active" nav tab in nav.js -->
-	      <div ng-include src="template.url"></div>
-	
-	    </div> <!-- /container -->
-    </div> <!-- navCtrl -->
+	<!--[if lt IE 9]>
+		<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<!-- Favicons
+	================================================== -->
+	<link rel="shortcut icon" href="images/favicon.ico">
+	<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+
+</head>
+<body ng-app="item">
+
+	<!-- Primary Page Layout
+	================================================== -->
+
+	<div class="container" ng-controller="itemCtrl">
+		<div class="sixteen columns">
+			<div class="row">
+			    <h1 class="remove-bottom" style="margin-top: 40px">Inventory</h1>
+				<h5>add and update items at the land</h5>
+			</div>
+			<div class="row">
+				<a class="full-width button" ng-click="addItemClick()">Add Item</a>
+			</div>
+
+			<div class="row" ng-show="showForm()">
+				<form action="">
+	  
+				  <!-- Label and text input -->
+				  <label for="inputName">Name</label>
+				  <input type="text" id="inputName" ng-model="itemName" ng-change="imageSearch()" />
+				 
+				  <!-- Label and textarea -->
+				  <label for="inputDesc">Description</label>
+				  <textarea id="inputDesc" ng-model="itemDescription"></textarea>
+				 
+				  <!-- Label and select list -->
+				  <label for="inputLoc">Location</label>
+				  <select ng-model="itemLoc" id="inputLoc" ng-options="l for l in locations">
+	                <option></option>
+	              </select>
+
+	              <label ng-show="newLocation()" for="inputLocOther">Other Location</label>
+	              <input ng-show="newLocation()" type="text" id="inputLocOther" placeholder="enter location" ng-model="itemLocOther">
+
+	              <label for="inputComment">Comment</label>
+				  <textarea id="inputComment" ng-model="itemComment"></textarea>
+				 
+				  <button type="submit" ng-click="addItem()">Submit Form</button>
+				 
+				</form>
+			</div>
 
 
-    <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    
-    
-    
-    <!-- AngularJS Controllers
-    ================================================== -->
-    
-    <!-- nav controller -->
-	<script type="text/javascript" src="js/nav.js"></script>
-	<!-- item controller -->
-	<script type="text/javascript" src="js/item.js"></script>
-	<script type="text/javascript" src="js/testCtrl.js"></script>
-	
-  </body>
+			<div class="row" ng-repeat="item in items">
+				<div class="two columns alpha">
+					<img ng-src="{{item.image}}" />
+				</div>
+				<div class="four columns">
+					<h4><small>name</small>{{item.name}}</h4>
+				</div>
+				<div class="four columns">
+					<h3><small>description</small>{{item.description}}</h3>
+					
+				</div>
+				<div class="six columns omega">
+					<h3>other</h3>
+					
+				</div>
+				<hr />
+			</div>
+		</div>
+
+	</div><!-- container -->
+
+
+<!-- End Document
+================================================== -->
+
+<!-- Javascript
+================================================== -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<script src="js/item.js"></script>
+<script src="js/wikiSearch.js"></script>
+
+</body>
 </html>
