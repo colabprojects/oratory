@@ -1,11 +1,17 @@
 {
-	"name": "webapp",
-		"description": "some webapp",
-		"version": "0.0.0",
-		"private": true,
-		"dependencies": {
-			"express": "*",
-			"mongojs": "*",
-			"jsdom": "*"
-		}
+  "name": "inventory",
+  "version": "0.0.1",
+  "description": "keeping it simple.........",
+  "main": "server.js",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "dependencies": {
+    "express": "3.x",
+    "body-parser": "^1.1.2",
+    "errorhandler": "^1.0.1",
+    "method-override": "^1.0.0",
+    "mongojs": "*"
+  }
 }

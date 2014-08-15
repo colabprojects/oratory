@@ -11,37 +11,32 @@ app.configure(function(){
     app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 });
 
+//GETS GETS GETS GETS GETS GETS GETS GETS GETS GETS GETS GETS GETS GETS GETS GETS GETS GETS GETS GETS GETS GETS GETS GETS
+
+//this is a test one:
+app.get('/api/getTest', function (req, res) {
+	res.send('yup - working!')
+});
+
+//get all items (to get a single item use the searches in posts or search on the resulting object for the single item you are looking for)
 app.get('/api/getItems', function (req, res) {
-
 	db.itemdb.find(function(err, docs) {
-		res.send( docs, "pants" );
+		res.send( docs );
 	});
 });
 
-app.get('/api/getWiki', function (req, res) {
 
-	var jsdom = require('jsdom');
-
-	jsdom.env({  
-	  html: "<html><body></body></html>",
-	  scripts: [
-	    'http://code.jquery.com/jquery-1.5.min.js'
-	  ]
-	}, function (err, window) {
-	  var $ = window.jQuery;
-
-	  $('body').append("<div class='testing'>Hello World</div>");
-	  res.send($(".testing").text()); // outputs Hello World
-	});
-});
-
+//POSTS POSTS POSTS POSTS POSTS POSTS POSTS POSTS POSTS POSTS POSTS POSTS POSTS POSTS POSTS POSTS POSTS POSTS POSTS POSTS
 app.post('/api/saveItem', express.json(), function (req, res) {
-	db.itemdb.save(req.body);
+	db.itemdb.insert(req.body);
 });
 
+app.post('/api/removeItem', express.json(), function (req, res) {
+	db.itemdb.remove(req.body);
+});
 
-
-
-
+app.post('/api/updateItem', express.json(), function (req, res) {
+	db.itemdb.update(req.body.uid, {$set: req.body});
+});
 
 app.listen(80);

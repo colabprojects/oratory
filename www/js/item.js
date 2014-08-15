@@ -1,7 +1,6 @@
 var item = angular.module('item', []);
 var sent = false;
 var showForm = false;
-var $temps = [{tbUrl:"http://www.gravatar.com/avatar/5fb0060c7cdd203de3e9e798741f363d?s=48&d=monsterid&r=g"}];
 
 function uniqueIdGen() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -16,12 +15,13 @@ $('#itemForm').click(function(e){
 
 item.controller('itemCtrl', function($scope, $http) {
   
-  $scope.items=[];
   $scope.itemLoc="Please select";  
   
   //initilize items
+
   $http.get('/api/getItems').then(function (response) {
     $scope.items = response.data;
+
     //grab new locations
     $scope.locations = ["None", "Pittsburgh", "Boulder", "New York"];
     for (var i=0; i < $scope.items.length; i++) {
@@ -49,31 +49,47 @@ item.controller('itemCtrl', function($scope, $http) {
                 + currentdate.getSeconds();
 
     if ($scope.itemLoc == 'Other (add one)') { $scope.itemLoc = $scope.itemLocOther; }
+    if (typeof $scope.itemImageUrl == 'undefined') { $scope.itemImageUrl = "http://s3.timetoast.com/public/uploads/photos/1687876/Unknown-7_small_square.jpeg?1312881542"; }
       
     $scope.item = {
       uid: $uidd,
-      posted: datetime,
-      edited: "never",
+      posted:datetime,
+      edited:"never",
       type:'item', 
       name:$scope.itemName,
+      number:$scope.items.length + 1,
       description:$scope.itemDescription,
-      location: $scope.itemLoc,
+      location:$scope.itemLoc,
       quantity:$scope.itemQuantity,
       comment:$scope.itemComment,
-      image:$temps[0].tbUrl,
-      imagetb:$scope.itemImagetb,
-      temp:$temps,
-      edit:true
+      image:$scope.itemImageUrl,
+      imagetb:$scope.itemImageTb,
+      temp:'',
+      edit:true,
+      deleted:false
     };
+
     $scope.items.push($scope.item);
 
-    callWikipediaAPI($scope.item.name);
-
-    $http.post('/api/saveItem', $scope.item)
+    $http.post('/api/saveItem', $scope.item);
     sent = true;
     showForm = false;
   
-  }; //end additem
+  }; //end addItem
+
+  $scope.removeItem = function(itemUID) {
+    $http.post('/api/removeItem', JSON.stringify({uid:itemUID}));
+    $('#'+itemUID).css('background-color','#DDD');
+  }; //end removeItem
+
+  $scope.updateItem = function(itemUID) {
+    $http.post('/api/updateItem', JSON.stringify({uid:itemUID}));
+  }; //end updateItem
+
+  $scope.returnItem = function(itemUID) {
+    $http.post('/api/returnItem', JSON.stringify({uid:itemUID}));
+  }; //end returnItem
+
 
   $scope.newLocation = function() {
     if($scope.itemLoc == 'Other (add one)'){
@@ -84,12 +100,6 @@ item.controller('itemCtrl', function($scope, $http) {
   
   }; //end newLocation
 
-  $scope.imageSearch = function(name) {
-    $http.jsonp("https://ajax.googleapis.com/ajax/services/search/images?v=1.0&q="+ encodeURIComponent(name) + "&callback=JSON_CALLBACK").success(function($data){
-      $temps = $data.responseData.results;
-    }).error(function() { alert("failed");});
-  }; //end imageSearch
-
   $scope.showForm = function() {
     return showForm;
   
@@ -99,14 +109,9 @@ item.controller('itemCtrl', function($scope, $http) {
     showForm = true;
   }; //end addItemClick
 
-  $scope.findImage = function(thing) {
-    thing.edit = true;
-    $http.jsonp("https://ajax.googleapis.com/ajax/services/search/images?v=1.0&q="+ encodeURIComponent(thing.name) + "&callback=JSON_CALLBACK").success(function($data){
-      thing.temp = $data.responseData.results;
-    }).error(function() { alert("failed");});
-    thing.editImage = true;
-  }; //end findImage
-
+  $scope.cancelForm = function() {
+    showForm = false;
+  };
 
 
 
