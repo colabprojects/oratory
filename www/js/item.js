@@ -2,60 +2,45 @@ var item = angular.module('item', []);
 var sent = false;
 var showForm = false;
 
-function uniqueIdGen() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-        return v.toString(16);
-    });
-}
-
-$('#itemForm').click(function(e){
-      e.preventDefault();
-});
-
+//ITEM CONTROLLER -----------------------------------------------------------------
 item.controller('itemCtrl', function($scope, $http) {
   
-  $scope.itemLoc="Please select";  
-  
   //initilize items
-
   $http.get('/api/getItems').then(function (response) {
     $scope.items = response.data;
-
-    //grab new locations
-    $scope.locations = ["None", "Pittsburgh", "Boulder", "New York"];
-    for (var i=0; i < $scope.items.length; i++) {
-      var loc = $scope.items[i].location;
-      if (($.inArray(loc, $scope.locations) == -1) && (typeof loc !== 'undefined') && (loc !== 'Other (add one)')){
+  }); //end getItems
+  //initilize locations
+  $http.get('/api/getLocations').then(function (response) {
+    //$http.post('/api/saveLocation', {type:'location',name:'Other (add one)'});
+    $scope.locations=['Other (add one)'];
+    if (typeof response.data !== 'undefined') {
+      response.data.foreach(function(loc){ 
         $scope.locations.push(loc);
-      }
-    } 
-    //put other at the end
-    $scope.locations.push("Other (add one)");
-  }); //end getitems
-  
-
+      });
+    }
+    $scope.$apply();
+  }); //end getLocations
 
   //functions
-  //--------------------------------------------------------
   $scope.addItem = function() {
-    var $uidd=uniqueIdGen();
-    var currentdate = new Date(); 
-    var datetime = (currentdate.getMonth()+1) + "/"
-                + currentdate.getDate() + "/" 
-                + currentdate.getFullYear() + " @ "  
-                + currentdate.getHours() + ":"  
-                + currentdate.getMinutes() + ":" 
-                + currentdate.getSeconds();
+    var uidd=generateUID();
+    var datetime=generateDate();
+    
+    //save location if new
+    if ($scope.itemLoc == 'Other (add one)') {  
+      $http.post('/api/saveLocation', {type:'location', name:JSON.stringify($scope.itemLocOther)});
+      $scope.itemLoc = $scope.itemLocOther;
+      $scope.locations.push($scope.itemLoc); 
+    }
 
-    if ($scope.itemLoc == 'Other (add one)') { $scope.itemLoc = $scope.itemLocOther; }
+    //set image if no url specified
     if (typeof $scope.itemImageUrl == 'undefined') { $scope.itemImageUrl = "http://s3.timetoast.com/public/uploads/photos/1687876/Unknown-7_small_square.jpeg?1312881542"; }
       
     $scope.item = {
-      uid: $uidd,
+      uid: uidd,
+      type:'item', 
       posted:datetime,
       edited:"never",
-      type:'item', 
       name:$scope.itemName,
       number:$scope.items.length + 1,
       description:$scope.itemDescription,
@@ -90,29 +75,51 @@ item.controller('itemCtrl', function($scope, $http) {
     $http.post('/api/returnItem', JSON.stringify({uid:itemUID}));
   }; //end returnItem
 
-
   $scope.newLocation = function() {
-    if($scope.itemLoc == 'Other (add one)'){
-      return true;
-    } else {
-      return false;
-    }
-  
+    if($scope.itemLoc == 'Other (add one)'){ return true; } else { return false; }
   }; //end newLocation
 
   $scope.showForm = function() {
     return showForm;
-  
-  }; //end showForm
+  };//end showForm
 
   $scope.addItemClick = function() {
     showForm = true;
-  }; //end addItemClick
+  };//end addItemClick
 
   $scope.cancelForm = function() {
     showForm = false;
-  };
-
-
+  };//end cancelForm
 
 }); // end itemCtrl
+
+
+
+//GENERAL FUNCTIONS and JQUERY -------------------------------------------------------
+function generateUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+      return v.toString(16);
+  });
+}
+
+function generateDate() {
+  var currentdate = new Date(); 
+  var datetime = (currentdate.getMonth()+1) + "/"
+                + currentdate.getDate() + "/" 
+                + currentdate.getFullYear() + " @ "  
+                + currentdate.getHours() + ":"  
+                + currentdate.getMinutes() + ":" 
+                + currentdate.getSeconds();
+  return datetime;
+}
+
+$('#itemForm').click(function(e){
+      e.preventDefault();
+});
+
+//-------------------------------------------------------------------------------------
+
+
+
+
