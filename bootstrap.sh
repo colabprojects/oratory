@@ -36,4 +36,5 @@ sudo apt-get -y install nodejs
 sudo npm install mongojs
 sudo npm install express
 
+echo DO THIS: cd /vagrant sudo node server.js
 echo app is running on localhost:55656
