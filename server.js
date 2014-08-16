@@ -1,17 +1,23 @@
 //be careful with plurals - all the singular words are dealing with one object, and the plurals are dealing with multiple
 
+//database
 var mongojs = require('mongojs');
 var db = mongojs('mongodb://localhost:27017/itemdb', ['itemdb']);
 
+//app engine
 var express = require('express'),
     app = express();
 
-// Configure the web app
+//app configuration
 app.configure(function(){
     app.use(app.router);
     app.use(express.static(__dirname + '/www'));
     app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 });
+
+//email
+var nodemailer = require('nodemailer');
+
 
 
 //API
@@ -76,6 +82,62 @@ app.post('/api/saveLocation', express.json(), function (req, res) {
 app.post('/api/saveField', express.json(), function (req, res) {
 	db.itemdb.insert(req.body);
 });//end SAVE form field
+
+
+
+
+
+
+
+
+app.post('/sendemail', function(req, res){
+    smtpTrans = nodemailer.createTransport('SMTP', {
+      	service: 'Gmail',
+     	auth: {
+          	user: "colabrobot@gmail.com",
+          	pass: "r0b0tp4r4d3" 
+      	}
+    });
+    smtpTrans.sendMail({
+	    from: 'Robot <colabrobot@gmail.com>',
+	    to: 'steven.c.hein@gmail.com',
+	    subject: 'hello',
+	    text: 'hello world!'
+	});
+});
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

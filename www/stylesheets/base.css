@@ -268,5 +268,6 @@
 	.add-top { margin-top: 60px !important; }
 
 	.image-size { height: 60px; width: 60px; }
+	.item:hover { background-color: #FAFAFA; }
 
 
