@@ -42,8 +42,8 @@
 
 
 	<!-- START OF THE BODY AND THE ITEM APP -->
-	<body ng-app="item">
-		<div class="container" ng-controller="itemCtrl">
+	<body ng-app="itemApp">
+		<div class="container" ng-controller="itemCtrl" id="itemCtrl">
 			<div class="sixteen columns">
 				<div class="row">
 				    <h1 class="remove-bottom" style="margin-top: 40px">Inventory</h1>
@@ -63,29 +63,29 @@
 				  			
 							<!-- Label and text input -->
 							<label for="inputName">Name</label>
-							<input type="text" id="inputName" ng-model="itemName" />
+							<input type="text" id="inputName" ng-model="item.name" />
 							 
 							<!-- Label and textarea -->
 							<label for="inputDesc">Description</label>
-							<textarea id="inputDesc" ng-model="itemDescription"></textarea>
+							<textarea id="inputDesc" ng-model="item.description"></textarea>
 							 
 							<!-- Label and select list -->
-							<label ng-hide="newLocation()" for="inputLoc">Location</label>
-							<select ng-hide="newLocation()" ng-model="itemLoc" id="inputLoc" ng-options="l for l in locations">
+							<label ng-hide="checkLocation()" for="inputLoc">Location</label>
+							<select ng-hide="checkLocation()" ng-model="item.loc" id="inputLoc" ng-options="l for l in locations">
 				            	<option></option>
 				            </select>
 
-				            <label ng-show="newLocation()" for="inputLocOther">Other Location</label>
-				            <input ng-show="newLocation()" type="text" id="inputLocOther" placeholder="enter location" ng-model="itemLocOther">
+				            <label ng-show="checkLocation()" for="inputLocOther">Other Location</label>
+				            <input ng-show="checkLocation()" type="text" id="inputLocOther" placeholder="enter location" ng-model="item.other">
 
 				            <label for="inputComment">Comment</label>
-							<textarea id="inputComment" ng-model="itemComment"></textarea>
+							<textarea id="inputComment" ng-model="item.comment"></textarea>
 					 	
 					 		<label for="inputImageUrl">Image URL</label>
-					 		<input type="text" id="inputImageUrl" ng-model="itemImageUrl" />
+					 		<input type="text" id="inputImageUrl" ng-model="item.image" />
 
-					 		<button type="submit" ng-click="updateItem()" ng-show='showUpdateButtonFunction()'>Update Item</button>&nbsp
 					 		<button type="submit" ng-click="addItem()" ng-hide="showUpdateButtonFunction()">Submit Form</button>&nbsp
+					 		<button id= 'updateButton' type="submit" ng-click='updateItem()' ng-show='showUpdateButtonFunction()'>Update Item</button>&nbsp
 					 		<button ng-click="cancelForm()">Cancel</button>
 						 	
 						</form>
@@ -93,28 +93,30 @@
 				</div> <!-- end add item form -->
 
 				<!-- SHOW ALL THE ITEMS!! -->
-				<div ng-repeat="item in items">
+				<div ng-repeat="loopitem in items">
 					
-					<div class="row item" id="{{item.uid}}" ng-click="selectItem(item)">
+					<div class="row item" id="{{loopitem.uid}}">
 						<div class="two columns alpha">
-							<img ng-src="{{item.image}}" />
+							<img ng-src="{{loopitem.image}}" />
 						</div>
 						<div class="three columns">
-							<h4>{{item.name}}</h4>
+							<h4>{{loopitem.name}}</h4>
+						</div>
+						<div class="five columns">
+							<h4>{{loopitem.description}}</h4>
 						</div>
 						<div class="four columns">
-							<h4>{{item.description}}</h4>
+							<h4>{{loopitem.comment}}</h4>
 						</div>
-						<div class="four columns">
-							<h4>FUCK IT{{item.comment}}</h4>
-							
+						<div class="one column">
+							<h4><a ng-click='selectItem(loopitem)'>edit</a></h4>
 						</div>
-						<div class="two columns omega">
-							<img class="image-size" src="http://i1-win.softpedia-static.com/screenshots/icon-60/File-Delete-Absolutely.png" ng-click="removeItem(item.uid)"/>
+						<div class="one column omega">
+							<img class="image-size" src="http://i1-win.softpedia-static.com/screenshots/icon-60/File-Delete-Absolutely.png" ng-click="removeItem(loopitem.uid)"/>
 						</div>
 					</div>
 				</div> <!-- end item repeat -->
-				<!--<button ng-click='testEmail()'>send</button>-->
+				<button ng-click='testEmail()'>send</button>
 			</div> <!-- end 16 col div -->
 
 		</div><!-- end item control container -->

@@ -33,8 +33,12 @@ sudo apt-get -y install gcc make build-essential
 sudo add-apt-repository -y ppa:chris-lea/node.js
 sudo apt-get update
 sudo apt-get -y install nodejs
-sudo npm install mongojs
-sudo npm install express
+sudo npm install
+sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 465 -j REDIRECT --to-port 55465
+sudo npm update
+
+#testing this shit:
+sudo npm install jquery.cookie
 
 echo DO THIS: cd /vagrant sudo node server.js
 echo app is running on localhost:55656
