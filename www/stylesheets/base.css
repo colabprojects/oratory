@@ -263,9 +263,10 @@
 /* #Misc
 ================================================== */
 	.remove-bottom { margin-bottom: 0 !important; }
+	.remove-top { margin-top: 0 !important; }
 	.half-bottom { margin-bottom: 10px !important; }
 	.add-bottom { margin-bottom: 20px !important; }
-	.add-top { margin-top: 60px !important; }
+	.add-top { margin-top: 20px !important; }
 
 	.image-size { height: 60px; width: 60px; }
 	.item:hover { background-color: #FAFAFA; }

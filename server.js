@@ -31,7 +31,7 @@ smtpTrans = nodemailer.createTransport(smtpTransport({
 
 //API ---------------------------------------------------------------------------------------
 
-//Items:
+//Items  --------------------------------
 app.get('/api/getItems', function (req, res) {
 	db.itemdb.find({type:'item'},function(err, docs) {
 		res.send(docs);
@@ -46,13 +46,10 @@ app.post('/api/getItem', function (req,res) {
 });//end 'GET' (single) item - send the uid and retrieve item (untested - send multiple uid's?)
 
 app.post('/api/saveItem',express.json(), function (req, res) {
-	console.log("this is the name that was saved: "+req.body.name);
-	console.log(req.body);
 	db.itemdb.insert(req.body);
 });//end SAVE single item
 
 app.post('/api/removeItem', express.json(), function (req, res) {
-	console.log(req.body);
 	db.itemdb.remove(req.body);
 });//end REMOVE single item
 
@@ -60,8 +57,14 @@ app.post('/api/updateItem', express.json(), function (req, res) {
 	db.itemdb.update({uid: req.body.uid}, req.body);
 });//end UPDATE single item
 
+app.post('/api/stageItem', express.json(), function (req, res) {
+	db.itemdb.insert({type:'staged', key:req.body.actionKey, modifiedItem:req.body.data});
+});//end UPDATE single item
 
-//Item dictionaries:
+
+
+
+//Item dictionaries --------------------------------
 
 //locations:
 app.get('/api/getLocations', function (req,res) {
@@ -82,14 +85,18 @@ app.post('/api/saveField', express.json(), function (req, res) {
 
 
 
-//test email - figure out how to put this in the post - req.body.from, etc..
-app.post('/sendemail', function (req, res){
 
-    smtpTrans.sendMail({
+//Emails ----------------------------------------
+
+app.post('/api/sendEmail', express.json(), function (req, res){
+
+	console.log(req.body.to);
+	smtpTrans.sendMail({
 	    from: 'Robot <colabrobot@gmail.com>',
-	    to: 'steven.c.hein@gmail.com',
-	    subject: 'hello',
-	    text: 'hello world!'
+	    to: req.body.to,
+	    subject: req.body.subject,
+	    text: 'text body',
+	    html: req.body.HTMLbody
 	}, function(error, info){
 	    if(error){
 	        console.log(error);
@@ -97,6 +104,7 @@ app.post('/sendemail', function (req, res){
 	        console.log('Message sent: ' + info.response);
 	    }
 	});
+    
 });
 	
 

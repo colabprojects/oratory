@@ -45,8 +45,18 @@
 	<body ng-app="itemApp">
 		<div class="container" ng-controller="itemCtrl" id="itemCtrl">
 			<div class="sixteen columns">
-				<div class="row">
-				    <h1 class="remove-bottom" style="margin-top: 40px">Inventory</h1>
+
+				<div class="row remove-bottom">
+					<div id="email" class="four columns offset-by-eleven alpha">
+						<input ng-model='email' class ="remove-bottom add-top" type='text' place-holder='email' />
+					</div>
+					<div class = "one column omega">
+						<button class ="remove-bottom add-top" ng-click='setEmailCookie()'>Save</button>
+					</div>
+				</div>
+
+				<div class="row" class='remove-top'>
+				    <h1 class="remove-bottom remove-top" style="margin-top: 40px">Inventory</h1>
 					<h5>add and update items at the land</h5>
 				</div>
 
@@ -116,7 +126,7 @@
 						</div>
 					</div>
 				</div> <!-- end item repeat -->
-				<button ng-click='testEmail()'>send</button>
+		
 			</div> <!-- end 16 col div -->
 
 		</div><!-- end item control container -->
@@ -128,6 +138,7 @@
 		<!-- Javascript
 		================================================== -->
 		<script src="js/jquery.min.js"></script>
+		<script src="js/jquery.cookie.js"></script>
 		<script src="js/item.js"></script>
 	</body>
 </html>

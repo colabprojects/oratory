@@ -7,10 +7,13 @@ var showUpdateButton=false;
 var sent = false;
 var emailSet = false;
 //cookies:
-//var email = $.cookie('email'); 
+var email = $.cookie('email'); 
 
 //ITEM CONTROLLER -----------------------------------------------------------------
 itemApp.controller('itemCtrl', function($scope, $http) {
+
+  //get email
+  $scope.email = email;
   
   //initilize items
   $http.get('/api/getItems').then(function (response) {
@@ -39,6 +42,7 @@ itemApp.controller('itemCtrl', function($scope, $http) {
     $scope.item['type'] = 'item';
     $scope.item['number'] = $scope.items.length + 1; 
     $scope.item['posted'] = generateDate(); 
+    $scope.item['owner'] = $scope.email;
 
     //add to the ng-repeat and save (probably should be doing this differently - like it adds once it saves...)
     $scope.items.push($scope.item);
@@ -55,14 +59,26 @@ itemApp.controller('itemCtrl', function($scope, $http) {
   }; //end removeItem ------------------------------------
 
   $scope.updateItem = function() {
-    //add location if new
-    $scope.addLocation();
-
+    //timestamp for update
     $scope.item['updated'] = generateDate();
-    $http.post('/api/updateItem', $scope.item);
+    //check to see who is editing
+    if ($scope.item.owner == $scope.email) { //this is the standard update call  <<<<<<<<<<<<<
+      //add location if new
+      $scope.addLocation();
+      $http.post('/api/updateItem', $scope.item);
+
+    } else { //stage item if different author (have a function to change ownership - maybe in the body of the email!)  <<<<<<<<<<<<<
+    
+      $scope.item['updatedBy'] = $scope.email;
+      var key = generateUID();
+      $http.post('/api/stageItem', { actionKey:key, data:$scope.item });
+      $scope.itemChangeEmailGen($scope.item);
+
+    }
 
     showForm = false;
     delete $scope.item;
+
   }; //end updateItem ------------------------------------
 
   $scope.selectItem = function(fnitem) {
@@ -107,9 +123,21 @@ itemApp.controller('itemCtrl', function($scope, $http) {
     console.log('canceled form')
   };//end cancelForm ------------------------------------
 
-  $scope.testEmail = function() {
-    $http.post('/sendemail');
-  }//end testEmail ------------------------------------
+  $scope.setEmailCookie = function() {
+    $.cookie('email', $scope.email);
+  };//end setEmailCookie ------------------------------------
+
+
+  //remember to send this funtion the entire item - it may get deleted before it can be sent
+  $scope.itemChangeEmailGen = function(itemX) {
+    var packageEmail = {};
+    packageEmail.to = itemX.owner;
+    packageEmail.subject = '[inventory/ ' + 'changes have been made to ' + itemX.name;
+    packageEmail.HTMLbody = '<!DOCTYPE HTML><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /></head><body><h3>do you like these changes?</h3><h4>' + itemX.name + ' </h4><h4>' + itemX.description + ' </h4><h4>' + itemX.comment + ' </h4><h4>changes made by: '+ itemX.updatedBy+'</h4><p>full item data:</p><p>'+JSON.stringify(itemX)+'</p></body></html>';
+
+    alert(JSON.stringify(packageEmail));
+    $http.post('/api/sendEmail',packageEmail);
+  }//end itemChangeEmailGen
 
 
 //testing get single item
@@ -144,10 +172,3 @@ function generateDate() {
 $('#itemForm').click(function(e){
       e.preventDefault();
 });
-
-//------------------------------------------------------------------------------------
-
-
-
-
-
