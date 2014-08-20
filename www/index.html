@@ -1,33 +1,33 @@
 <!DOCTYPE html>
-	<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
-	<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
-	<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
-	<!--[if (gte IE 9)|!(IE)]><!--><html lang="en"> <!--<![endif]-->
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!--><html lang="en"> <!--<![endif]-->
 	<head>
 
 		<!-- Basic Page Needs
-	    ================================================== -->
+		================================================== -->
 		<meta charset="utf-8">
 		<title>Inventory</title>
 		<meta name="description" content="inventory for stuff on the Land">
 		<meta name="author" content="freedom foundation">
 
 		<!-- Mobile Specific Metas
-	    ================================================== -->
+		================================================== -->
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
 		<!-- CSS
-	    ================================================== -->
+		================================================== -->
 		<link rel="stylesheet" href="stylesheets/base.css">
 		<link rel="stylesheet" href="stylesheets/skeleton.css">
 		<link rel="stylesheet" href="stylesheets/layout.css">
 
 		<!-- angularJS (manipulates some CSS..)
-	    ================================================== -->
-	    <script type="text/javascript" src="js/angular.min.js"></script>
+		================================================== -->
+		<script type="text/javascript" src="js/angular.min.js"></script>
 
 		<!--[if lt IE 9]>
-			<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+		<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
 		<![endif]-->
 
 		<!-- Favicons
@@ -45,90 +45,82 @@
 	<body ng-app="itemApp">
 		<div class="container" ng-controller="itemCtrl" id="itemCtrl">
 			<div class="sixteen columns">
-
 				<div class="row remove-bottom">
 					<div id="email" class="four columns offset-by-eleven alpha">
 						<input ng-model='email' class ="remove-bottom add-top" type='text' place-holder='email' />
 					</div>
 					<div class = "one column omega">
-						<button class ="remove-bottom add-top" ng-click='setEmailCookie()'>Save</button>
+						<button class ="remove-bottom add-top" ng-click='setEmailCookie()'>save</button>
 					</div>
 				</div>
-
 				<div class="row" class='remove-top'>
-				    <h1 class="remove-bottom remove-top" style="margin-top: 40px">Inventory</h1>
+					<h1 class="remove-bottom remove-top" style="margin-top: 40px">Inventory</h1>
 					<h5>add and update items at the land</h5>
 				</div>
-
 				<div class="row">
-					<a class="button" ng-click="addItemClick()">Add Item</a>
+					<button ng-click="addItemClick()" ng-hide="showForm()">add item</button>
 				</div>
-
 
 				<!-- ADD A FORM  -->
 				<div ng-show="showForm()" class="row">
-					
 					<div class="six columns alpha">
 						<form action="">
-				  			
 							<!-- Label and text input -->
-							<label for="inputName">Name</label>
+							<label for="inputName">name</label>
 							<input type="text" id="inputName" ng-model="item.name" />
-							 
+
 							<!-- Label and textarea -->
-							<label for="inputDesc">Description</label>
+							<label for="inputDesc">description</label>
 							<textarea id="inputDesc" ng-model="item.description"></textarea>
-							 
+
 							<!-- Label and select list -->
-							<label ng-hide="checkLocation()" for="inputLoc">Location</label>
-							<select ng-hide="checkLocation()" ng-model="item.loc" id="inputLoc" ng-options="l for l in locations">
-				            	<option></option>
-				            </select>
+							<label ng-hide="showOtherLocationField()" for="inputLoc">location</label>
+							<select ng-hide="showOtherLocationField()" ng-model="item.loc" id="inputLoc" ng-options="l for l in locations">
+								<option></option>
+							</select>
 
-				            <label ng-show="checkLocation()" for="inputLocOther">Other Location</label>
-				            <input ng-show="checkLocation()" type="text" id="inputLocOther" placeholder="enter location" ng-model="item.other">
+							<label ng-show="showOtherLocationField()" for="inputLocOther">other location</label>
+							<input ng-show="showOtherLocationField()" type="text" id="inputLocOther" placeholder="enter location" ng-model="item.other">
 
-				            <label for="inputComment">Comment</label>
+							<label for="inputComment">comment</label>
 							<textarea id="inputComment" ng-model="item.comment"></textarea>
-					 	
-					 		<label for="inputImageUrl">Image URL</label>
-					 		<input type="text" id="inputImageUrl" ng-model="item.image" />
 
-					 		<button type="submit" ng-click="addItem()" ng-hide="showUpdateButtonFunction()">Submit Form</button>&nbsp
-					 		<button id= 'updateButton' type="submit" ng-click='updateItem()' ng-show='showUpdateButtonFunction()'>Update Item</button>&nbsp
-					 		<button ng-click="cancelForm()">Cancel</button>
-						 	
+							<label for="inputImageUrl">image URL</label>
+							<input type="text" id="inputImageUrl" ng-model="item.image" />
+
+							<button type="submit" ng-click="addItem()" ng-hide="showUpdateButtonFunction()">add</button>
+							<button id= 'updateButton' type="submit" ng-click='updateItem()' ng-show='showUpdateButtonFunction()'>update</button>&nbsp
+							<button ng-click="cancelForm()">cancel</button>
+
 						</form>
 					</div>
 				</div> <!-- end add item form -->
 
 				<!-- SHOW ALL THE ITEMS!! -->
 				<div ng-repeat="loopitem in items">
-					
-					<div class="row item" id="{{loopitem.uid}}">
-						<div class="two columns alpha">
-							<img ng-src="{{loopitem.image}}" />
-						</div>
-						<div class="three columns">
-							<h4>{{loopitem.name}}</h4>
-						</div>
-						<div class="five columns">
-							<h4>{{loopitem.description}}</h4>
-						</div>
-						<div class="four columns">
-							<h4>{{loopitem.comment}}</h4>
-						</div>
-						<div class="one column">
-							<h4><a ng-click='selectItem(loopitem)'>edit</a></h4>
-						</div>
-						<div class="one column omega">
-							<img class="image-size" src="http://i1-win.softpedia-static.com/screenshots/icon-60/File-Delete-Absolutely.png" ng-click="removeItem(loopitem.uid)"/>
-						</div>
-					</div>
-				</div> <!-- end item repeat -->
-		
-			</div> <!-- end 16 col div -->
 
+				<div class="row item" id="{{loopitem.uid}}">
+				<div class="two columns alpha">
+				<img ng-src="{{loopitem.image}}" />
+				</div>
+				<div class="three columns">
+				<h4>{{loopitem.name}}</h4>
+				</div>
+				<div class="five columns">
+				<h4>{{loopitem.description}}</h4>
+				</div>
+				<div class="four columns">
+				<h4>{{loopitem.comment}}</h4>
+				</div>
+				<div class="one column">
+				<h4><a ng-click='selectItem(loopitem)'>edit</a></h4>
+				</div>
+				<div class="one column omega">
+				<img class="image-size" src="http://i1-win.softpedia-static.com/screenshots/icon-60/File-Delete-Absolutely.png" ng-click="removeItem(loopitem.uid)"/>
+				</div>
+				</div>
+				</div> <!-- end item repeat -->
+			</div> <!-- end 16 col div -->
 		</div><!-- end item control container -->
 
 
