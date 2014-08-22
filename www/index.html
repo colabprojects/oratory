@@ -47,27 +47,28 @@
 			<div class="sixteen columns">
 				<div class="row remove-bottom">
 					<div id="email" class="four columns offset-by-eleven alpha">
-						<input ng-model='email' class ="remove-bottom add-top" type='text' place-holder='email' />
+						<input id='req-email-input' ng-model='email' class ="remove-bottom add-top" type='text' placeholder='email' />
 					</div>
 					<div class = "one column omega">
 						<button class ="remove-bottom add-top" ng-click='setEmailCookie()'>save</button>
 					</div>
 				</div>
-				<div class="row" class='remove-top'>
-					<h1 class="remove-bottom remove-top" style="margin-top: 40px">Inventory</h1>
+				<div class="row">
+					<h1 class="remove-bottom remove-top">Inventory</h1>
 					<h5>add and update items at the land</h5>
 				</div>
-				<div class="row">
-					<button ng-click="addItemClick()" ng-hide="showForm()">add item</button>
+				<div class="row half-bottom">
+					<h6 class='help' ng-show="showAddItemHelp">...please fill out all<span class='help-req'>required fields</span></h6>
+					<button ng-click="addItemClick()" ng-hide="showForm">add item</button>
 				</div>
 
 				<!-- ADD A FORM  -->
-				<div ng-show="showForm()" class="row">
+				<div ng-show="showForm" class="row">
 					<div class="six columns alpha">
 						<form action="">
 							<!-- Label and text input -->
-							<label for="inputName">name</label>
-							<input type="text" id="inputName" ng-model="item.name" />
+							<label id='req-name-label' for="req-name-input">name</label>
+							<input type="text" id="req-name-input" ng-model="item.name" />
 
 							<!-- Label and textarea -->
 							<label for="inputDesc">description</label>
@@ -88,8 +89,8 @@
 							<label for="inputImageUrl">image URL</label>
 							<input type="text" id="inputImageUrl" ng-model="item.image" />
 
-							<button type="submit" ng-click="addItem()" ng-hide="showUpdateButtonFunction()">add</button>
-							<button id= 'updateButton' type="submit" ng-click='updateItem()' ng-show='showUpdateButtonFunction()'>update</button>&nbsp
+							<button type="submit" ng-click="addItem()" ng-hide="showUpdateButton">add</button>
+							<button id= 'updateButton' type="submit" ng-click='updateItem()' ng-show='showUpdateButton'>update</button>
 							<button ng-click="cancelForm()">cancel</button>
 
 						</form>
@@ -99,26 +100,28 @@
 				<!-- SHOW ALL THE ITEMS!! -->
 				<div ng-repeat="loopitem in items">
 
-				<div class="row item" id="{{loopitem.uid}}">
-				<div class="two columns alpha">
-				<img ng-src="{{loopitem.image}}" />
-				</div>
-				<div class="three columns">
-				<h4>{{loopitem.name}}</h4>
-				</div>
-				<div class="five columns">
-				<h4>{{loopitem.description}}</h4>
-				</div>
-				<div class="four columns">
-				<h4>{{loopitem.comment}}</h4>
-				</div>
-				<div class="one column">
-				<h4><a ng-click='selectItem(loopitem)'>edit</a></h4>
-				</div>
-				<div class="one column omega">
-				<img class="image-size" src="http://i1-win.softpedia-static.com/screenshots/icon-60/File-Delete-Absolutely.png" ng-click="removeItem(loopitem.uid)"/>
-				</div>
-				</div>
+					<div class="row item-row item" id="{{loopitem.uid}}">
+						<div class="two columns alpha">
+							<img ng-src="{{loopitem.image}}" />
+						</div>
+						<div class="three columns">
+							<h4>{{loopitem.name}}</h4>
+						</div>
+						<div class="five columns">
+							<h4>{{loopitem.description}}</h4>
+						</div>
+						<div class="four columns">
+							<h4>{{loopitem.comment}}</h4>
+						</div>
+						<div class="one column">
+							<a class='item-link'ng-click='selectItem(loopitem)'>edit</a>
+							<a class='item-link'>ask</a> <!-- possibly to ask about the item...? -->
+							<a class='item-link'>report</a>
+						</div>
+						<div class="one column omega">
+							<img class="image-size" src="http://i1-win.softpedia-static.com/screenshots/icon-60/File-Delete-Absolutely.png" ng-click="removeItem(loopitem.uid)"/>
+						</div>
+					</div>
 				</div> <!-- end item repeat -->
 			</div> <!-- end 16 col div -->
 		</div><!-- end item control container -->

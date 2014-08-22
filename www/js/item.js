@@ -1,8 +1,5 @@
 //the angular magic:
 var itemApp = angular.module('itemApp', []);
-//view settings:
-var showForm = false;
-var showUpdateButton=false;
 //message triggers:
 var sent = false;
 var emailSet = false;
@@ -14,12 +11,20 @@ var email = $.cookie('email');
 //############################################################################################################################################################
 
 itemApp.controller('itemCtrl', function ($scope, $http) {
+  //view settings:
+  $scope.showForm = false;
+  $scope.showUpdateButton=false;
+  $scope.showAddItemHelp=false;
+  //all clear flag
+  $scope.allClearFlag = false;
   //get email
   $scope.email = email;
   //initilize items
   $http.get('/api/getItems').then(function (response) {
     $scope.items = response.data;
   }); //end getItems
+  //initilize empty item
+  $scope.item = {};
   //initilize locations
   $scope.locations=['Other (add one)'];
   $http.get('/api/getLocations').then(function (response) {
@@ -28,7 +33,21 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     }
   }); //end getLocations
 
-  //ITEM FUNCTIONS ----------------------------------------------------------------------------------------------------------------------------
+  //FUNCTIONS ----------------------------------------------------------------------------------------------------------------------------
+  $scope.cancelForm = function () {
+    $scope.showForm = false;
+    $scope.showAddItemHelp = false;
+  };//end cancelForm ---------------
+
+  $scope.addItemClick = function () {
+    $scope.item = {};
+    $scope.showUpdateButton = false;
+    $scope.showForm = true;
+    $scope.showAddItemHelp = true;
+    //set required fields
+    $scope.setRequiredFields();
+  };//end addItemClick ---------------
+
   $scope.addItem = function () {
     //save location if new
     $scope.addLocation();
@@ -41,12 +60,16 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     $scope.item['posted'] = generateDate(); 
     $scope.item['owner'] = $scope.email;
     //save - then add to the ng-repeat
-    $http.post('/api/saveItem', $scope.item).success(function (data) { 
-      $scope.items.push(data); 
-    });
-    //remove form
-    showForm = false;
-    delete $scope.item;
+    //if ($scope.reqCheck()) {
+      $http.post('/api/saveItem', $scope.item).success(function (data) { 
+        $scope.items.push(data); 
+      });
+      //change view settings
+      $scope.showForm = false;
+      $scope.showAddItemHelp = false;
+      delete $scope.item;
+    //}//end req check
+    
   }; //end addItem ---------------
 
   $scope.removeItem = function (itemUID) {
@@ -75,8 +98,8 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
       $http.post('/api/stageItem', { actionKey:key, data:$scope.item });
       $scope.itemChangeEmailGen($scope.item, key);
     }
-
-    showForm = false;
+    //change view settings
+    $scope.showForm = false;
     delete $scope.item;
 
   }; //end updateItem ---------------
@@ -84,28 +107,24 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   $scope.selectItem = function (fnitem) {
     //set the form field bindings
     $scope.item = fnitem;
-    showUpdateButton=true;
-    showForm=true;
+    //change view settings
+    $scope.showUpdateButton=true;
+    $scope.showForm=true;
+    $scope.showAddItemHelp=false;
   }; //end selectItem ---------------
 
-  //PAGE FUNCTIONS ----------------------------------------------------------------------------------------------------------------------------
   $scope.setEmailCookie = function () {
     $.cookie('email', $scope.email);
   };//end setEmailCookie ---------------
 
   $scope.addLocation = function () {
     if ($scope.item.loc == 'Other (add one)') { 
-      $http.post('/api/saveLocation', {type:'location', name:$scope.item.other}).success(function() {
-        $scope.item.loc = $scope.item.other;
-        $scope.item.other = '';
-        $scope.locations.push($scope.item.loc); 
-      });
+      $http.post('/api/saveLocation', {type:'location', name:$scope.item.other}).success(function (err, doc) {});
+      $scope.item.loc = $scope.item.other;
+      $scope.item.other = '';
+      $scope.locations.push($scope.item.loc);
     }//end if
   }; //end addLocation ---------------
-
-  $scope.showForm = function () {
-    return showForm;
-  };//end showForm ---------------
 
   $scope.showOtherLocationField = function () {
     //this opens the element for new location (could be made better - where should this be placed? might be able to combine with addLocation)
@@ -115,19 +134,31 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     else { return false; }
   }; //end showOtherLocationField ---------------
 
-  $scope.showUpdateButtonFunction = function () {
-    return showUpdateButton;
-  };//end showUpdateButtonFunction ---------------
+  $scope.setRequiredFields = function () {
+    if (!$scope.email) { $('#req-email-input').addClass('req-alert-on-left'); }
+    if (!$scope.item.name) { $('#req-name-input').addClass('req-alert-on-left'); }
+  }; //end setRequiredFields
 
-  $scope.addItemClick = function () {
-    $scope.item = {};
-    showForm = true;
-  };//end addItemClick ---------------
+  $scope.reqCheck = function(req, value) {
 
-  $scope.cancelForm = function () {
-    showForm = false;
-    console.log('canceled form')
-  };//end cancelForm ---------------
+    //DO - something here............
+
+    //if ((typeof $scope.email=='undefined')||($scope.email=='')) { $('#req-email-input').addClass('req-alert-on-left'); }
+    //if ((typeof $scope.item.name =='undefined')||($scope.item.name=='')) { $('#req-name-input').addClass('req-alert-on-left'); return false; }
+    //else { return true; }
+    return true;
+  };//end reqCheck ---------------  
+
+
+
+
+
+
+
+
+
+
+
 
 
   //remember to send this funtion the entire item - it may get deleted before it can be sent
@@ -142,13 +173,6 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
 
     $http.post('/api/sendEmail',packageEmail);
   }//end itemChangeEmailGen ---------------
-
-
-  //testing get single item
-  $http.post('/api/getItem', JSON.stringify({ uid:'7fd09d83-24df-4439-86b6-91e2c0245931'})).success(function(data){
-    //success function
-    testes = data; //WORKS!
-  });
 
 }); // end itemCtrl #########
 
