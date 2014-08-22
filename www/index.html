@@ -115,14 +115,17 @@
 						</div>
 						<div class="one column">
 							<a class='item-link'ng-click='selectItem(loopitem)'>edit</a>
-							<a class='item-link'>ask</a> <!-- possibly to ask about the item...? -->
+							<a class='item-link' ng-click='showHistory(loopitem.uid)'>history</a> <!-- possibly to ask about the item...? -->
 							<a class='item-link'>report</a>
 						</div>
 						<div class="one column omega">
-							<img class="image-size" src="http://i1-win.softpedia-static.com/screenshots/icon-60/File-Delete-Absolutely.png" ng-click="removeItem(loopitem.uid)"/>
+							<img class="image-size" src="http://i1-win.softpedia-static.com/screenshots/icon-60/File-Delete-Absolutely.png" ng-click="removeItem(loopitem)"/>
 						</div>
 					</div>
+					
 				</div> <!-- end item repeat -->
+				<button ng-click='hideHistory()' ng-show="showItemHistory">hide history</button>
+				<div ng-show="showItemHistory" class="remove-all" id='history'></div>
 			</div> <!-- end 16 col div -->
 		</div><!-- end item control container -->
 

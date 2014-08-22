@@ -15,6 +15,7 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   $scope.showForm = false;
   $scope.showUpdateButton=false;
   $scope.showAddItemHelp=false;
+  $scope.showItemHistory=false;
   //all clear flag
   $scope.allClearFlag = false;
   //get email
@@ -72,12 +73,23 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     
   }; //end addItem ---------------
 
-  $scope.removeItem = function (itemUID) {
-    $http.post('/api/removeItem', JSON.stringify({ uid:itemUID })).success(function () {
-      $('#'+itemUID).css('background-color','#EDE');
+  $scope.removeItem = function (itemR) {
+    $http.post('/api/removeItem', itemR).success(function () {
+      $('#'+itemR.uid).css('background-color','#EDE');
     });
     
   }; //end removeItem ---------------
+
+  $scope.showHistory = function (itemUID) {
+    $http.post('/api/getItemHistory', JSON.stringify({ uid:itemUID })).success(function (docs) {
+      $('#history').html('<p>' + JSON.stringify(docs) + '</p>');
+      $scope.showItemHistory=true;
+    });
+  }; //end showHistory ---------------
+
+  $scope.hideHistory = function () {
+    $scope.showItemHistory=false;
+  }
 
   $scope.updateItem = function () {
     //remove _id
@@ -115,6 +127,7 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
 
   $scope.setEmailCookie = function () {
     $.cookie('email', $scope.email);
+    //$.cookie('key')
   };//end setEmailCookie ---------------
 
   $scope.addLocation = function () {

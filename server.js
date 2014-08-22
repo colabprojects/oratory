@@ -4,6 +4,7 @@
 //	location
 //	staged
 //	history
+//	deleted
 
 console.log('server running');
 
@@ -40,6 +41,18 @@ app.get('/api/getItems', function (req, res) {
 	});
 });//end GET items
 
+app.get('/api/getDeletedItems', function (req, res) {
+	db.itemdb.find({type:'deleted'},function (err, docs) {
+		if(err){ console.log('(error getting deleted items) '+err); }else{ res.send(docs); }
+	});
+});//end GET deleted items
+
+app.post('/api/getItemHistory', function (req, res) {
+	db.itemdb.find({type:'history', uid:req.body},function (err, docs) {
+		if(err){ console.log('(error getting item history) '+err); }else{ res.send(docs); }
+	});
+});//end GET item history
+
 //for an example of this - see "testing calls" bottom of item.js
 app.post('/api/getItem', function (req, res) {
 	db.itemdb.findOne(req.body, function (err, doc) {
@@ -54,7 +67,10 @@ app.post('/api/saveItem',express.json(), function (req, res) {
 });//end SAVE single item
 
 app.post('/api/removeItem', express.json(), function (req, res) {
-	db.itemdb.remove(req.body, function (err, doc) {
+	//insert a deleted type
+	db.itemdb.insert({type:'deleted', data:req.body});
+	//remove item
+	db.itemdb.remove({uid:req.body.uid}, function (err, doc) {
 		if(err){ console.log('(error removing item) '+err); }else{ res.send(doc); }
 	});
 });//end REMOVE single item
