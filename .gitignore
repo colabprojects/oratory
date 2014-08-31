@@ -2,3 +2,4 @@ node_modules/
 .vagrant/
 old/
 npm-debug.log
+www/images/

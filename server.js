@@ -2,7 +2,7 @@
 //database types:
 //	item
 //	location
-//	staged
+//	staged (add a staged deleted?)
 //	history
 //	deleted
 
@@ -31,10 +31,25 @@ smtpTrans = nodemailer.createTransport(smtpTransport({
       	pass: "r0b0tp4r4d3" 
   	}
 }));
+//the following are used for images (but can also be used for a shit-ton of other things)
+var fs = require('fs');
+var request = require('request');
+var url = require('url');
+//image manipulation (for thumbnails)
+var gm = require('gm').subClass({ imageMagick: true });
+
 
 //API ---------------------------------------------------------------------------------------
 
-//Items  --------------------------------
+
+
+//ITEMS  --------------------------------
+app.get('/api/getDatabase', function (req, res) {
+	db.itemdb.find('', function (err, docs) {
+		if(err){ console.log('(error getting database) '+err);}else { res.send(docs); }
+	});
+});//end GET database
+
 app.get('/api/getItems', function (req, res) {
 	db.itemdb.find({type:'item'},function (err, docs) {
 		if(err){ console.log('(error getting items) '+err); }else{ res.send(docs); }
@@ -47,8 +62,9 @@ app.get('/api/getDeletedItems', function (req, res) {
 	});
 });//end GET deleted items
 
-app.post('/api/getItemHistory', function (req, res) {
-	db.itemdb.find({type:'history', uid:req.body},function (err, docs) {
+app.post('/api/getItemHistory', express.json(), function (req, res) {
+	console.log('getting the history for uid:'+req.body.uid);
+	db.itemdb.find({type:'history', forUID:req.body.uid},function (err, docs) {
 		if(err){ console.log('(error getting item history) '+err); }else{ res.send(docs); }
 	});
 });//end GET item history
@@ -76,9 +92,13 @@ app.post('/api/removeItem', express.json(), function (req, res) {
 });//end REMOVE single item
 
 app.post('/api/updateItem', express.json(), function (req, res) {
+	db.itemdb.find({type:'item', uid:req.body.uid}, function (err, old) {
+		db.itemdb.insert({type:'history', forUID:old[0].uid, data:old[0] }, function (err, doc) {});
+	});
 	db.itemdb.update({uid: req.body.uid}, req.body, function (err, doc) {
 		if(err){ console.log('(error updating item) '+err); }else{ res.send(doc); }
 	});
+
 });//end UPDATE single item
 
 app.post('/api/stageItem', express.json(), function (req, res) {
@@ -103,8 +123,29 @@ app.get('/api/unStage/:key/:decision', function (req, res) {
 	db.itemdb.remove({type:'staged', key:req.params.key}, function (err, doc) {});
 });//end 'UNSTAGE' single item
 
-//EMAILS ----------------------------------------
 
+//IMAGES --------------------------------
+app.post('/api/saveImage', express.json(), function (req, res) {
+	request.get({url: url.parse(req.body.imageURL), encoding: 'binary'}, function (err, response, body) {
+		console.log('trying to save the image for item: '+req.body.name);
+		var path = '/vagrant/www/images/item'+req.body.uid+'/';
+		fs.mkdir(path);
+	    fs.writeFile(path+"itemImage.jpg", body, 'binary', function(err) {
+	    	if(err) { console.log(err); }else{ 
+	    		//save image thumbnail
+	    		console.log("The file was saved!"); 
+	    		gm(path+'itemImage.jpg').resize('60','60').gravity('center').write(path+'itemThumb.jpg', function(err) {
+	    			if(err) { console.log(err); }else{ console.log("Image thumbnail saved"); }
+	    		});//end save image thumb
+	    	}//end save image
+	    }); 
+	});
+}); //end SAVE image
+
+
+
+
+//EMAILS --------------------------------
 app.post('/api/sendEmail', express.json(), function (req, res){
 
 	console.log('trying to send email to ' + req.body.to);
@@ -123,8 +164,9 @@ app.post('/api/sendEmail', express.json(), function (req, res){
     
 });
 	
-//DICTIONARIES --------------------------------
 
+
+//DICTIONARIES --------------------------------
 //locations:
 app.get('/api/getLocations', function (req,res) {
 	db.itemdb.find({type:'location'}, function (err, doc) {

@@ -37,8 +37,8 @@ sudo npm install
 sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 465 -j REDIRECT --to-port 55465
 sudo npm update
 
-#testing this shit:
-sudo npm install jquery.cookie
+#need this for the image manipulation (subclass of the npm module, gm)
+sudo apt-get install imagemagick
 
 echo DO THIS: cd /vagrant sudo node server.js
 echo app is running on localhost:55656

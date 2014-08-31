@@ -4,7 +4,9 @@ var itemApp = angular.module('itemApp', []);
 var sent = false;
 var emailSet = false;
 //cookies:
-var email = $.cookie('email'); 
+var email = $.cookie('email');
+
+$('#column-labels').hover( function() {$('#column-labels').fadeTo('normal',1)}, function() {$('#column-labels').fadeTo('normal',.1)} );
 
 //############################################################################################################################################################
 //ITEM CONTROLLER ############################################################################################################################################################
@@ -16,14 +18,16 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   $scope.showUpdateButton=false;
   $scope.showAddItemHelp=false;
   $scope.showItemHistory=false;
-  //all clear flag
-  $scope.allClearFlag = false;
   //get email
   $scope.email = email;
   //initilize items
   $http.get('/api/getItems').then(function (response) {
     $scope.items = response.data;
   }); //end getItems
+  //get deleted items
+  $http.get('/api/getDeletedItems').then(function (response) {
+    $scope.deletedItems = response.data;
+  });
   //initilize empty item
   $scope.item = {};
   //initilize locations
@@ -38,6 +42,8 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   $scope.cancelForm = function () {
     $scope.showForm = false;
     $scope.showAddItemHelp = false;
+    //remove email warning becasue it is outside of the form
+    $('#req-email-input').removeClass('req-alert-on-left');
   };//end cancelForm ---------------
 
   $scope.addItemClick = function () {
@@ -45,43 +51,47 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     $scope.showUpdateButton = false;
     $scope.showForm = true;
     $scope.showAddItemHelp = true;
-    //set required fields
-    $scope.setRequiredFields();
+    //set and check required fields
+    $scope.reqCheck();
   };//end addItemClick ---------------
 
   $scope.addItem = function () {
     //save location if new
-    $scope.addLocation();
-    //set image if no url specified (this could be made as a function - maybe a list of most used images or generic ones?)
-    if (($scope.item.image == '')||(typeof $scope.item.image == 'undefined')) { $scope.item.image = "http://s3.timetoast.com/public/uploads/photos/1687876/Unknown-7_small_square.jpeg?1312881542"; }
-    //set 'hidden' fields
+    $scope.saveLocation();
+    //set item stuff
     $scope.item['uid'] = generateUID();
     $scope.item['type'] = 'item';
-    $scope.item['number'] = $scope.items.length + 1; 
+    $scope.item['number'] = $scope.items.length + 1;
+    //save image if specified
+    //set image if no url specified (this could be made as a function - maybe a list of most used images or generic ones?)
+    if (($scope.item.imageURL == '')||(typeof $scope.item.imageURL == 'undefined')) { 
+      $scope.item.thumb = "http://s3.timetoast.com/public/uploads/photos/1687876/Unknown-7_small_square.jpeg?1312881542"; 
+    }else{
+      $scope.saveImage($scope.item);
+      $scope.item['image'] = 'images/item'+$scope.item.uid+'/itemImage.jpg';
+      $scope.item['thumb'] = 'images/item'+$scope.item.uid+'/itemThumb.jpg'; 
+    }
+    //set 'hidden' fields
     $scope.item['posted'] = generateDate(); 
     $scope.item['owner'] = $scope.email;
     //save - then add to the ng-repeat
-    //if ($scope.reqCheck()) {
-      $http.post('/api/saveItem', $scope.item).success(function (data) { 
-        $scope.items.push(data); 
-      });
-      //change view settings
-      $scope.showForm = false;
-      $scope.showAddItemHelp = false;
-      delete $scope.item;
-    //}//end req check
-    
+    $http.post('/api/saveItem', $scope.item).success(function (data) { 
+      $scope.items.push(data); 
+    });
+    //change view settings
+    $scope.showForm = false;
+    delete $scope.item;
   }; //end addItem ---------------
 
   $scope.removeItem = function (itemR) {
     $http.post('/api/removeItem', itemR).success(function () {
       $('#'+itemR.uid).css('background-color','#EDE');
+      $('#trash'+itemR.uid).remove();
     });
-    
   }; //end removeItem ---------------
 
-  $scope.showHistory = function (itemUID) {
-    $http.post('/api/getItemHistory', JSON.stringify({ uid:itemUID })).success(function (docs) {
+  $scope.showHistory = function (itemH) {
+    $http.post('/api/getItemHistory', itemH).success(function (docs) {
       $('#history').html('<p>' + JSON.stringify(docs) + '</p>');
       $scope.showItemHistory=true;
     });
@@ -89,7 +99,7 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
 
   $scope.hideHistory = function () {
     $scope.showItemHistory=false;
-  }
+  }; //end hideHistory
 
   $scope.updateItem = function () {
     //remove _id
@@ -99,13 +109,13 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     //check to see who is editing
     if ($scope.item.owner == $scope.email) { //this is the standard update call  <<<<<<<<<<<<<
       //add location if new
-      $scope.addLocation();
+      $scope.saveLocation();
+      //add image if changed!
+      //DO THIS - $scope.saveImage($scope.item);
       $http.post('/api/updateItem', $scope.item);
     } else { //stage item if different author (have a function to change ownership - maybe in the body of the email!)  <<<<<<<<<<<<<
       $scope.item['updatedBy'] = $scope.email;
-      
       var key = generateUID();
-
       //the following creates a staged item that can be converted or 'unstaged' by a call to /api/unstage/<key>
       $http.post('/api/stageItem', { actionKey:key, data:$scope.item });
       $scope.itemChangeEmailGen($scope.item, key);
@@ -122,7 +132,8 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     //change view settings
     $scope.showUpdateButton=true;
     $scope.showForm=true;
-    $scope.showAddItemHelp=false;
+    //set and check required fields
+    $scope.reqCheck();
   }; //end selectItem ---------------
 
   $scope.setEmailCookie = function () {
@@ -130,51 +141,61 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     //$.cookie('key')
   };//end setEmailCookie ---------------
 
-  $scope.addLocation = function () {
+  $scope.saveLocation = function () {
     if ($scope.item.loc == 'Other (add one)') { 
       $http.post('/api/saveLocation', {type:'location', name:$scope.item.other}).success(function (err, doc) {});
       $scope.item.loc = $scope.item.other;
       $scope.item.other = '';
       $scope.locations.push($scope.item.loc);
     }//end if
-  }; //end addLocation ---------------
+  }; //end saveLocation ---------------
 
   $scope.showOtherLocationField = function () {
-    //this opens the element for new location (could be made better - where should this be placed? might be able to combine with addLocation)
+    //this opens the element for new location (could be made better - where should this be placed? might be able to combine with saveLocation)
     if (typeof $scope.item =='undefined') { return false; }
     else if($scope.item.loc == 'Other (add one)'){ 
       return true; } 
     else { return false; }
   }; //end showOtherLocationField ---------------
 
-  $scope.setRequiredFields = function () {
-    if (!$scope.email) { $('#req-email-input').addClass('req-alert-on-left'); }
-    if (!$scope.item.name) { $('#req-name-input').addClass('req-alert-on-left'); }
-  }; //end setRequiredFields
+  $scope.saveImage = function (itemI) {
+    //save the image from the specified url
+    $http.post('/api/saveImage', itemI).success(function (err, doc) {});
+  }; //end saveImage ---------------
 
-  $scope.reqCheck = function(req, value) {
+  $scope.reqCheck = function () {
+    var emailGood=false;
+    var nameGood=false;
 
-    //DO - something here............
+    //check email
+    if (checkEmail($scope.email)) {//email valid
+      $('#req-email-input').removeClass('req-alert-on-left');
+      emailGood=true;
+    } else {//email NOT valid
+      $('#req-email-input').addClass('req-alert-on-left');
+    }
 
-    //if ((typeof $scope.email=='undefined')||($scope.email=='')) { $('#req-email-input').addClass('req-alert-on-left'); }
-    //if ((typeof $scope.item.name =='undefined')||($scope.item.name=='')) { $('#req-name-input').addClass('req-alert-on-left'); return false; }
-    //else { return true; }
-    return true;
+    //check name
+    if ((typeof $scope.item.name =='undefined')||($scope.item.name=='')) {//name NOT valid
+      $('#req-name-input').addClass('req-alert-on-left');
+    } else {//name valid
+      $('#req-name-input').removeClass('req-alert-on-left');
+      nameGood=true;
+    }
+
+    if (emailGood&&nameGood) {
+      //all good - remove disabled from update and add buttons
+      console.log('all good');
+      $('#addButton').prop("disabled", false);
+      $('#updateButton').prop("disabled", false);
+      $scope.showAddItemHelp=false;
+    } else {
+      //not good
+      $('#addButton').prop("disabled", true);
+      $('#updateButton').prop("disabled", true);
+    }
   };//end reqCheck ---------------  
 
-
-
-
-
-
-
-
-
-
-
-
-
-  //remember to send this funtion the entire item - it may get deleted before it can be sent
   $scope.itemChangeEmailGen = function (itemX, actionKey) {
     var packageEmail = {};
     packageEmail.to = itemX.owner;
@@ -199,6 +220,11 @@ function generateUID() {
       var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
       return v.toString(16);
   });
+}
+
+function checkEmail(email) {
+  var regex = /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+  return regex.test(email);
 }
 
 function generateDate() {
