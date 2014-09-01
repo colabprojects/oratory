@@ -91,8 +91,8 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
       $scope.item.thumb = defaultImage; 
     }else{
       $scope.saveImage($scope.item);
-      $scope.item['image'] = 'images/item'+$scope.item.uid+'/itemImage.jpg';
-      $scope.item['thumb'] = 'images/item'+$scope.item.uid+'/itemThumb.jpg'; 
+      $scope.item['image'] = 'images/items/'+$scope.item.uid+'/itemImage.jpg';
+      $scope.item['thumb'] = 'images/items/'+$scope.item.uid+'/itemThumb.jpg'; 
     }
     //set 'hidden' fields
     $scope.item['posted'] = generateDate(); 
@@ -140,8 +140,8 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
       //add image if changed!
       if (($scope.item.thumb == defaultImage)&&(typeof $scope.item.imageURL != 'undefined')&&($scope.item.imageURL!='')) {
         //item image has changed
-        $scope.item['image'] = 'images/item'+$scope.item.uid+'/itemImage.jpg';
-        $scope.item['thumb'] = 'images/item'+$scope.item.uid+'/itemThumb.jpg'; 
+        $scope.item['image'] = 'images/items/'+$scope.item.uid+'/itemImage.jpg';
+        $scope.item['thumb'] = 'images/items/'+$scope.item.uid+'/itemThumb.jpg'; 
         $scope.saveImage($scope.item);
       }
       //update the item

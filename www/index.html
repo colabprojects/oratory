@@ -179,6 +179,7 @@
 					<div class="row remove-all" ng-show='showItemHistory(loopitem.uid)'>
 						<button ng-click='hideHistory(loopitem.uid)'>hide</button>
 						<div class="item-history remove-all" id='history-{{loopitem.uid}}'></div>
+					</div>
 					<div class='row remove-all' id='alert-{{loopitem.uid}}' ng-show='{{loopitem.lock}}'>
 						<p class='alert-lock'>{{loopitem.name}} is waiting on owner response</p>
 					</div>
