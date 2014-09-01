@@ -3,10 +3,13 @@ var itemApp = angular.module('itemApp', []);
 //message triggers:
 var sent = false;
 var emailSet = false;
+//default image:
+var defaultImage = "images/default.jpg";
 //cookies:
 var email = $.cookie('email');
+var items = {};
 
-$('#column-labels').hover( function() {$('#column-labels').fadeTo('normal',1)}, function() {$('#column-labels').fadeTo('normal',.1)} );
+//$('#column-labels').hover( function() {$('#column-labels').fadeTo('normal',1)}, function() {$('#column-labels').fadeTo('normal',.1)} );
 
 //############################################################################################################################################################
 //ITEM CONTROLLER ############################################################################################################################################################
@@ -18,18 +21,23 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   $scope.showUpdateButton=false;
   $scope.showAddItemHelp=false;
   $scope.showItemHistory=false;
+  //boolean defaults:
+  $scope.false = false;
+  $scope.true = true;
   //get email
   $scope.email = email;
   //initilize items
   $http.get('/api/getItems').then(function (response) {
     $scope.items = response.data;
-  }); //end getItems
+  });
   //get deleted items
   $http.get('/api/getDeletedItems').then(function (response) {
     $scope.deletedItems = response.data;
   });
   //initilize empty item
   $scope.item = {};
+  //refresh selected items
+  $scope.selected = {};
   //initilize locations
   $scope.locations=['Other (add one)'];
   $http.get('/api/getLocations').then(function (response) {
@@ -39,15 +47,28 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   }); //end getLocations
 
   //FUNCTIONS ----------------------------------------------------------------------------------------------------------------------------
+  $scope.refreshItems = function () {
+    $http.get('/api/getItems').then(function (response) {
+      $scope.items = response.data;
+    });
+  };//end refreshItems
+
   $scope.cancelForm = function () {
     $scope.showForm = false;
     $scope.showAddItemHelp = false;
+    //unlock if not a new item:
+    if (!$scope.newItem) { $scope.pushToItem($scope.item, "lock", false); }
     //remove email warning becasue it is outside of the form
     $('#req-email-input').removeClass('req-alert-on-left');
   };//end cancelForm ---------------
 
   $scope.addItemClick = function () {
     $scope.item = {};
+    $scope.newItem = true;
+    //defaults for new item:
+    $scope.item.quantity = 1;
+    $scope.item.need = 'have';
+    //view settings
     $scope.showUpdateButton = false;
     $scope.showForm = true;
     $scope.showAddItemHelp = true;
@@ -58,6 +79,8 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   $scope.addItem = function () {
     //save location if new
     $scope.saveLocation();
+    //refresh $scope.items
+    $scope.refreshItems();
     //set item stuff
     $scope.item['uid'] = generateUID();
     $scope.item['type'] = 'item';
@@ -65,7 +88,7 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     //save image if specified
     //set image if no url specified (this could be made as a function - maybe a list of most used images or generic ones?)
     if (($scope.item.imageURL == '')||(typeof $scope.item.imageURL == 'undefined')) { 
-      $scope.item.thumb = "http://s3.timetoast.com/public/uploads/photos/1687876/Unknown-7_small_square.jpeg?1312881542"; 
+      $scope.item.thumb = defaultImage; 
     }else{
       $scope.saveImage($scope.item);
       $scope.item['image'] = 'images/item'+$scope.item.uid+'/itemImage.jpg';
@@ -74,9 +97,9 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     //set 'hidden' fields
     $scope.item['posted'] = generateDate(); 
     $scope.item['owner'] = $scope.email;
-    //save - then add to the ng-repeat
+    //save - then refresh $scope.items
     $http.post('/api/saveItem', $scope.item).success(function (data) { 
-      $scope.items.push(data); 
+      $scope.refreshItems();
     });
     //change view settings
     $scope.showForm = false;
@@ -85,21 +108,25 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
 
   $scope.removeItem = function (itemR) {
     $http.post('/api/removeItem', itemR).success(function () {
-      $('#'+itemR.uid).css('background-color','#EDE');
+      $('#'+itemR.uid).addClass('deleted-item-row');
       $('#trash'+itemR.uid).remove();
     });
   }; //end removeItem ---------------
 
+  $scope.showItemHistory = function(itemUID) {
+    if ($scope.showItemHistory[itemUID] == true) { return true; }else { return false; }
+  }; //end showItemHistory
+
   $scope.showHistory = function (itemH) {
     $http.post('/api/getItemHistory', itemH).success(function (docs) {
-      $('#history').html('<p>' + JSON.stringify(docs) + '</p>');
-      $scope.showItemHistory=true;
+      $scope.showItemHistory[itemH.uid] = true;
+      $('#history-'+itemH.uid).html('<p>' + JSON.stringify(docs) + '</p>');
     });
   }; //end showHistory ---------------
 
-  $scope.hideHistory = function () {
-    $scope.showItemHistory=false;
-  }; //end hideHistory
+  $scope.hideHistory = function (itemUID) {
+    $scope.showItemHistory[itemUID]=false;
+  }; //end hideHistory ---------------
 
   $scope.updateItem = function () {
     //remove _id
@@ -111,10 +138,23 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
       //add location if new
       $scope.saveLocation();
       //add image if changed!
-      //DO THIS - $scope.saveImage($scope.item);
-      $http.post('/api/updateItem', $scope.item);
+      if (($scope.item.thumb == defaultImage)&&(typeof $scope.item.imageURL != 'undefined')&&($scope.item.imageURL!='')) {
+        //item image has changed
+        $scope.item['image'] = 'images/item'+$scope.item.uid+'/itemImage.jpg';
+        $scope.item['thumb'] = 'images/item'+$scope.item.uid+'/itemThumb.jpg'; 
+        $scope.saveImage($scope.item);
+      }
+      //update the item
+      $http.post('/api/updateItem', $scope.item).success(function (err, doc) { 
+        //refresh scope.items
+        $scope.refreshItems();
+      });
     } else { //stage item if different author (have a function to change ownership - maybe in the body of the email!)  <<<<<<<<<<<<<
       $scope.item['updatedBy'] = $scope.email;
+      //set stage lock
+      $scope.item['stageLock'] = true;
+      //unselect item
+      
       var key = generateUID();
       //the following creates a staged item that can be converted or 'unstaged' by a call to /api/unstage/<key>
       $http.post('/api/stageItem', { actionKey:key, data:$scope.item });
@@ -122,18 +162,42 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     }
     //change view settings
     $scope.showForm = false;
+    //remove selected
+    $scope.selected[$scope.item.uid] = false; 
+    //remove form binding
     delete $scope.item;
 
   }; //end updateItem ---------------
 
-  $scope.selectItem = function (fnitem) {
+  $scope.editItem = function (fnitem) {
     //set the form field bindings
     $scope.item = fnitem;
+    $scope.newItem = false;
+    //set and edit lock
+    $scope.pushToItem(fnitem, "lock", true);
     //change view settings
     $scope.showUpdateButton=true;
     $scope.showForm=true;
     //set and check required fields
     $scope.reqCheck();
+  }; //end editItem ---------------
+
+  $scope.selectItem = function (fnitem) {
+    items = fnitem;
+    //set the form field bindings
+    if ($scope.selected[fnitem.uid] == true) { //item was already selected
+      $scope.selected[fnitem.uid] = false;
+    } else { //item is not selected
+      //check for locks
+      if(fnitem.lock||fnitem.stageLock) {
+        //locked
+      } else {
+        //item is not locked
+        $scope.selected[fnitem.uid] = true;
+      }
+    }
+    
+
   }; //end selectItem ---------------
 
   $scope.setEmailCookie = function () {
@@ -163,9 +227,20 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     $http.post('/api/saveImage', itemI).success(function (err, doc) {});
   }; //end saveImage ---------------
 
+  $scope.pushToItem = function (itemP, pushP, valueP) {
+    var itemPush = {
+      push: pushP,
+      pushToUID: itemP.uid,
+      value: valueP
+    };
+    $http.post('/api/pushToItem', itemPush).then(function (err, doc) { $scope.refreshItems(); });
+  }; //end pushToItem ---------------
+
   $scope.reqCheck = function () {
     var emailGood=false;
     var nameGood=false;
+    var imageGood=true; //quasi required - if entered it must be vaild
+    var receiptGood=true; //quasi required
 
     //check email
     if (checkEmail($scope.email)) {//email valid
@@ -183,9 +258,36 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
       nameGood=true;
     }
 
-    if (emailGood&&nameGood) {
+    //check image url
+    if ((typeof $scope.item.imageURL != 'undefined')&&($scope.item.imageURL!='')) {//something is there
+      if (checkURL($scope.item.imageURL)){//url vaild
+        $('#quasireq-ImageUrl').removeClass('req-alert-on-left');
+        imageGood=true;
+      }else{//url NOT valid
+        $('#quasireq-ImageUrl').addClass('req-alert-on-left');
+        imageGood=false;
+      } 
+    }else{//cancel the requirment
+      $('#quasireq-ImageUrl').removeClass('req-alert-on-left');
+      imageGood=true;
+    }
+
+    //check receipt url
+    if ((typeof $scope.item.receiptURL != 'undefined')&&($scope.item.receiptURL!='')) {//something is there
+      if (checkURL($scope.item.receiptURL)){//url vaild
+        $('#quasireq-receiptUrl').removeClass('req-alert-on-left');
+        receiptGood=true;
+      }else{//url NOT valid
+        $('#quasireq-receiptUrl').addClass('req-alert-on-left');
+        receiptGood=false;
+      } 
+    }else{//cancel the requirment
+      $('#quasireq-receiptUrl').removeClass('req-alert-on-left');
+      receiptGood=true;
+    }
+
+    if (emailGood&&nameGood&&imageGood&&receiptGood) {
       //all good - remove disabled from update and add buttons
-      console.log('all good');
       $('#addButton').prop("disabled", false);
       $('#updateButton').prop("disabled", false);
       $scope.showAddItemHelp=false;
@@ -225,6 +327,11 @@ function generateUID() {
 function checkEmail(email) {
   var regex = /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/;
   return regex.test(email);
+}
+
+function checkURL(url) {
+  var regex = new RegExp("^(http[s]?:\\/\\/(www\\.)?|ftp:\\/\\/(www\\.)?|www\\.){1}([0-9A-Za-z-\\.@:%_\+~#=]+)+((\\.[a-zA-Z]{2,3})+)(/(.)*)?(\\?(.)*)?");
+  return regex.test(url);
 }
 
 function generateDate() {

@@ -69,7 +69,7 @@
 	h1 { font-size: 46px; line-height: 50px; margin-bottom: 14px;}
 	h2 { font-size: 35px; line-height: 40px; margin-bottom: 10px; }
 	h3 { font-size: 28px; line-height: 34px; margin-bottom: 8px; }
-	h4 { font-size: 21px; line-height: 30px; margin-bottom: 4px; }
+	h4 { font-size: 20px; line-height: 20px; margin-bottom: 4px; }
 	h5 { font-size: 17px; line-height: 24px; }
 	h6 { font-size: 14px; line-height: 21px; }
 	.subheader { color: #777; }
@@ -266,6 +266,7 @@
 	/* button addition */
 	button:disabled { color:#999; }
 
+	.bold { font-weight: bold !important; }
 
 	.remove-bottom { margin-bottom: 0 !important; }
 	.remove-top { margin-top: 0 !important; }
@@ -274,6 +275,10 @@
 	.add-top { margin-top: 20px !important; }
 	.remove-all { margin:0px !important; padding:0px !important; }
 
+	.pad-left { padding-left:15px; }
+	.pad-left-more { padding-left:20px; }
+	.pad-top { padding-top: 15px; }
+
 	#column-labels { opacity: .1; }
 
 	.help { font-style:italic !important; color:#999 !important; }
@@ -281,10 +286,31 @@
 
 	.image-size { height: 60px; width: 60px; }
 
-	.item-link { vertical-align:middle !important; color:#777 !important; }
-	.item-link:hover { color: #444 !important;}
-	.item-row { margin-bottom: 25px !important;}
-	.item-row:hover { background-color: #FAFAFA !important; }
+	.item-link { padding-left:15px; color:#777 !important; }
+	.item-link:hover { color: #444 !important; }
+	#add-item { margin-bottom:0px !important; padding:20px !important; }
+	.item-row { 
+		margin-bottom: 0px !important;
+		padding-top: 15px !important;
+		padding-bottom: 25px !important;
+	}
+	.alive {
+		border-top:1px solid #F2F2F2 !important;
+		border-bottom:1px solid #FFF !important;
+		background-color: #FAFAFA;
+	}
+	.selected { 
+		background-color:#FFF !important;
+		border-top:1px solid #FFF !important;
+	}
+	.graveyard {
+		background-color: #FFF !important;
+		opacity:.5 !important;
+	}
+	.alive:hover { background-color: #FFF !important; border-top:1px solid #FFF !important; }
+	.graveyard:hover { opacity:1 !important; }
+	.deleted-item-row { background-color: #EDE !important; border-top:1px solid #DCE !important; border-bottom:0px !important; }
+	.deleted-item-row:hover { background-color: #EDE !important; border-top:1px solid #DCE !important; }
 
 	.req-alert-on-left { border-left: 5px solid #dc143c !important; }
 	.req-alert-text { color: #dc143c !important; }

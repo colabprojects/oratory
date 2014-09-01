@@ -5,6 +5,10 @@
 //	staged (add a staged deleted?)
 //	history
 //	deleted
+//  lock
+//allowable push changes:
+//	flag
+//	comment
 
 console.log('server running');
 
@@ -63,7 +67,6 @@ app.get('/api/getDeletedItems', function (req, res) {
 });//end GET deleted items
 
 app.post('/api/getItemHistory', express.json(), function (req, res) {
-	console.log('getting the history for uid:'+req.body.uid);
 	db.itemdb.find({type:'history', forUID:req.body.uid},function (err, docs) {
 		if(err){ console.log('(error getting item history) '+err); }else{ res.send(docs); }
 	});
@@ -101,6 +104,16 @@ app.post('/api/updateItem', express.json(), function (req, res) {
 
 });//end UPDATE single item
 
+app.post('/api/pushToItem', express.json(), function (req, res) {
+	var pushValue = {};
+	pushValue.$set = {};
+	pushValue.$set[req.body.push] = req.body.value; 
+	db.itemdb.update({uid: req.body.pushToUID}, pushValue, function (err, doc) {
+		if(err){ console.log('(error updating item) '+err); }else{ res.send(doc); }
+	});
+
+});//end PUSH to single item
+
 app.post('/api/stageItem', express.json(), function (req, res) {
 	db.itemdb.insert({type:'staged', key:req.body.actionKey, modifiedItem:req.body.data}, function (err, doc) {
 		if(err){ console.log('(error staging item) '+err); }else{ res.send(doc); }
@@ -108,19 +121,25 @@ app.post('/api/stageItem', express.json(), function (req, res) {
 });//end 'STAGE' single item
 
 app.get('/api/unStage/:key/:decision', function (req, res) {
-	//find the staged item based on key
-	db.itemdb.find({type:'staged', key:req.params.key}, function (err, doc) {
-		//for some reason - it is returning an array......
-		modifiedItem = doc[0].modifiedItem;
-		//slap in the historical item
-		db.itemdb.find({type:'item', uid:modifiedItem.uid}, function (err, old) {
-			db.itemdb.insert({type:'history', forUID:old[0].uid, data:old[0] }, function (err, doc) {});
+	if (req.params.decision) { //true!
+		//find the staged item based on key
+		db.itemdb.find({type:'staged', key:req.params.key}, function (err, doc) {
+			//for some reason - it is returning an array......
+			modifiedItem = doc[0].modifiedItem;
+			//slap in the historical item
+			db.itemdb.find({type:'item', uid:modifiedItem.uid}, function (err, old) {
+				db.itemdb.insert({type:'history', forUID:old[0].uid, data:old[0] }, function (err, doc) {});
+			});
+			//remove stageLock
+			modifiedItem.stageLock = false;
+			//update with new item data
+			db.itemdb.update({uid:modifiedItem.uid}, modifiedItem);
 		});
-		//update with new item data
-		db.itemdb.update({uid:modifiedItem.uid}, modifiedItem);
-	});
-	//remove the staged item
-	db.itemdb.remove({type:'staged', key:req.params.key}, function (err, doc) {});
+		//remove the staged item
+		db.itemdb.remove({type:'staged', key:req.params.key}, function (err, doc) {});
+	} else { //false
+		console.log('decided against it...');
+	}
 });//end 'UNSTAGE' single item
 
 
@@ -186,6 +205,20 @@ app.post('/api/saveLocation', express.json(), function (req, res) {
 //});//end SAVE form field
 
 
+
+
+//EXPERIMENTS --------------------------------
+app.get('/api/getScopeFunctions', function (req,res) {
+	fs.readFile('www/js/item.js', 'utf8', function (err,data) {
+		if (err) { console.log(err); }else{
+			matches = data.match(/\$scope\.[A-Za-z]+\s\=\sfunction\s\(/g);
+			bettermatches = [];
+			for (i=0; i <matches.length; i++) { bettermatches[i]=matches[i].match(/\w+\b/g)[1]; }
+			res.send(bettermatches);
+	    }
+	});
+
+});
 
 
 

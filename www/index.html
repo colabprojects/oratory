@@ -67,12 +67,22 @@
 				<div ng-show="showForm" class="row">
 					<div class="six columns alpha">
 						<form action="">
-							<label for="wanted-item">wanted</label>
-							<input id='wanted-item' type="text" />
 
 							<!-- Required -->
 							<label id='req-name-label' for="req-name-input">name</label>
 							<input type="text" id="req-name-input" ng-model="item.name" ng-change='reqCheck()' />
+
+							<fieldset>
+							    <label for="have">
+							    	<input type="radio" name="need" id="have" value="have" ng-model="item.need" />
+							    	<span>have</span>
+							    </label>
+							 
+							    <label for="want">
+							    	<input type="radio" name="need" id="want" ng-model="item.need" value="want" />
+							    	<span>want</span>
+							    </label>
+						    </fieldset>
 
 							<label for="inputDesc">description</label>
 							<textarea id="inputDesc" ng-model="item.description"></textarea>
@@ -85,17 +95,29 @@
 							<label ng-show="showOtherLocationField()" for="inputLocOther">other location</label>
 							<input ng-show="showOtherLocationField()" type="text" id="inputLocOther" placeholder="enter location" ng-model="item.other">
 
-							<label for="inputComment">comment</label>
-							<textarea id="inputComment" ng-model="item.comment"></textarea>
+							<label for="inputQuantity">quantity</label>
+							<input id='inputQuantity' type="text" ng-model="item.quantity" />
 
-							<label for="inputImageUrl">image URL</label>
-							<input type="text" id="inputImageUrl" ng-model="item.imageURL" />
+							<label for="quasireq-ImageUrl">image URL</label>
+							<input type="text" id="quasireq-ImageUrl" ng-model="item.imageURL" ng-change='reqCheck()' />
+
+							<fieldset>
+								<label for="receiptTrigger">
+									<input type='checkbox' ng-model='showReceiptField' value="false" />
+									<span class="bold">receipt?</span>
+								</label>
+							</fieldset>
+
+							<label for="inputPrice'" ng-show="showReceiptField">price</label>
+							<input type="text" id="inputPrice'" ng-model="item.price" ng-show="showReceiptField"/>
+
+							<label for="quasireq-receiptUrl" ng-show="showReceiptField">receipt URL</label>
+							<input type="text" id="quasireq-receiptUrl" ng-model="item.receiptURL" ng-change='reqCheck()' ng-show="showReceiptField" />
 
 							<!-- these fields are disabled via reqCheck() unless required fields meet criteria -->
 							<button id='addButton' type="submit" ng-click="addItem()" ng-hide="showUpdateButton">add</button>
 							<button id= 'updateButton' type="submit" ng-click='updateItem()' ng-show='showUpdateButton'>update</button>
-
-							<button ng-click="cancelForm()">cancel</button>
+							<button id= 'cancelButton' ng-click="cancelForm()">cancel</button>
 
 						</form>
 					</div>
@@ -128,30 +150,36 @@
 				
 				<!-- SHOW ALL THE ITEMS!! -->
 				<div ng-repeat="loopitem in items">
-
-					<div class="row item-row item" id="{{loopitem.uid}}">
-						<div class="two columns alpha">
-							<a href='/images/item{{loopitem.uid}}/itemImage.jpg'><img id='image-{{loopitem.uid}}' ng-src="{{loopitem.thumb}}" /></a>
+					<div class="row item-row alive" id="{{loopitem.uid}}" ng-class="{selected:selected[loopitem.uid]}">
+						<div class="one column alpha">
+							<h4 class="pad-left"><input type='checkbox' ng-hide='{{loopitem.lock}}' ng-click='selectItem(loopitem)' ng-model='selected[loopitem.uid]' /><img class='pad-top' ng-show='{{loopitem.lock}}' src="images/lock.png"/></h4>
 						</div>
-						<div class="three columns">
-							<h4>{{loopitem.name}}</h4>
+						<div class="two column">
+							<a href='/images/item{{loopitem.uid}}/itemImage.jpg'><img id='image-{{loopitem.uid}}' class='pad-left' ng-src="{{loopitem.thumb}}" /></a>
 						</div>
-						<div class="five columns">
-							<h4>{{loopitem.description}}</h4>
+						<div class="three columns" ng-click='selectItem(loopitem)'>
+							<h4 class="pad-left">{{loopitem.name}}</h4>
 						</div>
-						<div class="four columns">
-							<h4>{{loopitem.comment}}</h4>
+						<div class="five columns" ng-click='selectItem(loopitem)'>
+							<p class="pad-left">{{loopitem.description}}</p>
 						</div>
-						<div class="one column">
-							<a class='item-link' ng-click='selectItem(loopitem)' ng-hide='{{loopitem.lock}}'>edit</a>
-							<a class='item-link' ng-click='showHistory(loopitem)'>history</a> <!-- possibly to ask about the item...? -->
-							<a class='item-link'>report</a>
+						<div class="two columns" ng-click='selectItem(loopitem)'>
+							<p class="pad-left">x {{loopitem.quantity}}</p>
 						</div>
-						<div class="one column omega">
-							<img id='trash{{loopitem.uid}}' class="image-size" src="http://i1-win.softpedia-static.com/screenshots/icon-60/File-Delete-Absolutely.png" ng-click="removeItem(loopitem)"/>
+						<div class="one columns">
+							<a class='item-link' ng-click=''>ask</a> <!-- push comments to the item...? -->
+							<a class='item-link' ng-click='showHistory(loopitem)'>old</a> 
+							<a class='item-link'><span ng-show='{{loopitem.flag}}' ng-click='pushToItem(loopitem, "flag", false)'><img src='images/flag.gif'/></span><span ng-hide='{{loopitem.flag}}' ng-click='pushToItem(loopitem, "flag", true)'>flag</span></a>
+						</div>
+						<div class="two columns omega">
+							<a class="pad-left" ng-click="removeItem(loopitem)"><img class="pad-top" id='trash{{loopitem.uid}}' src="images/toast.png" /></a>
+							<a class='pad-left' ng-click='editItem(loopitem)' ng-show="selected[loopitem.uid]"><img class="pad-top" src="images/edit.png" /></a>
 						</div>
 					</div>
-					<div class='row' id='alert-{{loopitem.uid}}' ng-show='{{loopitem.lock}}'>
+					<div class="row remove-all" ng-show='showItemHistory(loopitem.uid)'>
+						<button ng-click='hideHistory(loopitem.uid)'>hide</button>
+						<div class="item-history remove-all" id='history-{{loopitem.uid}}'></div>
+					<div class='row remove-all' id='alert-{{loopitem.uid}}' ng-show='{{loopitem.lock}}'>
 						<p class='alert-lock'>{{loopitem.name}} is waiting on owner response</p>
 					</div>
 					
@@ -159,19 +187,17 @@
 
 				<div ng-repeat='deleted in deletedItems'>
 					
-					<div class="row item-row item">
+					<div class="row item-row graveyard">
 						<div class="two columns alpha">
-							<img src='http://www.ksal.com/wp-content/uploads/2014/04/tombstone-3394lar-60x60.jpg' />
+							<img class="pad-left-more" src='images/dead.png' />
 						</div>
-						<div class="three columns">
-							<h4>{{deleted.data.name}}</h4>
+						<div class="fourteen columns omega">
+							<h4 class="pad-left">{{deleted.data.name}}</h4>
 						</div>
 					</div>
 
 				</div> <!-- end deleted item repeat -->
 
-				<button ng-click='hideHistory()' ng-show="showItemHistory">hide history</button>
-				<div ng-show="showItemHistory" class="remove-all" id='history'></div>
 			</div> <!-- end 16 col div -->
 		</div><!-- end item control container -->
 

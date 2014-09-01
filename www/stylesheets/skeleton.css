@@ -65,8 +65,8 @@
     .container .offset-by-ten                   { padding-left: 600px; }
     .container .offset-by-eleven                { padding-left: 660px; }
     .container .offset-by-twelve                { padding-left: 720px; }
-    .container .offset-by-thirteen              { padding-left: 780px; }
-    .container .offset-by-fourteen              { padding-left: 840px; }
+    .container .offset-by-thirteen              { padding-left: 780px; } /**/
+    .container .offset-by-fourteen              { padding-left: 840px; } /*this one*/
     .container .offset-by-fifteen               { padding-left: 900px; }
 
 

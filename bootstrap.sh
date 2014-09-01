@@ -38,7 +38,7 @@ sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 465 -j REDIRECT --to-p
 sudo npm update
 
 #need this for the image manipulation (subclass of the npm module, gm)
-sudo apt-get install imagemagick
+sudo apt-get -y install imagemagick
 
 echo DO THIS: cd /vagrant sudo node server.js
 echo app is running on localhost:55656
