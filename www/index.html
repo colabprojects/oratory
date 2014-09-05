@@ -69,8 +69,11 @@
 						<form action="">
 
 							<!-- Required -->
-							<label id='req-name-label' for="req-name-input">name</label>
-							<input type="text" id="req-name-input" ng-model="item.name" ng-change='reqCheck()' />
+							<label id='req-name-label' for="req-name-input">
+								name 
+								<span ng-show="imageSearchText"> - serach: <a id="imageSearchLink" ng-href='{{imageSearchHref}}' target="_blank">{{imageSearchText}}</a></span>
+							</label>
+							<input type="text" id="req-name-input" ng-model="item.name" ng-change='reqCheck(); imageSearch();' />
 
 							<fieldset>
 							    <label for="have">

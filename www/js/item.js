@@ -227,6 +227,14 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     $http.post('/api/saveImage', itemI).success(function (err, doc) {});
   }; //end saveImage ---------------
 
+  $scope.imageSearch = function () {
+    console.log($scope.item.name);
+    $scope.imageSearchHref = 'https://www.google.com/search?q='+encodeURIComponent($scope.item.name)
+    $scope.imageSearchText = $scope.item.name;
+
+  }; //end imageSearch ---------------
+
+
   $scope.pushToItem = function (itemP, pushP, valueP) {
     var itemPush = {
       push: pushP,
