@@ -46,12 +46,9 @@
 		<div class="container" ng-controller="itemCtrl" id="itemCtrl">
 			<div class="sixteen columns">
 				<div class="row remove-bottom">
-					<div id="email" class="four columns offset-by-eleven alpha">
+					<div id="email" class="email-field">
 						<!-- Required -->
-						<input id='req-email-input' ng-model='email' ng-change='reqCheck()' class ="remove-bottom add-top" type='text' placeholder='email' />
-					</div>
-					<div class = "one column omega">
-						<button class ="remove-bottom add-top" ng-click='setEmailCookie()'>save</button>
+						<input id='req-email-input' ng-model='email' ng-change='reqCheck()' class ="remove-bottom add-top inline" type='text' placeholder='email' /><button class ="remove-bottom add-top" ng-click='setEmailCookie()'>save</button>
 					</div>
 				</div>
 				<div class="row">
@@ -60,10 +57,10 @@
 				</div>
 				<div class="row half-bottom">
 					<h6 class='help' ng-show="showAddItemHelp">...please fill out all<span class='help-req'>required fields</span></h6>
-					<button ng-click="addItemClick()" ng-hide="showForm">add item</button>
+					<button ng-click="addItemClick()" title='show form for adding thigs such as items, projects, books, etc.' ng-hide="showForm">add</button><button ng-hide='showForm'>show</button>
 				</div>
 
-				<!-- ADD A FORM  -->
+				<!-- ADD FORM  -->
 				<div ng-show="showForm" class="row">
 					<div class="six columns alpha">
 						<form action="">
@@ -125,31 +122,6 @@
 						</form>
 					</div>
 				</div> <!-- end add item form -->
-
-				<!-- labels - figure this out 
-				<div id='column-labels'>
-					<div class="row remove-all">
-						<div class="two columns alpha">
-							<p class='remove-top half-bottom'>img</p>
-						</div>
-						<div class="three columns">
-							<p class='remove-top half-bottom'>name</p>
-						</div>
-						<div class="five columns">
-							<p class='remove-top half-bottom'>desc</p>
-						</div>
-						<div class="four columns">
-							<p class='remove-top half-bottom'>comment</p>
-						</div>
-						<div class="one column">
-							<p class='remove-top half-bottom'>opt</p>
-						</div>
-						<div class="one column omega">
-							<p class='remove-top half-bottom'>del</p>
-						</div>
-					</div>
-				</div>
-				-->
 				
 				<!-- SHOW ALL THE ITEMS!! -->
 				<div ng-repeat="loopitem in items">
@@ -160,13 +132,13 @@
 						<div class="two column">
 							<a href='/images/items/{{loopitem.uid}}/itemImage.jpg'><img id='image-{{loopitem.uid}}' class='pad-left' ng-src="{{loopitem.thumb}}" /></a>
 						</div>
-						<div class="three columns" ng-click='selectItem(loopitem)'>
+						<div class="three columns">
 							<h4 class="pad-left">{{loopitem.name}}</h4>
 						</div>
-						<div class="five columns" ng-click='selectItem(loopitem)'>
+						<div class="five columns">
 							<p class="pad-left">{{loopitem.description}}</p>
 						</div>
-						<div class="two columns" ng-click='selectItem(loopitem)'>
+						<div class="two columns">
 							<p class="pad-left">x {{loopitem.quantity}}</p>
 						</div>
 						<div class="one columns">

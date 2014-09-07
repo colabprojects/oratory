@@ -42,17 +42,12 @@ var request = require('request');
 var url = require('url');
 //image manipulation (for thumbnails)
 var gm = require('gm').subClass({ imageMagick: true });
-
-//????????????????????????????????????????????????????????????
 //make directory for item images:
-fs.mkdir('/vagrant/www/images/items/'); //might need to change this because it dont want it to write over the directory
-//????????????????????????????????????????????????????????????
-
+if (!fs.existsSync('/vagrant/www/images/items/')) {
+	fs.mkdir('/vagrant/www/images/items/');
+}
 
 //API ---------------------------------------------------------------------------------------
-
-
-
 //ITEMS  --------------------------------
 app.get('/api/getDatabase', function (req, res) {
 	db.itemdb.find('', function (err, docs) {
@@ -78,7 +73,6 @@ app.post('/api/getItemHistory', express.json(), function (req, res) {
 	});
 });//end GET item history
 
-//for an example of this - see "testing calls" bottom of item.js
 app.post('/api/getItem', function (req, res) {
 	db.itemdb.findOne(req.body, function (err, doc) {
 		if(err){ console.log('(error getting item) '+err); }else{ res.send(doc); }
@@ -122,12 +116,23 @@ app.post('/api/pushToItem', express.json(), function (req, res) {
 
 app.post('/api/tempLock', express.json(), function (req, res) {
 	//send this object with email and uid
-	var pushValue = {};
-	pushValue.$set = {};
-	pushValue.$set['lock'] = true;
-	pushValue.$set['lockedBy'] = req.body.email 
-	db.itemdb.update({uid: req.body.uid}, pushValue, function (err, doc) {
-		if(err){ console.log('(error updating item) '+err); }else{ res.send(doc); }
+	var lockValue = {};
+	lockValue.$set = {};
+	lockValue.$set['lock'] = true;
+	lockValue.$set['lockedBy'] = req.body.email 
+	db.itemdb.update({uid: req.body.uid}, lockValue, function (err, doc) {
+		if(err){ console.log('(error locking item) '+err); }else{ //unlock the item after short time
+			setTimeout(function (){
+				var unlockValue = {};
+				unlockValue.$set = {};
+				unlockValue.$set['lock'] = false;
+				unlockValue.$set['lockedBy'] = '';
+				db.itemdb.update({uid: req.body.uid}, unlockValue, function (err, doc) {
+					if(err){ console.log('(error unlocking item) '+err); }else{ /*do nothing*/ }
+				});
+			}, 20000);
+			res.send(doc); 
+		}
 	});
 
 });//end PUSH to single item
@@ -180,8 +185,6 @@ app.post('/api/saveImage', express.json(), function (req, res) {
 }); //end SAVE image
 
 
-
-
 //EMAILS --------------------------------
 app.post('/api/sendEmail', express.json(), function (req, res){
 
@@ -202,7 +205,6 @@ app.post('/api/sendEmail', express.json(), function (req, res){
 });
 	
 
-
 //DICTIONARIES --------------------------------
 //locations:
 app.get('/api/getLocations', function (req,res) {
@@ -215,14 +217,6 @@ app.post('/api/saveLocation', express.json(), function (req, res) {
 		if(err){ console.log(err); }else{ res.send(doc); }
 	});
 });//end SAVE location
-
-//form fields:
-//GET form fields....
-//app.post('/api/saveField', express.json(), function (req, res) {
-//	db.itemdb.insert(req.body);
-//});//end SAVE form field
-
-
 
 
 //EXPERIMENTS --------------------------------
@@ -237,7 +231,5 @@ app.get('/api/getScopeFunctions', function (req,res) {
 	});
 
 });
-
-
 
 app.listen(80);

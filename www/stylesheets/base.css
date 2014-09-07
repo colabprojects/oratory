@@ -270,6 +270,7 @@
 
 	.remove-bottom { margin-bottom: 0 !important; }
 	.remove-top { margin-top: 0 !important; }
+	.remove-right { margin-right:0 !important; }
 	.half-bottom { margin-bottom: 10px !important; }
 	.add-bottom { margin-bottom: 20px !important; }
 	.add-top { margin-top: 20px !important; }
@@ -280,6 +281,9 @@
 	.pad-top { padding-top: 15px; }
 
 	#column-labels { opacity: .1; }
+
+	.inline { display:inline-block !important; }
+	.email-field { float:right; }
 
 	.help { font-style:italic !important; color:#999 !important; }
 	.help-req { border: 1px solid #CCC; border-radius:2px; margin-left:6px; padding: 6px 8px 6px 4px; border-left:5px solid #dc143c !important; }
