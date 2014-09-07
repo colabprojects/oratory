@@ -155,10 +155,10 @@
 				<div ng-repeat="loopitem in items">
 					<div class="row item-row alive" id="{{loopitem.uid}}" ng-class="{selected:selected[loopitem.uid]}">
 						<div class="one column alpha">
-							<h4 class="pad-left"><input type='checkbox' ng-hide='{{loopitem.lock}}' ng-click='selectItem(loopitem)' ng-model='selected[loopitem.uid]' /><img class='pad-top' ng-show='{{loopitem.lock}}' src="images/lock.png"/></h4>
+							<h4 class="pad-left"><input type='checkbox' ng-hide='{{loopitem.lock}}' ng-click='selectItem(loopitem)' ng-model='selected[loopitem.uid]' /><img id="lock-{{loopitem.uid}}" title='{{loopitem.name}} is locked by {{loopitem.lockedBy}}'class='pad-top' ng-show='{{loopitem.lock}}' src="images/lock.png"/></h4>
 						</div>
 						<div class="two column">
-							<a href='/images/item{{loopitem.uid}}/itemImage.jpg'><img id='image-{{loopitem.uid}}' class='pad-left' ng-src="{{loopitem.thumb}}" /></a>
+							<a href='/images/items/{{loopitem.uid}}/itemImage.jpg'><img id='image-{{loopitem.uid}}' class='pad-left' ng-src="{{loopitem.thumb}}" /></a>
 						</div>
 						<div class="three columns" ng-click='selectItem(loopitem)'>
 							<h4 class="pad-left">{{loopitem.name}}</h4>
@@ -175,7 +175,7 @@
 							<a class='item-link'><span ng-show='{{loopitem.flag}}' ng-click='pushToItem(loopitem, "flag", false)'><img src='images/flag.gif'/></span><span ng-hide='{{loopitem.flag}}' ng-click='pushToItem(loopitem, "flag", true)'>flag</span></a>
 						</div>
 						<div class="two columns omega">
-							<a class="pad-left" ng-click="removeItem(loopitem)"><img class="pad-top" id='trash{{loopitem.uid}}' src="images/toast.png" /></a>
+							<a class="pad-left" ng-hide='{{loopitem.lock}}' ng-click="removeItem(loopitem)"><img class="pad-top" id='trash{{loopitem.uid}}' src="images/toast.png" /></a>
 							<a class='pad-left' ng-click='editItem(loopitem)' ng-show="selected[loopitem.uid]"><img class="pad-top" src="images/edit.png" /></a>
 						</div>
 					</div>
@@ -184,7 +184,7 @@
 						<div class="item-history remove-all" id='history-{{loopitem.uid}}'></div>
 					</div>
 					<div class='row remove-all' id='alert-{{loopitem.uid}}' ng-show='{{loopitem.lock}}'>
-						<p class='alert-lock'>{{loopitem.name}} is waiting on owner response</p>
+						<p class='alert-lock'>{{loopitem.name}} is locked by {{loopitem.lockedBy}}</p>
 					</div>
 					
 				</div> <!-- end item repeat -->

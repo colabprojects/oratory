@@ -5,8 +5,9 @@
 //	staged (add a staged deleted?)
 //	history
 //	deleted
-//  lock
+//  stageLock
 //allowable push changes:
+//	lock
 //	flag
 //	comment
 
@@ -114,6 +115,18 @@ app.post('/api/pushToItem', express.json(), function (req, res) {
 	pushValue.$set = {};
 	pushValue.$set[req.body.push] = req.body.value; 
 	db.itemdb.update({uid: req.body.pushToUID}, pushValue, function (err, doc) {
+		if(err){ console.log('(error updating item) '+err); }else{ res.send(doc); }
+	});
+
+});//end PUSH to single item
+
+app.post('/api/tempLock', express.json(), function (req, res) {
+	//send this object with email and uid
+	var pushValue = {};
+	pushValue.$set = {};
+	pushValue.$set['lock'] = true;
+	pushValue.$set['lockedBy'] = req.body.email 
+	db.itemdb.update({uid: req.body.uid}, pushValue, function (err, doc) {
 		if(err){ console.log('(error updating item) '+err); }else{ res.send(doc); }
 	});
 

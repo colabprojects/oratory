@@ -1,3 +1,9 @@
+// problem with browser navigation (going back will lock the item) - also you can delete a locked item
+
+
+
+
+
 //the angular magic:
 var itemApp = angular.module('itemApp', []);
 //message triggers:
@@ -175,11 +181,15 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     $scope.newItem = false;
     //set and edit lock
     $scope.pushToItem(fnitem, "lock", true);
+    $scope.pushToItem(fnitem, "lockedBy", $scope.email);
+
     //change view settings
     $scope.showUpdateButton=true;
     $scope.showForm=true;
     //set and check required fields
     $scope.reqCheck();
+
+    $('#lock-'+$scope.item.uid).title = $scope.item.name+" is locked by "+$scope.email;
   }; //end editItem ---------------
 
   $scope.selectItem = function (fnitem) {
