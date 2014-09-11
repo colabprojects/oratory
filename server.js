@@ -79,7 +79,17 @@ app.post('/api/getItem', function (req, res) {
 	});
 });//end 'GET' (single) item - send the uid and retrieve item (untested - send multiple uid's?)
 
-app.post('/api/saveItem',express.json(), function (req, res) {
+app.post('/api/searchItems', express.json(), function (req, res) {
+	var query = {};
+	for (key in req.body) {
+		query[key] = RegExp('^'+req.body[key]);
+	}
+	db.itemdb.find(query, function (err, docs) {
+		if(err){ console.log('(error searching for item) '+err); }else { res.send(docs); }
+	});
+});//end SEARCH items
+
+app.post('/api/saveItem', express.json(), function (req, res) {
 	db.itemdb.insert(req.body, function (err, doc) { 
 		if(err){ console.log('(error saving item) '+err); }else{ res.send(doc); } 
 	});

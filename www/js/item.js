@@ -11,7 +11,8 @@ var emailSet = false;
 var defaultImage = "images/default.jpg";
 //cookies:
 var email = $.cookie('email');
-var items = {};
+//debug:
+var debug = {};
 
 $('#add-help').hover( function() { $('#column-labels').fadeTo('normal',0); });
 
@@ -22,13 +23,14 @@ $('#add-help').hover( function() { $('#column-labels').fadeTo('normal',0); });
 itemApp.controller('itemCtrl', function ($scope, $http) {
   //view settings:
   $scope.showForm = false;
+  $scope.showSearch = false;
   $scope.showUpdateButton=false;
   $scope.showAddItemHelp=false;
   $scope.showItemHistory=false;
   //boolean defaults:
   $scope.false = false;
   $scope.true = true;
-  //get email
+  //get email (oauth would go here)
   $scope.email = email;
   //initilize items
   $http.get('/api/getItems').then(function (response) {
@@ -40,6 +42,9 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   });
   //initilize empty item
   $scope.item = {};
+  //initilize empty search and search results
+  $scope.searchItem = {};
+  $scope.searchResults = {};
   //refresh selected items
   $scope.selected = {};
   //initilize locations
@@ -78,6 +83,36 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     //set and check required fields
     $scope.reqCheck();
   };//end addItemClick ---------------
+
+  $scope.searchItemClick = function () {
+    $scope.searchItem = {};
+    //defaults:
+    //view settings
+    $scope.showSearch = true;
+    $scope.showSearchItemHelp = true;
+    //requiredfields?
+
+  };//end searchItemClick ---------------
+
+  $scope.cancelSearch = function () {
+    //view settings
+    $scope.showSearch = false;
+    $scope.showSearchItemHelp = false;
+  };//end cancelSearch ---------------
+
+  $scope.searchItems = function () {
+    //clear search results
+    $scope.searchResults = {};
+    //check to see if there is anything
+    if (($scope.searchItem.name != '')||(typeof $scope.searchItem.name == 'undefined')) {
+      $http.post('/api/searchItems', $scope.searchItem).then(function (response) {
+        for (var i = 0, len = response.data.length; i < len; i++) {
+          //add search results to the ng-repeat for the search
+          $scope.searchResults[i] = response.data[i];
+        }
+      });
+    }
+  };//end searchItem ---------------
 
   $scope.addItem = function () {
     //save location if new
