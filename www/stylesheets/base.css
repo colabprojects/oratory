@@ -211,7 +211,7 @@
 	form {
 		margin-bottom: 20px; }
 	fieldset {
-		margin-bottom: 20px; }
+		margin-bottom: 3px; }
 	input[type="text"],
 	input[type="password"],
 	input[type="email"],
@@ -229,7 +229,7 @@
 		width: 210px;
 		max-width: 100%;
 		display: block;
-		margin-bottom: 20px;
+		margin-bottom: 3px;
 		background: #fff; }
 	select {
 		padding: 0; }

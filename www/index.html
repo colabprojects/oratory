@@ -23,6 +23,15 @@
 		<link rel="stylesheet" href="stylesheets/layout.css">
 		<link rel="stylesheet" href="stylesheets/page.css">
 
+		<!-- maps -->
+		<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+
+		<!-- calendar (need to put jquery here so fullcal can use it...?) -->
+		<link rel='stylesheet' href='js/fullcalendar/fullcalendar.css' />
+		<script src='js/jquery.min.js'></script>
+		<script src='js/moment.min.js'></script>
+		<script src='js/fullcalendar/fullcalendar.js'></script>
+
 		<!-- angularJS (manipulates some CSS..)
 		================================================== -->
 		<script type="text/javascript" src="js/angular.min.js"></script>
@@ -49,7 +58,7 @@
 				<div class="row remove-bottom">
 					<div id="email" class="email-field">
 						<!-- Required -->
-						<input id="req-email-input" ng-model="email" ng-change="reqCheck()" class ="remove-bottom add-top inline" type="text" placeholder="email" /><button class ="remove-bottom add-top" ng-click="setEmailCookie()">save</button>
+						<input id="req-email-input" ng-model="email" ng-change="reqCheck(); emailSuccess=false;" class ="remove-bottom add-top inline" type="text" placeholder="email" /><button id="email-button" class ="remove-bottom add-top" ng-click="setEmailCookie()" ng-hide="emailSuccess">save</button>
 					</div>
 				</div>
 				<div class="row">
@@ -60,15 +69,16 @@
 				<div class="row half-bottom">
 					<button ng-model="page" ng-click="addItemClick(page.type)" title="show form for adding thigs such as items, projects, books, etc." ng-hide="showForm">add</button><button ng-model="page" ng-click="searchItemClick(page.type)" ng-hide="showForm">search</button>
 				</div>
-				 
+
 				<!-- ADD FORM  -->
 				<div ng-show="showForm" id="add-form" class="row">
 					<h6 class="help" ng-show="showAddItemHelp">...please fill out all<span class="help-req">required fields</span></h6>
 					<div class="six columns alpha">
 						<form action="">
 
-							<label for="inputType">type</label>
-							<select ng-model="item.type" id="inputType" ng-options="t for t in types"></select>
+							<!-- Required -->
+							<label for="req-type-label">type</label>
+							<select ng-model="item.type" id="req-type-input" ng-change="reqCheck();" ng-options="t for t in types"></select>
 
 							<!-- Required -->
 							<label id="req-name-label" for="req-name-input">
@@ -154,7 +164,6 @@
 				
 				<!-- SHOW ALL THE ITEMS!! -->
 				<div ng-repeat="loopitem in items">
-					<span>{{loopitem.type}}</span>
 					<div class="row item-row alive" id="{{loopitem.uid}}" ng-class="{selected:selected[loopitem.uid]}" style="border-left:3px solid {{colors[loopitem.type]}};">
 						<div class="one column alpha">
 							<h4 class="pad-left"><input type="checkbox" ng-hide="{{loopitem.lock}}" ng-click="selectItem(loopitem)" ng-model="selected[loopitem.uid]" /><img id="lock-{{loopitem.uid}}" title="{{loopitem.name}} is locked by {{loopitem.lockedBy}}" class="pad-top" ng-show="{{loopitem.lock}}" src="images/lock.png"/></h4>
@@ -164,10 +173,11 @@
 							<button id="delete-button" ng-click="removeItem(loopitem)">delete</button>
 						</div>
 						<div class="two column">
+
 							<a href="/images/items/{{loopitem.uid}}/itemImage.jpg"><img id="image-{{loopitem.uid}}" class="pad-left" ng-src="{{loopitem.thumb}}" /></a>
 						</div>
 						<div class="three columns">
-							<h4 class="pad-left">{{loopitem.name}}</h4>
+							<h4 class="pad-left"><small class="small-type" style="background-color:{{colors[loopitem.type]}};">{{loopitem.type}}</small>{{loopitem.name}}</h4>
 						</div>
 						<div class="five columns">
 							<p class="pad-left">{{loopitem.description}}</p>
@@ -191,20 +201,30 @@
 					
 				</div> <!-- end item repeat -->
 
-				<div ng-repeat="deleted in deletedItems">
+				<div ng-repeat="deleted in deletedItems" ng-hide="page.showMap||page.showCalendar">
 					
 					<div class="row item-row graveyard">
 						<div class="two columns alpha">
 							<img class="pad-left-more" src="images/dead.png" />
 						</div>
 						<div class="fourteen columns omega">
-							<h4 class="pad-left">{{deleted.data.name}}</h4>
+							<h4 class="pad-left"><small class="small-type" style="background-color:{{colors[deleted.type]}};">{{deleted.type}}</small>{{deleted.data.name}}</h4>
 						</div>
 					</div>
 
 				</div> <!-- end deleted item repeat -->
 
 			</div> <!-- end 16 col div -->
+
+			<!-- MAP AND CALENDAR CONTAINERS -->
+			<div id="map" ng-show="page.showMap">
+				<div id="insert-map"></div>
+			</div>
+			<div id="calendar" ng-show="page.showCalendar">
+				<div id="insert-calendar"></div>
+			</div>
+			<!-- end map/calendar -->
+
 		</div><!-- end item control container -->
 
 
@@ -213,8 +233,8 @@
 
 		<!-- Javascript
 		================================================== -->
-		<script src="js/jquery.min.js"></script>
 		<script src="js/jquery.cookie.js"></script>
+		<script src="js/gmaps.js"></script>
 		<script src="js/item.js"></script>
 	</body>
 </html>

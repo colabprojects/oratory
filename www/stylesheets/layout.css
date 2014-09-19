@@ -35,11 +35,13 @@
 	/* Mobile Landscape Size to Tablet Portrait (devices and browsers) */
 	@media only screen and (min-width: 480px) and (max-width: 767px) {
 		.email-field { float:left !important; }
+		#insert-map { width:300px !important; height:300px !important; }
 	}
 
 	/* Mobile Portrait Size to Mobile Landscape Size (devices and browsers) */
 	@media only screen and (max-width: 479px) {
 		.email-field { float:left !important; }
+		#insert-map { width:300px !important; height:300px !important; }
 	}
 
 

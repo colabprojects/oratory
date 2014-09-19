@@ -42,37 +42,44 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
       'name':'projects', 
       'sub':'being worked on and formulated', 
       'title':'add, participate in, or propose projects', 
-      'type':'project'}, 
+      'type':'project'
+    }, 
     {
       'id':4, 
       'name':'books', 
       'sub':'in the library on The Land', 
       'title':'add or browse books', 
-      'type':'book'}, 
+      'type':'book'
+    }, 
     {
       'id':5, 
       'name':'map', 
       'sub':'of The Land', 
       'title':'view and add stuff', 
-      'type':'map'}, 
+      'type':'map',
+      'showMap':true
+    }, 
     {
       'id':6, 
       'name':'calendar', 
       'sub':'of events related to The Land', 
       'title':'see when people are coming or say when you are coming',
-      'type':'calendar'}
+      'type':'calendar',
+      'showCalendar':true
+    }
   ];
   //set default page to "everything"
   $scope.page = $scope.pages[0];
   //set the 'types' of enteries for the database:
   $scope.types = ['item', 'project', 'book', 'map', 'calendar', 'media', 'money', 'misc'];
-  $scope.colors = {'item':'#218559', 'project':'#EBB035'};
+  $scope.colors = {'item':'#218559', 'project':'#EBB035', 'book':'#876f69', 'deleted':'#FF4C4C'};
   //view settings:
   $scope.showForm = false;
   $scope.showSearch = false;
   $scope.showUpdateButton=false;
   $scope.showAddItemHelp=false;
   $scope.showItemHistory=false;
+  if (email) { $scope.emailSuccess=true; }else{ $scope.emailSuccess=false; }
   //boolean defaults:
   $scope.false = false;
   $scope.true = true;
@@ -103,8 +110,33 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
 
   //FUNCTIONS ----------------------------------------------------------------------------------------------------------------------------
   $scope.changePage = function () {
-    showForm = false;
+    $scope.showForm = false;
     $scope.refreshItems();
+    //if map insert map
+    if ($scope.page.showMap) {
+      //should store this somehow once it is loaded to avoid a bunch of calls to google api
+      new GMaps({
+        div: '#insert-map',
+        lat: 36.375892,
+        lng: -85.586121
+        //mapTypeId: google.maps.MapTypeId.SATELLITE
+      });
+    }//end insert map
+    //if calendar insert calendar
+    if ($scope.page.showCalendar) {
+      $('#insert-calendar').fullCalendar({
+        //settings
+        events: [
+          {
+            title: 'Steve, Micha, and Luke on The Land',
+            start: '2014-09-19',
+            end: '2014-09-29'
+          }
+        ]
+      });
+      //something about the scope.... this is my workaround:
+      setTimeout(function() { $('#insert-calendar').fullCalendar('render'); }, 100);
+    }//end insert calendar
   };//end changePage
 
   $scope.refreshItems = function () {
@@ -289,6 +321,7 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
           //locked
         } else {
           //item is not locked
+          debug=$scope.selected;
           $scope.selected[refreshedItem.uid] = true;
         }
       });
@@ -296,7 +329,10 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   }; //end selectItem ---------------
 
   $scope.setEmailCookie = function () {
-    $.cookie('email', $scope.email);
+    if ($.cookie('email', $scope.email)) {
+      $scope.emailSuccess=true;
+      email=$scope.email;
+    };
     //$.cookie('key')
   };//end setEmailCookie ---------------
 
@@ -323,7 +359,6 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   }; //end saveImage ---------------
 
   $scope.imageSearch = function () {
-    console.log($scope.item.name);
     $scope.imageSearchHref = 'https://www.google.com/search?q='+encodeURIComponent($scope.item.name)
     $scope.imageSearchText = $scope.item.name;
 
@@ -342,6 +377,7 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   $scope.reqCheck = function () {
     var emailGood=false;
     var nameGood=false;
+    var typeGood=false;
     var imageGood=true; //quasi required - if entered it must be vaild
     var receiptGood=true; //quasi required
 
@@ -359,6 +395,14 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     } else {//name valid
       $('#req-name-input').removeClass('req-alert-on-left');
       nameGood=true;
+    }
+
+    //check type
+    if ((typeof $scope.item.type =='undefined')||($scope.item.type=='')) {//type NOT valid
+      $('#req-type-input').addClass('req-alert-on-left');
+    } else {//type valid
+      $('#req-type-input').removeClass('req-alert-on-left');
+      typeGood=true;
     }
 
     //check image url
@@ -448,6 +492,6 @@ function generateDate() {
   return datetime;
 }
 
-$('#itemForm').click(function(e){
+$('.container').click(function(e){
       e.preventDefault();
 });
