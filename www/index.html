@@ -8,7 +8,7 @@
 		<!-- Basic Page Needs
 		================================================== -->
 		<meta charset="utf-8">
-		<title>Inventory</title>
+		<title>colabLife</title>
 		<meta name="description" content="inventory for stuff on the Land">
 		<meta name="author" content="freedom foundation">
 
@@ -21,6 +21,7 @@
 		<link rel="stylesheet" href="stylesheets/base.css">
 		<link rel="stylesheet" href="stylesheets/skeleton.css">
 		<link rel="stylesheet" href="stylesheets/layout.css">
+		<link rel="stylesheet" href="stylesheets/page.css">
 
 		<!-- angularJS (manipulates some CSS..)
 		================================================== -->
@@ -52,18 +53,22 @@
 					</div>
 				</div>
 				<div class="row">
-					<h1 class="remove-bottom remove-top">Inventory</h1>
-					<h5>add and update items at the land</h5>
+					<!--<h1 class="remove-bottom remove-top" id="pageTitle">Inventory</h1>-->
+					<select id="page-name" ng-model="page" ng-change="changePage();" ng-options="p.name for p in pages" title="{{page.title}}"></select>
+					<span id="page-sub" ng-model="page">...{{page.sub}}</span>
 				</div>
 				<div class="row half-bottom">
-					<h6 class="help" ng-show="showAddItemHelp">...please fill out all<span class="help-req">required fields</span></h6>
-					<button ng-click="addItemClick()" title="show form for adding thigs such as items, projects, books, etc." ng-hide="showForm">add</button><button ng-click="searchItemClick()" ng-hide="showForm">search</button>
+					<button ng-model="page" ng-click="addItemClick(page.type)" title="show form for adding thigs such as items, projects, books, etc." ng-hide="showForm">add</button><button ng-model="page" ng-click="searchItemClick(page.type)" ng-hide="showForm">search</button>
 				</div>
-
+				 
 				<!-- ADD FORM  -->
-				<div ng-show="showForm" id="addForm" class="row">
+				<div ng-show="showForm" id="add-form" class="row">
+					<h6 class="help" ng-show="showAddItemHelp">...please fill out all<span class="help-req">required fields</span></h6>
 					<div class="six columns alpha">
 						<form action="">
+
+							<label for="inputType">type</label>
+							<select ng-model="item.type" id="inputType" ng-options="t for t in types"></select>
 
 							<!-- Required -->
 							<label id="req-name-label" for="req-name-input">
@@ -124,7 +129,7 @@
 				</div> <!-- end add item form -->
 
 				<!-- SEARCH FORM -->
-				<div id="searchForm" ng-show="showSearch" class="row">
+				<div id="search-form" ng-show="showSearch" class="row">
 					<div class="six columns alpha">
 						<form action="">
 							<label for="searchName">name</label>
@@ -149,9 +154,14 @@
 				
 				<!-- SHOW ALL THE ITEMS!! -->
 				<div ng-repeat="loopitem in items">
-					<div class="row item-row alive" id="{{loopitem.uid}}" ng-class="{selected:selected[loopitem.uid]}">
+					<span>{{loopitem.type}}</span>
+					<div class="row item-row alive" id="{{loopitem.uid}}" ng-class="{selected:selected[loopitem.uid]}" style="border-left:3px solid {{colors[loopitem.type]}};">
 						<div class="one column alpha">
 							<h4 class="pad-left"><input type="checkbox" ng-hide="{{loopitem.lock}}" ng-click="selectItem(loopitem)" ng-model="selected[loopitem.uid]" /><img id="lock-{{loopitem.uid}}" title="{{loopitem.name}} is locked by {{loopitem.lockedBy}}" class="pad-top" ng-show="{{loopitem.lock}}" src="images/lock.png"/></h4>
+						</div>
+						<div class="two columns" ng-show="selected[loopitem.uid]">
+							<button id="edit-button" ng-click="editItem(loopitem)" >edit</button>
+							<button id="delete-button" ng-click="removeItem(loopitem)">delete</button>
 						</div>
 						<div class="two column">
 							<a href="/images/items/{{loopitem.uid}}/itemImage.jpg"><img id="image-{{loopitem.uid}}" class="pad-left" ng-src="{{loopitem.thumb}}" /></a>
@@ -165,14 +175,10 @@
 						<div class="two columns">
 							<p class="pad-left">x {{loopitem.quantity}}</p>
 						</div>
-						<div class="one columns">
+						<div class="one column omega">
 							<a class="item-link">ask</a> <!-- push comments to the item...? -->
 							<a class="item-link" ng-click="showHistory(loopitem)">old</a> 
 							<a class="item-link"><span ng-show="{{loopitem.flag}}" ng-click="pushToItem(loopitem, 'flag', false)"><img src="images/flag.gif"/></span><span ng-hide="{{loopitem.flag}}" ng-click="pushToItem(loopitem, 'flag', true)">flag</span></a>
-						</div>
-						<div class="two columns omega">
-							<a class="pad-left" ng-hide="{{loopitem.lock}}" ng-click="removeItem(loopitem)"><img class="pad-top" id="trash{{loopitem.uid}}" src="images/toast.png" /></a>
-							<a class="pad-left" ng-click="editItem(loopitem)" ng-show="selected[loopitem.uid]"><img class="pad-top" src="images/edit.png" /></a>
 						</div>
 					</div>
 					<div class="row remove-all" ng-show="showItemHistory(loopitem.uid)">

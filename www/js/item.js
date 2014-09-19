@@ -21,6 +21,52 @@ $('#add-help').hover( function() { $('#column-labels').fadeTo('normal',0); });
 //############################################################################################################################################################
 
 itemApp.controller('itemCtrl', function ($scope, $http) {
+  //navigation and things
+  $scope.pages = [
+    {
+      'id':1, 
+      'name':'everything', 
+      'sub':'on The Land', 
+      'title':'add anything and search everything', 
+      'type':''
+    },
+    {
+      'id':2, 
+      'name':'inventory', 
+      'sub':'of items and resources', 
+      'title':'add and update items', 
+      'type':'item'
+    }, 
+    {
+      'id':3, 
+      'name':'projects', 
+      'sub':'being worked on and formulated', 
+      'title':'add, participate in, or propose projects', 
+      'type':'project'}, 
+    {
+      'id':4, 
+      'name':'books', 
+      'sub':'in the library on The Land', 
+      'title':'add or browse books', 
+      'type':'book'}, 
+    {
+      'id':5, 
+      'name':'map', 
+      'sub':'of The Land', 
+      'title':'view and add stuff', 
+      'type':'map'}, 
+    {
+      'id':6, 
+      'name':'calendar', 
+      'sub':'of events related to The Land', 
+      'title':'see when people are coming or say when you are coming',
+      'type':'calendar'}
+  ];
+  //set default page to "everything"
+  $scope.page = $scope.pages[0];
+  //set the 'types' of enteries for the database:
+  $scope.types = ['item', 'project', 'book', 'map', 'calendar', 'media', 'money', 'misc'];
+  $scope.colors = {'item':'#218559', 'project':'#EBB035'};
   //view settings:
   $scope.showForm = false;
   $scope.showSearch = false;
@@ -33,7 +79,7 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   //get email (oauth would go here)
   $scope.email = email;
   //initilize items
-  $http.get('/api/getItems').then(function (response) {
+  $http.post('/api/getItems', $scope.page).then(function (response) {
     $scope.items = response.data;
   });
   //get deleted items
@@ -56,8 +102,13 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   }); //end getLocations
 
   //FUNCTIONS ----------------------------------------------------------------------------------------------------------------------------
+  $scope.changePage = function () {
+    showForm = false;
+    $scope.refreshItems();
+  };//end changePage
+
   $scope.refreshItems = function () {
-    $http.get('/api/getItems').then(function (response) {
+    $http.post('/api/getItems',$scope.page).then(function (response) {
       $scope.items = response.data;
     });
   };//end refreshItems
@@ -69,8 +120,10 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     $('#req-email-input').removeClass('req-alert-on-left');
   };//end cancelForm ---------------
 
-  $scope.addItemClick = function () {
+  $scope.addItemClick = function (type) {
     $scope.item = {};
+    //set item type as default
+    $scope.item.type = type;
     $scope.newItem = true;
     //defaults for new item:
     $scope.item.quantity = 1;
@@ -84,9 +137,10 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     $scope.reqCheck();
   };//end addItemClick ---------------
 
-  $scope.searchItemClick = function () {
+  $scope.searchItemClick = function (type) {
     $scope.searchItem = {};
     //defaults:
+    $scope.searchItem.type = type;
     //view settings
     $scope.showSearch = true;
     $scope.showSearchItemHelp = true;
@@ -121,8 +175,9 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     $scope.refreshItems();
     //set item stuff
     $scope.item['uid'] = generateUID();
-    $scope.item['type'] = 'item';
-    $scope.item['number'] = $scope.items.length + 1;
+    //!!!!!!!!!!!!
+    //$scope.item['number'] = $scope.items.length + 1;     FIX THIS ONE ----- not sure how to do it best ----- 
+    //!!!!!!!!!!!!
     //save image if specified
     //set image if no url specified (this could be made as a function - maybe a list of most used images or generic ones?)
     if (($scope.item.imageURL == '')||(typeof $scope.item.imageURL == 'undefined')) { 

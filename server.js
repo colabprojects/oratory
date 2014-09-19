@@ -55,8 +55,11 @@ app.get('/api/getDatabase', function (req, res) {
 	});
 });//end GET database
 
-app.get('/api/getItems', function (req, res) {
-	db.itemdb.find({type:'item'},function (err, docs) {
+app.post('/api/getItems', express.json(), function (req, res) {
+	var query = {};
+	if (req.body.type) { query['type'] = req.body.type; }
+	else { query = { $or:[{'type':'item'}, {'type':'project'}, {'type':'book'}] }; }
+	db.itemdb.find(query,function (err, docs) {
 		if(err){ console.log('(error getting items) '+err); }else{ res.send(docs); }
 	});
 });//end GET items
