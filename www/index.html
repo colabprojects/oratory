@@ -62,7 +62,6 @@
 					</div>
 				</div>
 				<div class="row">
-					<!--<h1 class="remove-bottom remove-top" id="pageTitle">Inventory</h1>-->
 					<select id="page-name" ng-model="page" ng-change="changePage();" ng-options="p.name for p in pages" title="{{page.title}}"></select>
 					<span id="page-sub" ng-model="page">...{{page.sub}}</span>
 				</div>
@@ -164,13 +163,16 @@
 				
 				<!-- SHOW ALL THE ITEMS!! -->
 				<div ng-repeat="loopitem in items">
-					<div class="row item-row alive" id="{{loopitem.uid}}" ng-class="{selected:selected[loopitem.uid]}" style="border-left:3px solid {{colors[loopitem.type]}};">
+					<div class="row item-row alive" id="{{loopitem.uid}}" style="border-left:3px solid {{colors[loopitem.type]}};">
 						<div class="one column alpha">
-							<h4 class="pad-left"><input type="checkbox" ng-hide="{{loopitem.lock}}" ng-click="selectItem(loopitem)" ng-model="selected[loopitem.uid]" /><img id="lock-{{loopitem.uid}}" title="{{loopitem.name}} is locked by {{loopitem.lockedBy}}" class="pad-top" ng-show="{{loopitem.lock}}" src="images/lock.png"/></h4>
+							<h4 class="pad-left">
+								<input type="checkbox" ng-model="selected[loopitem.uid]">
+							</h4>
 						</div>
-						<div class="two columns" ng-show="selected[loopitem.uid]">
-							<button id="edit-button" ng-click="editItem(loopitem)" >edit</button>
-							<button id="delete-button" ng-click="removeItem(loopitem)">delete</button>
+						<div class="one columns" ng-show="selected[loopitem.uid]">
+							<button id="edit-button" ng-click="editItem(loopitem)" ng-hide="{{loopitem.lock}}" >edit</button>
+							<button id="delete-button" ng-click="removeItem(loopitem)" ng-hide="{{loopitem.lock}}">delete</button>
+							<img id="lock-{{loopitem.uid}}" title="{{loopitem.name}} is locked by {{loopitem.lockedBy}}" class="pad-top" ng-show="{{loopitem.lock}}" src="images/lock.png"/>
 						</div>
 						<div class="two column">
 

@@ -127,6 +127,8 @@ app.post('/api/pushToItem', express.json(), function (req, res) {
 
 });//end PUSH to single item
 
+
+/*
 app.post('/api/tempLock', express.json(), function (req, res) {
 	//send this object with email and uid
 	var lockValue = {};
@@ -141,14 +143,15 @@ app.post('/api/tempLock', express.json(), function (req, res) {
 				unlockValue.$set['lock'] = false;
 				unlockValue.$set['lockedBy'] = '';
 				db.itemdb.update({uid: req.body.uid}, unlockValue, function (err, doc) {
-					if(err){ console.log('(error unlocking item) '+err); }else{ /*do nothing*/ }
+					if(err){ console.log('(error unlocking item) '+err); }else{ }
 				});
 			}, 20000);
 			res.send(doc); 
 		}
 	});
+});
+*/
 
-});//end PUSH to single item
 
 app.post('/api/stageItem', express.json(), function (req, res) {
 	db.itemdb.insert({type:'staged', key:req.body.actionKey, modifiedItem:req.body.data}, function (err, doc) {
@@ -168,6 +171,7 @@ app.get('/api/unStage/:key/:decision', function (req, res) {
 			});
 			//remove stageLock
 			modifiedItem.stageLock = false;
+			modifiedItem.lock = false;
 			//update with new item data
 			db.itemdb.update({uid:modifiedItem.uid}, modifiedItem);
 		});

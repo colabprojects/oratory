@@ -14,8 +14,6 @@ var email = $.cookie('email');
 //debug:
 var debug = {};
 
-$('#add-help').hover( function() { $('#column-labels').fadeTo('normal',0); });
-
 //############################################################################################################################################################
 //ITEM CONTROLLER ############################################################################################################################################################
 //############################################################################################################################################################
@@ -95,11 +93,11 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   });
   //initilize empty item
   $scope.item = {};
+  //init selected
+  $scope.selected = {};
   //initilize empty search and search results
   $scope.searchItem = {};
   $scope.searchResults = {};
-  //refresh selected items
-  $scope.selected = {};
   //initilize locations
   $scope.locations=['Other (add one)'];
   $http.get('/api/getLocations').then(function (response) {
@@ -277,8 +275,8 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     } else { //stage item if different author (have a function to change ownership - maybe in the body of the email!)  <<<<<<<<<<<<<
       $scope.item['updatedBy'] = $scope.email;
       //set stage lock
+      $scope.item['lock'] = true;
       $scope.item['stageLock'] = true;
-      //unselect item
       
       var key = generateUID();
       //the following creates a staged item that can be converted or 'unstaged' by a call to /api/unstage/<key>
@@ -287,8 +285,6 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     }
     //change view settings
     $scope.showForm = false;
-    //remove selected
-    $scope.selected[$scope.item.uid] = false; 
     //remove form binding
     delete $scope.item;
 
@@ -298,35 +294,17 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     //set the form field bindings
     $scope.item = fnitem;
     $scope.newItem = false;
+    
     //set an edit lock interval (locks for 20seconds)
-    $http.post('/api/tempLock', {email:$scope.email, uid:$scope.item.uid}).then(function(){ $scope.refreshItems(); });
-    setTimeout(function() { $scope.refreshItems(); }, 21000);
+    //$http.post('/api/tempLock', {email:$scope.email, uid:$scope.item.uid}).then(function(){ $scope.refreshItems(); });
+    //setTimeout(function() { $scope.refreshItems(); }, 21000);
+    
     //change view settings
     $scope.showUpdateButton=true;
     $scope.showForm=true;
     //set and check required fields
     $scope.reqCheck();
   }; //end editItem ---------------
-
-  $scope.selectItem = function (fnitem) {
-    //set the form field bindings
-    if ($scope.selected[fnitem.uid] == true) { //item was already selected
-      $scope.selected[fnitem.uid] = false;
-    } else { //item is not selected
-      //check for locks (fetch new item data in case of change):
-      $http.post('/api/getItem', {uid:fnitem.uid}).then(function (response) {
-        var refreshedItem = {};
-        refreshedItem = response.data;
-        if(refreshedItem.lock||refreshedItem.stageLock) {
-          //locked
-        } else {
-          //item is not locked
-          debug=$scope.selected;
-          $scope.selected[refreshedItem.uid] = true;
-        }
-      });
-    }
-  }; //end selectItem ---------------
 
   $scope.setEmailCookie = function () {
     if ($.cookie('email', $scope.email)) {
@@ -433,7 +411,7 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
       receiptGood=true;
     }
 
-    if (emailGood&&nameGood&&imageGood&&receiptGood) {
+    if (emailGood&&nameGood&&imageGood&&receiptGood&&typeGood) {
       //all good - remove disabled from update and add buttons
       $('#addButton').prop("disabled", false);
       $('#updateButton').prop("disabled", false);
@@ -491,7 +469,3 @@ function generateDate() {
                 + currentdate.getSeconds();
   return datetime;
 }
-
-$('.container').click(function(e){
-      e.preventDefault();
-});
