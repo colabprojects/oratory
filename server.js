@@ -98,17 +98,9 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 	});
 });//end SAVE single item
 
-app.post('/api/removeItem', express.json(), function (req, res) {
-	//insert a deleted type
-	db.itemdb.insert({type:'deleted', data:req.body});
-	//remove item
-	db.itemdb.remove({uid:req.body.uid}, function (err, doc) {
-		if(err){ console.log('(error removing item) '+err); }else{ res.send(doc); }
-	});
-});//end REMOVE single item
 
 app.post('/api/updateItem', express.json(), function (req, res) {
-	db.itemdb.find({type:'item', uid:req.body.uid}, function (err, old) {
+	db.itemdb.find({uid:req.body.uid}, function (err, old) {
 		db.itemdb.insert({type:'history', forUID:old[0].uid, data:old[0] }, function (err, doc) {});
 	});
 	db.itemdb.update({uid: req.body.uid}, req.body, function (err, doc) {
@@ -166,7 +158,7 @@ app.get('/api/unStage/:key/:decision', function (req, res) {
 			//for some reason - it is returning an array......
 			modifiedItem = doc[0].modifiedItem;
 			//slap in the historical item
-			db.itemdb.find({type:'item', uid:modifiedItem.uid}, function (err, old) {
+			db.itemdb.find({uid:modifiedItem.uid}, function (err, old) {
 				db.itemdb.insert({type:'history', forUID:old[0].uid, data:old[0] }, function (err, doc) {});
 			});
 			//remove stageLock

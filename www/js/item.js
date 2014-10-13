@@ -4,9 +4,6 @@
 
 //the angular magic:
 var itemApp = angular.module('itemApp', []);
-//message triggers:
-var sent = false;
-var emailSet = false;
 //default item image:
 var defaultImage = "images/default.jpg";
 //cookies:
@@ -71,12 +68,9 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   //set the 'types' of enteries for the database:
   $scope.types = ['item', 'project', 'book', 'map', 'calendar', 'media', 'money', 'misc'];
   $scope.colors = {'item':'#218559', 'project':'#EBB035', 'book':'#876f69', 'deleted':'#FF4C4C'};
+  $scope.fields = {'name':'text', 'desc':'textfield', 'location':'text'};
   //view settings:
-  $scope.showForm = false;
-  $scope.showSearch = false;
-  $scope.showUpdateButton=false;
-  $scope.showAddItemHelp=false;
-  $scope.showItemHistory=false;
+  $scope.showItemHistory={};
   if (email) { $scope.emailSuccess=true; }else{ $scope.emailSuccess=false; }
   //boolean defaults:
   $scope.false = false;
@@ -86,10 +80,6 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
   //initilize items
   $http.post('/api/getItems', $scope.page).then(function (response) {
     $scope.items = response.data;
-  });
-  //get deleted items
-  $http.get('/api/getDeletedItems').then(function (response) {
-    $scope.deletedItems = response.data;
   });
   //initilize empty item
   $scope.item = {};
@@ -142,13 +132,6 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
       $scope.items = response.data;
     });
   };//end refreshItems
-
-  $scope.cancelForm = function () {
-    $scope.showForm = false;
-    $scope.showAddItemHelp = false;
-    //remove email warning becasue it is outside of the form
-    $('#req-email-input').removeClass('req-alert-on-left');
-  };//end cancelForm ---------------
 
   $scope.addItemClick = function (type) {
     $scope.item = {};
@@ -229,27 +212,12 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     delete $scope.item;
   }; //end addItem ---------------
 
-  $scope.removeItem = function (itemR) {
-    $http.post('/api/removeItem', itemR).success(function () {
-      $('#'+itemR.uid).addClass('deleted-item-row');
-      $('#trash'+itemR.uid).remove();
-    });
-  }; //end removeItem ---------------
-
-  $scope.showItemHistory = function(itemUID) {
-    if ($scope.showItemHistory[itemUID] == true) { return true; }else { return false; }
-  }; //end showItemHistory
-
   $scope.showHistory = function (itemH) {
     $http.post('/api/getItemHistory', itemH).success(function (docs) {
       $scope.showItemHistory[itemH.uid] = true;
       $('#history-'+itemH.uid).html('<p>' + JSON.stringify(docs) + '</p>');
     });
   }; //end showHistory ---------------
-
-  $scope.hideHistory = function (itemUID) {
-    $scope.showItemHistory[itemUID]=false;
-  }; //end hideHistory ---------------
 
   $scope.updateItem = function () {
     //remove _id

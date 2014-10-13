@@ -9,7 +9,7 @@
 		================================================== -->
 		<meta charset="utf-8">
 		<title>colabLife</title>
-		<meta name="description" content="inventory for stuff on the Land">
+		<meta name="description" content="stuff on the Land">
 		<meta name="author" content="freedom foundation">
 
 		<!-- Mobile Specific Metas
@@ -69,9 +69,18 @@
 					<button ng-model="page" ng-click="addItemClick(page.type)" title="show form for adding thigs such as items, projects, books, etc." ng-hide="showForm">add</button><button ng-model="page" ng-click="searchItemClick(page.type)" ng-hide="showForm">search</button>
 				</div>
 
+
+
+
+
+
+
+
+
+
 				<!-- ADD FORM  -->
 				<div ng-show="showForm" id="add-form" class="row">
-					<h6 class="help" ng-show="showAddItemHelp">...please fill out all<span class="help-req">required fields</span></h6>
+					
 					<div class="six columns alpha">
 						<form action="">
 
@@ -131,11 +140,17 @@
 							<!-- these fields are disabled via reqCheck() unless required fields meet criteria -->
 							<button id="addButton" type="submit" ng-click="addItem()" ng-hide="showUpdateButton">add</button>
 							<button id= "updateButton" type="submit" ng-click="updateItem()" ng-show="showUpdateButton">update</button>
-							<button id= "cancelButton" ng-click="cancelForm()">cancel</button>
+							<button id= "cancelButton" ng-click="showForm=false;">cancel</button>
 
 						</form>
 					</div>
 				</div> <!-- end add item form -->
+
+
+
+
+
+
 
 				<!-- SEARCH FORM -->
 				<div id="search-form" ng-show="showSearch" class="row">
@@ -160,6 +175,15 @@
 					</div> <!-- end search results -->
 				</div> <!-- end search form -->
 
+
+
+
+
+
+
+
+
+
 				
 				<!-- SHOW ALL THE ITEMS!! -->
 				<div ng-repeat="loopitem in items">
@@ -171,7 +195,7 @@
 						</div>
 						<div class="one columns" ng-show="selected[loopitem.uid]">
 							<button id="edit-button" ng-click="editItem(loopitem)" ng-hide="{{loopitem.lock}}" >edit</button>
-							<button id="delete-button" ng-click="removeItem(loopitem)" ng-hide="{{loopitem.lock}}">delete</button>
+							<button id="delete-button" ng-click="pushToItem(loopitem, 'deleted', true)" ng-hide="{{loopitem.lock}}">delete</button>
 							<img id="lock-{{loopitem.uid}}" title="{{loopitem.name}} is locked by {{loopitem.lockedBy}}" class="pad-top" ng-show="{{loopitem.lock}}" src="images/lock.png"/>
 						</div>
 						<div class="two column">
@@ -189,12 +213,12 @@
 						</div>
 						<div class="one column omega">
 							<a class="item-link">ask</a> <!-- push comments to the item...? -->
-							<a class="item-link" ng-click="showHistory(loopitem)">old</a> 
+							<a class="item-link" ng-click="showItemHistory[loopitem.uid]=true; showHistory(loopitem)">old</a> 
 							<a class="item-link"><span ng-show="{{loopitem.flag}}" ng-click="pushToItem(loopitem, 'flag', false)"><img src="images/flag.gif"/></span><span ng-hide="{{loopitem.flag}}" ng-click="pushToItem(loopitem, 'flag', true)">flag</span></a>
 						</div>
 					</div>
-					<div class="row remove-all" ng-show="showItemHistory(loopitem.uid)">
-						<button ng-click="hideHistory(loopitem.uid)">hide</button>
+					<div class="row remove-all" ng-show="showItemHistory[loopitem.uid]">
+						<button ng-click="showItemHistory[loopitem.uid]=false;">hide</button>
 						<div class="item-history remove-all" id="history-{{loopitem.uid}}"></div>
 					</div>
 					<div class="row remove-all" id="alert-{{loopitem.uid}}" ng-show="{{loopitem.lock}}">
@@ -203,20 +227,16 @@
 					
 				</div> <!-- end item repeat -->
 
-				<div ng-repeat="deleted in deletedItems" ng-hide="page.showMap||page.showCalendar">
-					
-					<div class="row item-row graveyard">
-						<div class="two columns alpha">
-							<img class="pad-left-more" src="images/dead.png" />
-						</div>
-						<div class="fourteen columns omega">
-							<h4 class="pad-left"><small class="small-type" style="background-color:{{colors[deleted.type]}};">{{deleted.type}}</small>{{deleted.data.name}}</h4>
-						</div>
-					</div>
-
-				</div> <!-- end deleted item repeat -->
-
 			</div> <!-- end 16 col div -->
+
+
+
+
+
+
+
+
+
 
 			<!-- MAP AND CALENDAR CONTAINERS -->
 			<div id="map" ng-show="page.showMap">
