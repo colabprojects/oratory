@@ -48,13 +48,11 @@
 		<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
 	</head>
 
-
-
-
 	<!-- START OF THE BODY AND THE ITEM APP -->
 	<body ng-app="itemApp">
 		<div class="container" ng-controller="itemCtrl" id="itemCtrl">
 			<div class="sixteen columns">
+				<button ng-click='saveConfig()'>save config</button>
 				<div class="row remove-bottom">
 					<div id="email" class="email-field">
 						<!-- Required -->
@@ -69,15 +67,6 @@
 					<button ng-model="page" ng-click="addItemClick(page.type)" title="show form for adding thigs such as items, projects, books, etc." ng-hide="showForm">add</button><button ng-model="page" ng-click="searchItemClick(page.type)" ng-hide="showForm">search</button>
 				</div>
 
-
-
-
-
-
-
-
-
-
 				<!-- ADD FORM  -->
 				<div ng-show="showForm" id="add-form" class="row">
 					
@@ -91,51 +80,51 @@
 							<!-- Required -->
 							<label id="req-name-label" for="req-name-input">
 								name 
-								<span ng-show="imageSearchText"> - serach: <a id="imageSearchLink" ng-href="{{imageSearchHref}}" target="_blank">{{imageSearchText}}</a></span>
+								<span ng-show="imageSearchText"> - search: <a id="imageSearchLink" ng-href="{{imageSearchHref}}" target="_blank">{{imageSearchText}}</a></span>
 							</label>
 							<input type="text" id="req-name-input" ng-model="item.name" ng-change="reqCheck(); imageSearch();" />
 
-							<fieldset>
-							    <label for="have">
-							    	<input type="radio" name="need" id="have" value="have" ng-model="item.need" />
-							    	<span>have</span>
-							    </label>
-							 
-							    <label for="want">
-							    	<input type="radio" name="need" id="want" ng-model="item.need" value="want" />
-							    	<span>want</span>
-							    </label>
-						    </fieldset>
+							<!-- inject the rest of the form elements depending on type -->
+							<div ng-repeat="field in typeFields[item.type]">
 
-							<label for="inputDesc">description</label>
-							<textarea id="inputDesc" ng-model="item.description"></textarea>
+								<!-- text -->
+								<label ng-if="fieldTypes[field]=='text'" id="req-{{field}}-label" for="req-{{field}}-input">{{field}}</label>
+								<input ng-if="fieldTypes[field]=='text'" type="text" id="req-{{field}}-input" ng-model="item[field]" ng-change="reqCheck();"/>
 
-							<label ng-hide="showOtherLocationField()" for="inputLoc">location</label>
-							<select ng-hide="showOtherLocationField()" ng-model="item.loc" id="inputLoc" ng-options="l for l in locations">
-								<option></option>
-							</select>
+								<!-- textarea -->
+								<label ng-if="fieldTypes[field]=='textarea'" for="{{field}}-input">{{field}}</label>
+								<textarea ng-if="fieldTypes[field]=='textarea'" id="{{field}}-input" ng-model="item[field]"></textarea>
 
-							<label ng-show="showOtherLocationField()" for="inputLocOther">other location</label>
-							<input ng-show="showOtherLocationField()" type="text" id="inputLocOther" placeholder="enter location" ng-model="item.other">
+								<!-- radio -->
+								<fieldset ng-if="fieldTypes[field]=='radio'">
+								    <label for="{{radio[field].first}}">
+								    	<input type="radio" name="{{field}}" id="{{radio[field].first}}" value="{{radio[field].first}}" ng-model="item[field]" />
+								    	<span>{{radio[field].first}}</span>
+								    </label>
+								 
+								    <label for="{{radio[field].second}}">
+								    	<input type="radio" name="{{field}}" id="{{radio[field].second}}" value="{{radio[field].second}}" ng-model="item[field]"  />
+								    	<span>{{radio[field].second}}</span>
+								    </label>
+						    	</fieldset>
 
-							<label for="inputQuantity">quantity</label>
-							<input id="inputQuantity" type="text" ng-model="item.quantity" />
+						    	<!-- checkbox -->
+						    	<fieldset ng-if="fieldTypes[field]=='checkbox'">
+									<label for="{{field}}-check">
+										<input type="checkbox" ng-model="item[field]" value="false" />
+										<span>{{field}}</span>
+									</label>
+								</fieldset>
 
-							<label for="quasireq-ImageUrl">image URL</label>
-							<input type="text" id="quasireq-ImageUrl" ng-model="item.imageURL" ng-change="reqCheck()" />
+							</div> <!-- end form element repeat -->
 
-							<fieldset>
-								<label for="receiptTrigger">
-									<input type="checkbox" ng-model="showReceiptField" value="false" />
-									<span class="bold">receipt?</span>
-								</label>
-							</fieldset>
-
-							<label for="inputPrice" ng-show="showReceiptField">price</label>
-							<input type="text" id="inputPrice" ng-model="item.price" ng-show="showReceiptField"/>
-
-							<label for="quasireq-receiptUrl" ng-show="showReceiptField">receipt URL</label>
-							<input type="text" id="quasireq-receiptUrl" ng-model="item.receiptURL" ng-change="reqCheck()" ng-show="showReceiptField" />
+							<label for="new-element-label">new element</label>
+						    <select ng-model="newElement.fieldType" id="new-element-label" ng-options="f for f in formFieldTypes" ng-change="showNewElement=true;"></select>
+						    <input ng-show="showNewElement" type="text" placeholder="new element name" ng-model="newElement.name">
+						    <button ng-show="showNewElement" ng-click="addFormElement('once')">add once</button>
+						    <button ng-show="showNewElement" ng-click="addFormElement('always')">add always</button>
+						    <button ng-show="showNewElement" ng-click="showNewElement=false;">remove</button>
+						    <br>
 
 							<!-- these fields are disabled via reqCheck() unless required fields meet criteria -->
 							<button id="addButton" type="submit" ng-click="addItem()" ng-hide="showUpdateButton">add</button>
@@ -228,15 +217,6 @@
 				</div> <!-- end item repeat -->
 
 			</div> <!-- end 16 col div -->
-
-
-
-
-
-
-
-
-
 
 			<!-- MAP AND CALENDAR CONTAINERS -->
 			<div id="map" ng-show="page.showMap">

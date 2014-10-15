@@ -1,7 +1,3 @@
-// problem with browser navigation (going back will lock the item) - also you can delete a locked item
-
-
-
 //the angular magic:
 var itemApp = angular.module('itemApp', []);
 //default item image:
@@ -16,59 +12,38 @@ var debug = {};
 //############################################################################################################################################################
 
 itemApp.controller('itemCtrl', function ($scope, $http) {
-  //navigation and things
-  $scope.pages = [
-    {
-      'id':1, 
-      'name':'everything', 
-      'sub':'on The Land', 
-      'title':'add anything and search everything', 
-      'type':''
-    },
-    {
-      'id':2, 
-      'name':'inventory', 
-      'sub':'of items and resources', 
-      'title':'add and update items', 
-      'type':'item'
-    }, 
-    {
-      'id':3, 
-      'name':'projects', 
-      'sub':'being worked on and formulated', 
-      'title':'add, participate in, or propose projects', 
-      'type':'project'
-    }, 
-    {
-      'id':4, 
-      'name':'books', 
-      'sub':'in the library on The Land', 
-      'title':'add or browse books', 
-      'type':'book'
-    }, 
-    {
-      'id':5, 
-      'name':'map', 
-      'sub':'of The Land', 
-      'title':'view and add stuff', 
-      'type':'map',
-      'showMap':true
-    }, 
-    {
-      'id':6, 
-      'name':'calendar', 
-      'sub':'of events related to The Land', 
-      'title':'see when people are coming or say when you are coming',
-      'type':'calendar',
-      'showCalendar':true
+  //config - navigation and things
+  $scope.master = {};
+  
+  $http.get('/api/getConfig').then(function (response) {  
+    $scope.master = response.data[0];
+    //set default page to "everything"
+    $scope.pages = $scope.master.pages;
+    $scope.page = $scope.master.pages[0];
+    //set the 'types' of enteries for the database:
+    $scope.fieldTypes=$scope.master.fieldTypes;
+    $scope.types=[];
+    $scope.typeFields = {};
+    $scope.colors = {};
+    $scope.radio = {};
+    for (var key in $scope.master.defaults) {
+      if ($scope.master.defaults.hasOwnProperty(key)) {
+        $scope.types.push(key);
+        $scope.typeFields[key]=$scope.master.defaults[key].fields;
+        $scope.colors[key]=$scope.master.defaults[key].color;
+
+        //special config
+        for (var radio in $scope.master.defaults[key].radio) {
+          if ($scope.master.defaults[key].radio.hasOwnProperty(radio)){
+            $scope.radio[radio]=$scope.master.defaults[key].radio[radio];
+          }
+        }
+      }
     }
-  ];
-  //set default page to "everything"
-  $scope.page = $scope.pages[0];
-  //set the 'types' of enteries for the database:
-  $scope.types = ['item', 'project', 'book', 'map', 'calendar', 'media', 'money', 'misc'];
-  $scope.colors = {'item':'#218559', 'project':'#EBB035', 'book':'#876f69', 'deleted':'#FF4C4C'};
-  $scope.fields = {'name':'text', 'desc':'textfield', 'location':'text'};
+  });
+
+  $scope.formFieldTypes = ['text', 'textarea', 'checkbox'];
+  
   //view settings:
   $scope.showItemHistory={};
   if (email) { $scope.emailSuccess=true; }else{ $scope.emailSuccess=false; }
@@ -188,9 +163,6 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     $scope.refreshItems();
     //set item stuff
     $scope.item['uid'] = generateUID();
-    //!!!!!!!!!!!!
-    //$scope.item['number'] = $scope.items.length + 1;     FIX THIS ONE ----- not sure how to do it best ----- 
-    //!!!!!!!!!!!!
     //save image if specified
     //set image if no url specified (this could be made as a function - maybe a list of most used images or generic ones?)
     if (($scope.item.imageURL == '')||(typeof $scope.item.imageURL == 'undefined')) { 
@@ -310,7 +282,6 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
 
   }; //end imageSearch ---------------
 
-
   $scope.pushToItem = function (itemP, pushP, valueP) {
     var itemPush = {
       push: pushP,
@@ -401,7 +372,20 @@ itemApp.controller('itemCtrl', function ($scope, $http) {
     packageEmail.HTMLbody += "<a href='http://127.0.0.1:55656/api/unStage/"+actionKey+"/true'>YES!</a>"
 
     $http.post('/api/sendEmail',packageEmail);
-  }//end itemChangeEmailGen ---------------
+  };//end itemChangeEmailGen ---------------
+
+  $scope.saveConfig = function () {
+    $http.post('/api/saveConfig', $scope.master);
+  };
+
+  $scope.addFormElement = function (x) {
+    if (x=='once'){
+      //adds new element 
+      $scope.fieldTypes[$scope.newElement.name]=$scope.newElement.fieldType;
+      $scope.typeFields[$scope.item.type].push($scope.newElement.name);
+      $scope.showNewElement=false;
+    }
+  };
 
 }); // end itemCtrl #########
 
