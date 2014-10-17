@@ -215,6 +215,7 @@
 	input[type="text"],
 	input[type="password"],
 	input[type="email"],
+	input[type="url"],
 	textarea,
 	select {
 		border: 1px solid #ccc;
@@ -236,6 +237,7 @@
 	input[type="text"]:focus,
 	input[type="password"]:focus,
 	input[type="email"]:focus,
+	input[type="url"]:focus,
 	textarea:focus {
 		border: 1px solid #aaa;
  		color: #444;

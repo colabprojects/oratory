@@ -1,423 +1,198 @@
 //the angular magic:
-var itemApp = angular.module('itemApp', []);
+var itemApp = angular.module('itemApp', ['ui.router','mgcrea.ngStrap']);
 //default item image:
-var defaultImage = "images/default.jpg";
+var defaultImage = 'images/default.jpg';
 //cookies:
 var email = $.cookie('email');
 //debug:
 var debug = {};
 
-//############################################################################################################################################################
-//ITEM CONTROLLER ############################################################################################################################################################
-//############################################################################################################################################################
+//create the service for database interaction and info
+itemApp.factory('master', function($http, $q){
+  var service = {};
 
-itemApp.controller('itemCtrl', function ($scope, $http) {
-  //config - navigation and things
-  $scope.master = {};
-  
-  $http.get('/api/getConfig').then(function (response) {  
-    $scope.master = response.data[0];
-    //set default page to "everything"
-    $scope.pages = $scope.master.pages;
-    $scope.page = $scope.master.pages[0];
-    //set the 'types' of enteries for the database:
-    $scope.fieldTypes=$scope.master.fieldTypes;
-    $scope.types=[];
-    $scope.typeFields = {};
-    $scope.colors = {};
-    $scope.radio = {};
-    for (var key in $scope.master.defaults) {
-      if ($scope.master.defaults.hasOwnProperty(key)) {
-        $scope.types.push(key);
-        $scope.typeFields[key]=$scope.master.defaults[key].fields;
-        $scope.colors[key]=$scope.master.defaults[key].color;
-
-        //special config
-        for (var radio in $scope.master.defaults[key].radio) {
-          if ($scope.master.defaults[key].radio.hasOwnProperty(radio)){
-            $scope.radio[radio]=$scope.master.defaults[key].radio[radio];
-          }
-        }
-      }
-    }
-  });
-
-  $scope.formFieldTypes = ['text', 'textarea', 'checkbox'];
-  
-  //view settings:
-  $scope.showItemHistory={};
-  if (email) { $scope.emailSuccess=true; }else{ $scope.emailSuccess=false; }
-  //boolean defaults:
-  $scope.false = false;
-  $scope.true = true;
-  //get email (oauth would go here)
-  $scope.email = email;
-  //initilize items
-  $http.post('/api/getItems', $scope.page).then(function (response) {
-    $scope.items = response.data;
-  });
-  //initilize empty item
-  $scope.item = {};
-  //init selected
-  $scope.selected = {};
-  //initilize empty search and search results
-  $scope.searchItem = {};
-  $scope.searchResults = {};
-  //initilize locations
-  $scope.locations=['Other (add one)'];
-  $http.get('/api/getLocations').then(function (response) {
-    for (var i = 0, len = response.data.length; i < len; i++) {
-      $scope.locations.push(response.data[i].name);
-    }
-  }); //end getLocations
-
-  //FUNCTIONS ----------------------------------------------------------------------------------------------------------------------------
-  $scope.changePage = function () {
-    $scope.showForm = false;
-    $scope.refreshItems();
-    //if map insert map
-    if ($scope.page.showMap) {
-      //should store this somehow once it is loaded to avoid a bunch of calls to google api
-      new GMaps({
-        div: '#insert-map',
-        lat: 36.375892,
-        lng: -85.586121
-        //mapTypeId: google.maps.MapTypeId.SATELLITE
-      });
-    }//end insert map
-    //if calendar insert calendar
-    if ($scope.page.showCalendar) {
-      $('#insert-calendar').fullCalendar({
-        //settings
-        events: [
-          {
-            title: 'Steve, Micha, and Luke on The Land',
-            start: '2014-09-19',
-            end: '2014-09-29'
-          }
-        ]
-      });
-      //something about the scope.... this is my workaround:
-      setTimeout(function() { $('#insert-calendar').fullCalendar('render'); }, 100);
-    }//end insert calendar
-  };//end changePage
-
-  $scope.refreshItems = function () {
-    $http.post('/api/getItems',$scope.page).then(function (response) {
-      $scope.items = response.data;
+  //------------------------------
+  service.items=[];
+  service.refreshItems=function(){
+    return $http.post('/api/getItems').then(function (response) {
+      //mystery
+      return angular.copy(response.data,service.items);
     });
-  };//end refreshItems
+  };
+  //init data
+  service.refreshItems();
+  //------------------------------
 
-  $scope.addItemClick = function (type) {
-    $scope.item = {};
-    //set item type as default
-    $scope.item.type = type;
-    $scope.newItem = true;
-    //defaults for new item:
-    $scope.item.quantity = 1;
-    $scope.item.need = 'have';
-    $scope.imageSearchHref = '';
-    //view settings
-    $scope.showUpdateButton = false;
-    $scope.showForm = true;
-    $scope.showAddItemHelp = true;
-    //set and check required fields
-    $scope.reqCheck();
-  };//end addItemClick ---------------
-
-  $scope.searchItemClick = function (type) {
-    $scope.searchItem = {};
-    //defaults:
-    $scope.searchItem.type = type;
-    //view settings
-    $scope.showSearch = true;
-    $scope.showSearchItemHelp = true;
-    //requiredfields?
-
-  };//end searchItemClick ---------------
-
-  $scope.cancelSearch = function () {
-    //view settings
-    $scope.showSearch = false;
-    $scope.showSearchItemHelp = false;
-  };//end cancelSearch ---------------
-
-  $scope.searchItems = function () {
-    //clear search results
-    $scope.searchResults = {};
-    //check to see if there is anything
-    if (($scope.searchItem.name != '')||(typeof $scope.searchItem.name == 'undefined')) {
-      $http.post('/api/searchItems', $scope.searchItem).then(function (response) {
-        for (var i = 0, len = response.data.length; i < len; i++) {
-          //add search results to the ng-repeat for the search
-          $scope.searchResults[i] = response.data[i];
-        }
-      });
-    }
-  };//end searchItem ---------------
-
-  $scope.addItem = function () {
-    //save location if new
-    $scope.saveLocation();
-    //refresh $scope.items
-    $scope.refreshItems();
-    //set item stuff
-    $scope.item['uid'] = generateUID();
-    //save image if specified
-    //set image if no url specified (this could be made as a function - maybe a list of most used images or generic ones?)
-    if (($scope.item.imageURL == '')||(typeof $scope.item.imageURL == 'undefined')) { 
-      $scope.item.thumb = defaultImage; 
+  service.saveItem = function(itemToBeSaved){
+    var promise;
+    if ((itemToBeSaved.imageURL == '')||(typeof itemToBeSaved.imageURL == 'undefined')) { 
+      itemToBeSaved.thumb = defaultImage; 
     }else{
-      $scope.saveImage($scope.item);
-      $scope.item['image'] = 'images/items/'+$scope.item.uid+'/itemImage.jpg';
-      $scope.item['thumb'] = 'images/items/'+$scope.item.uid+'/itemThumb.jpg'; 
+      //promise that the image will save
+      promise = service.saveImage(itemToBeSaved);
+      itemToBeSaved['image'] = 'images/items/'+itemToBeSaved.uid+'/itemImage.jpg';
+      itemToBeSaved['thumb'] = 'images/items/'+itemToBeSaved.uid+'/itemThumb.jpg'; 
     }
-    //set 'hidden' fields
-    $scope.item['posted'] = generateDate(); 
-    $scope.item['owner'] = $scope.email;
-    //save - then refresh $scope.items
-    $http.post('/api/saveItem', $scope.item).success(function (data) { 
-      $scope.refreshItems();
-    });
-    //change view settings
-    $scope.showForm = false;
-    delete $scope.item;
-  }; //end addItem ---------------
-
-  $scope.showHistory = function (itemH) {
-    $http.post('/api/getItemHistory', itemH).success(function (docs) {
-      $scope.showItemHistory[itemH.uid] = true;
-      $('#history-'+itemH.uid).html('<p>' + JSON.stringify(docs) + '</p>');
-    });
-  }; //end showHistory ---------------
-
-  $scope.updateItem = function () {
-    //remove _id
-    delete $scope.item._id;
-    //timestamp for update
-    $scope.item['updated'] = generateDate();
-    //check to see who is editing
-    if ($scope.item.owner == $scope.email) { //this is the standard update call  <<<<<<<<<<<<<
-      //add location if new
-      $scope.saveLocation();
-      //add image if changed!
-      if (($scope.item.thumb == defaultImage)&&(typeof $scope.item.imageURL != 'undefined')&&($scope.item.imageURL!='')) {
-        //item image has changed
-        $scope.item['image'] = 'images/items/'+$scope.item.uid+'/itemImage.jpg';
-        $scope.item['thumb'] = 'images/items/'+$scope.item.uid+'/itemThumb.jpg'; 
-        $scope.saveImage($scope.item);
-      }
-      //update the item
-      $http.post('/api/updateItem', $scope.item).success(function (err, doc) { 
-        //refresh scope.items
-        $scope.refreshItems();
+    return $q.when(promise).finally(function(){
+      return $http.post('/api/saveItem', itemToBeSaved).success(function (data) { 
+        return service.refreshItems();
       });
-    } else { //stage item if different author (have a function to change ownership - maybe in the body of the email!)  <<<<<<<<<<<<<
-      $scope.item['updatedBy'] = $scope.email;
-      //set stage lock
-      $scope.item['lock'] = true;
-      $scope.item['stageLock'] = true;
-      
-      var key = generateUID();
-      //the following creates a staged item that can be converted or 'unstaged' by a call to /api/unstage/<key>
-      $http.post('/api/stageItem', { actionKey:key, data:$scope.item });
-      $scope.itemChangeEmailGen($scope.item, key);
-    }
-    //change view settings
-    $scope.showForm = false;
-    //remove form binding
-    delete $scope.item;
+    });
+  };//END SAVE ITEM
 
-  }; //end updateItem ---------------
-
-  $scope.editItem = function (fnitem) {
-    //set the form field bindings
-    $scope.item = fnitem;
-    $scope.newItem = false;
-    
-    //set an edit lock interval (locks for 20seconds)
-    //$http.post('/api/tempLock', {email:$scope.email, uid:$scope.item.uid}).then(function(){ $scope.refreshItems(); });
-    //setTimeout(function() { $scope.refreshItems(); }, 21000);
-    
-    //change view settings
-    $scope.showUpdateButton=true;
-    $scope.showForm=true;
-    //set and check required fields
-    $scope.reqCheck();
-  }; //end editItem ---------------
-
-  $scope.setEmailCookie = function () {
-    if ($.cookie('email', $scope.email)) {
-      $scope.emailSuccess=true;
-      email=$scope.email;
-    };
-    //$.cookie('key')
-  };//end setEmailCookie ---------------
-
-  $scope.saveLocation = function () {
-    if ($scope.item.loc == 'Other (add one)') { 
-      $http.post('/api/saveLocation', {type:'location', name:$scope.item.other}).success(function (err, doc) {});
-      $scope.item.loc = $scope.item.other;
-      $scope.item.other = '';
-      $scope.locations.push($scope.item.loc);
-    }//end if
-  }; //end saveLocation ---------------
-
-  $scope.showOtherLocationField = function () {
-    //this opens the element for new location (could be made better - where should this be placed? might be able to combine with saveLocation)
-    if (typeof $scope.item =='undefined') { return false; }
-    else if($scope.item.loc == 'Other (add one)'){ 
-      return true; } 
-    else { return false; }
-  }; //end showOtherLocationField ---------------
-
-  $scope.saveImage = function (itemI) {
+  service.saveImage = function (itemI) {
     //save the image from the specified url
-    $http.post('/api/saveImage', itemI).success(function (err, doc) {});
-  }; //end saveImage ---------------
+    return $http.post('/api/saveImage', itemI);
+  }; //END SAVE IMAGE
 
-  $scope.imageSearch = function () {
-    $scope.imageSearchHref = 'https://www.google.com/search?q='+encodeURIComponent($scope.item.name)
-    $scope.imageSearchText = $scope.item.name;
 
-  }; //end imageSearch ---------------
-
-  $scope.pushToItem = function (itemP, pushP, valueP) {
-    var itemPush = {
-      push: pushP,
-      pushToUID: itemP.uid,
-      value: valueP
-    };
-    $http.post('/api/pushToItem', itemPush).then(function (err, doc) { $scope.refreshItems(); });
-  }; //end pushToItem ---------------
-
-  $scope.reqCheck = function () {
-    var emailGood=false;
-    var nameGood=false;
-    var typeGood=false;
-    var imageGood=true; //quasi required - if entered it must be vaild
-    var receiptGood=true; //quasi required
-
-    //check email
-    if (checkEmail($scope.email)) {//email valid
-      $('#req-email-input').removeClass('req-alert-on-left');
-      emailGood=true;
-    } else {//email NOT valid
-      $('#req-email-input').addClass('req-alert-on-left');
-    }
-
-    //check name
-    if ((typeof $scope.item.name =='undefined')||($scope.item.name=='')) {//name NOT valid
-      $('#req-name-input').addClass('req-alert-on-left');
-    } else {//name valid
-      $('#req-name-input').removeClass('req-alert-on-left');
-      nameGood=true;
-    }
-
-    //check type
-    if ((typeof $scope.item.type =='undefined')||($scope.item.type=='')) {//type NOT valid
-      $('#req-type-input').addClass('req-alert-on-left');
-    } else {//type valid
-      $('#req-type-input').removeClass('req-alert-on-left');
-      typeGood=true;
-    }
-
-    //check image url
-    if ((typeof $scope.item.imageURL != 'undefined')&&($scope.item.imageURL!='')) {//something is there
-      if (checkURL($scope.item.imageURL)){//url vaild
-        $('#quasireq-ImageUrl').removeClass('req-alert-on-left');
-        imageGood=true;
-      }else{//url NOT valid
-        $('#quasireq-ImageUrl').addClass('req-alert-on-left');
-        imageGood=false;
-      } 
-    }else{//cancel the requirment
-      $('#quasireq-ImageUrl').removeClass('req-alert-on-left');
-      imageGood=true;
-    }
-
-    //check receipt url
-    if ((typeof $scope.item.receiptURL != 'undefined')&&($scope.item.receiptURL!='')) {//something is there
-      if (checkURL($scope.item.receiptURL)){//url vaild
-        $('#quasireq-receiptUrl').removeClass('req-alert-on-left');
-        receiptGood=true;
-      }else{//url NOT valid
-        $('#quasireq-receiptUrl').addClass('req-alert-on-left');
-        receiptGood=false;
-      } 
-    }else{//cancel the requirment
-      $('#quasireq-receiptUrl').removeClass('req-alert-on-left');
-      receiptGood=true;
-    }
-
-    if (emailGood&&nameGood&&imageGood&&receiptGood&&typeGood) {
-      //all good - remove disabled from update and add buttons
-      $('#addButton').prop("disabled", false);
-      $('#updateButton').prop("disabled", false);
-      $scope.showAddItemHelp=false;
-    } else {
-      //not good
-      $('#addButton').prop("disabled", true);
-      $('#updateButton').prop("disabled", true);
-    }
-  };//end reqCheck ---------------  
-
-  $scope.itemChangeEmailGen = function (itemX, actionKey) {
-    var packageEmail = {};
-    packageEmail.to = itemX.owner;
-    packageEmail.subject = "[inventory] changes have been made to " + itemX.name;
-    packageEmail.HTMLbody += "here is the full item:<br/>";
-    packageEmail.HTMLbody += JSON.stringify(itemX) + "<br/>";
-    packageEmail.HTMLbody += "do you approve?<br/>";
-    packageEmail.HTMLbody += "<a href='http://127.0.0.1:55656/api/unStage/"+actionKey+"/true'>YES!</a>"
-
-    $http.post('/api/sendEmail',packageEmail);
-  };//end itemChangeEmailGen ---------------
-
-  $scope.saveConfig = function () {
-    $http.post('/api/saveConfig', $scope.master);
+  service.getDbInfo={
+    formElements:['text','text-search','textarea', 'url'],
+    types:['item','project'],
+    colors:{'item':'#218559','project':'#EBB035','book':'#876f69'}
+  };
+  service.getTypeInfo={
+    item:[
+      {name:'description',type:'textarea'}, 
+      {name:'location',type:'text'},
+      {name:'balls',type:'text-search'},
+      {name:'imageURL', type:'url'},
+      {name:'website', type:'url'}
+    ],
+    project:[
+      {name:'description',type:'textarea'},
+      {name:'task',type:'text'}
+    ]
   };
 
-  $scope.addFormElement = function (x) {
-    if (x=='once'){
-      //adds new element 
-      $scope.fieldTypes[$scope.newElement.name]=$scope.newElement.fieldType;
-      $scope.typeFields[$scope.item.type].push($scope.newElement.name);
-      $scope.showNewElement=false;
+  return service;
+});
+
+itemApp.config(function($stateProvider, $urlRouterProvider){
+  $urlRouterProvider.when('/edit/','/');
+  $urlRouterProvider.when('/edit','/');
+
+  $stateProvider
+    .state('default', {
+      url: '/',
+      templateUrl: 'templates/defaultView.html',
+      controller: function ($scope) {}
+    })
+    .state('newItemForm', {
+      url: '/addItem',
+      templateUrl:'templates/defaultView.html',
+      controller: function ($scope) {
+        $scope.showForm=true; 
+      }
+    })
+    .state('edit', {
+      url: '/edit/:uid',
+      resolve:{
+        itemToBeEdit: function ($http, $stateParams) {
+          return $http.post('/api/getItem', $stateParams).then(function (response){
+            return response.data;
+          });
+        }
+      },
+      templateUrl: 'templates/editView.html',
+      controller: function ($scope, itemToBeEdit, master) {
+        $scope.itemToBeEdit=itemToBeEdit;
+      }
+    });
+
+    
+    $urlRouterProvider.otherwise('/');
+
+});
+
+itemApp.controller('itemCtrl', function ($scope, $http, $state, master) {
+  $scope.dbInfo=master.getDbInfo;
+  $scope.typeInfo=master.getTypeInfo;
+  $scope.items = master.items;
+
+      //scope.formItem={};
+      //scope.formItem.name=scope.filter;
+
+  $scope.$on('cancelForm',function(){ $scope.showForm=false; $state.go('default'); });
+
+});
+
+//accepts a field array (of objects with a name and type)
+itemApp.directive('formElement', function() {
+  return {
+    restrict: 'E',
+    scope: {
+      field:'=',
+      formItem:'=',
+      form:'='
+    },
+    template: '<div ng-include="templateUrl"></div>',
+    link: function(scope, element, attrs) {
+      if (scope.field.type=='text') {
+        scope.templateUrl = 'templates/formElement_text.html';
+      }
+      if (scope.field.type=='textarea') {
+        scope.templateUrl = 'templates/formElement_textarea.html';
+      }
+      if (scope.field.type=='text-search') {
+        scope.templateUrl = 'templates/formElement_text_searchLink.html';
+      }
+      if (scope.field.type=='url') {
+        scope.templateUrl = 'templates/formElement_URL.html';
+      }
+
+      //functions
+      scope.imageSearch = function(searchTerm) {
+        scope.imageSearchHref = 'https://www.google.com/search?q='+encodeURIComponent(searchTerm);
+      };
     }
-  };
+  }
+});
 
-}); // end itemCtrl #########
+itemApp.directive('insertForm', function (master) {
+  return {
+    restrict: 'E',
+    scope: {
+      filter:'=',
+      formItem:'='
+    },
+    templateUrl: 'templates/insertForm.html',
+    link: function(scope, element, attrs) {
+      //db defaults for form
+      scope.dbInfo=master.getDbInfo;
+      scope.typeInfo=master.getTypeInfo;
 
+      scope.addItem = function(itemToBeAdded) {
+        //validate and add
 
-//############################################################################################################################################################
-//GENERAL FUNCTIONS ############################################################################################################################################################
-//############################################################################################################################################################
+        if (scope.form.$valid) { master.saveItem(itemToBeAdded); scope.cancelForm(); }
+      };
+      scope.cancelForm = function(){
+        scope.$emit('cancelForm');
+        scope.formItem={};
+      };
+    }
+  }
+});
 
-function generateUID() {
-  return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-      return v.toString(16);
-  });
-}
+itemApp.directive('listItem', function ($state, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      item:'='
+    },
+    templateUrl: 'templates/listItem.html',
+    link: function(scope, element, attrs) {
+      scope.color = function () { return master.getDbInfo.colors[scope.item.type]; };
 
-function checkEmail(email) {
-  var regex = /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-  return regex.test(email);
-}
+      scope.$watch('item.imageURL',function(url){
+        scope.editThumb = url;
+      });
 
-function checkURL(url) {
-  var regex = new RegExp("^(http[s]?:\\/\\/(www\\.)?|ftp:\\/\\/(www\\.)?|www\\.){1}([0-9A-Za-z-\\.@:%_\+~#=]+)+((\\.[a-zA-Z]{2,3})+)(/(.)*)?(\\?(.)*)?");
-  return regex.test(url);
-}
+      scope.editItem = function(itemToBeEdit) {
+        $state.go('edit',{uid: itemToBeEdit.uid});
+      };
 
-function generateDate() {
-  var currentdate = new Date(); 
-  var datetime = (currentdate.getMonth()+1) + "/"
-                + currentdate.getDate() + "/" 
-                + currentdate.getFullYear() + " @ "  
-                + currentdate.getHours() + ":"  
-                + currentdate.getMinutes() + ":" 
-                + currentdate.getSeconds();
-  return datetime;
-}
+    }
+  }
+});

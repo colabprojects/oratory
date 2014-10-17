@@ -39,7 +39,9 @@ smtpTrans = nodemailer.createTransport(smtpTransport({
 //the following are used for images (but can also be used for a shit-ton of other things)
 var fs = require('fs');
 var request = require('request');
+var q = require('q');
 var url = require('url');
+var moment = require('moment');
 //image manipulation (for thumbnails)
 var gm = require('gm').subClass({ imageMagick: true });
 //make directory for item images:
@@ -70,7 +72,7 @@ app.post('/api/getItemHistory', express.json(), function (req, res) {
 	});
 });//end GET item history
 
-app.post('/api/getItem', function (req, res) {
+app.post('/api/getItem', express.json(), function (req, res) {
 	db.itemdb.findOne(req.body, function (err, doc) {
 		if(err){ console.log('(error getting item) '+err); }else{ res.send(doc); }
 	});
@@ -87,21 +89,27 @@ app.post('/api/searchItems', express.json(), function (req, res) {
 });//end SEARCH items
 
 app.post('/api/saveItem', express.json(), function (req, res) {
-	db.itemdb.insert(req.body, function (err, doc) { 
-		if(err){ console.log('(error saving item) '+err); }else{ res.send(doc); } 
-	});
+	if (req.body.uid) {
+		db.itemdb.find({uid:req.body.uid}, function (err, check) {
+			if (!check.length||check[0].uid!==req.body.uid) {
+				return res.send(500);
+			}
+			//it is there - update and store history
+			delete req.body._id;
+			db.itemdb.insert({type:'history', forUID:req.body.uid, data:req.body }, function (err, doc) {});
+			req.body.posted=moment().format();
+			db.itemdb.update({uid: req.body.uid}, req.body, function (err, doc) {
+				if(err){ console.log('(error updating item) '+err); }else{ res.send(doc); }
+			});
+		});
+	} else {
+		req.body.uid=generateUID();
+		req.body.posted=moment().format();
+		db.itemdb.insert(req.body, function (err, doc) { 
+			if(err){ console.log('(error saving item) '+err); }else{ res.send(doc); } 
+		});
+	}
 });//end SAVE single item
-
-
-app.post('/api/updateItem', express.json(), function (req, res) {
-	db.itemdb.find({uid:req.body.uid}, function (err, old) {
-		db.itemdb.insert({type:'history', forUID:old[0].uid, data:old[0] }, function (err, doc) {});
-	});
-	db.itemdb.update({uid: req.body.uid}, req.body, function (err, doc) {
-		if(err){ console.log('(error updating item) '+err); }else{ res.send(doc); }
-	});
-
-});//end UPDATE single item
 
 app.post('/api/pushToItem', express.json(), function (req, res) {
 	var pushValue = {};
@@ -171,20 +179,27 @@ app.get('/api/unStage/:key/:decision', function (req, res) {
 
 //IMAGES --------------------------------
 app.post('/api/saveImage', express.json(), function (req, res) {
+	var deferred = q.defer();
 	request.get({url: url.parse(req.body.imageURL), encoding: 'binary'}, function (err, response, body) {
 		console.log('trying to save the image for item: '+req.body.name);
 		var path = '/vagrant/www/images/items/'+req.body.uid+'/';
 		fs.mkdir(path);
 	    fs.writeFile(path+"itemImage.jpg", body, 'binary', function(err) {
-	    	if(err) { console.log(err); }else{ 
+	    	if(err) { console.log(err); deferred.reject(res.send(500)); }else{ 
 	    		//save image thumbnail
 	    		console.log("The file was saved!"); 
 	    		gm(path+'itemImage.jpg').resize('60','60').gravity('center').write(path+'itemThumb.jpg', function(err) {
-	    			if(err) { console.log(err); }else{ console.log("Image thumbnail saved"); }
+	    			if(err) { console.log(err); deferred.reject(res.send(500)); }else{ 
+	    				//successful image save chain:
+	    				console.log("Image thumbnail saved"); 
+	    				deferred.resolve(res.send());
+	    			}
 	    		});//end save image thumb
 	    	}//end save image
 	    }); 
 	});
+
+	return deferred.promise;
 }); //end SAVE image
 
 
@@ -340,5 +355,12 @@ app.get('/api/getScopeFunctions', function (req,res) {
 	});
 
 });
+
+function generateUID() {
+  return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+      return v.toString(16);
+  });
+}
 
 app.listen(80);

@@ -1,0 +1,7 @@
+<br>
+<input type="text" class="inline" ng-model="filter" placeholder="search"><button ui-sref="newItemForm">add</button>
+
+<insert-form ng-if="showForm" form-item="formItem" filter="filter"></insert-form>
+
+<list-item ng-repeat="item in items | filter:filter" item="item"></list-item>
+

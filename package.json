@@ -18,6 +18,8 @@
     "mongojs": "*",
     "request":"*", 
     "gm":"*",
+    "moment":"*",
+    "q":"*",
     "jquery.cookie":"*"
   },
   "scripts": {

@@ -70,7 +70,6 @@ button:disabled { color:#999; }
 .item-row { 
 	margin-bottom: 0px !important;
 	padding-top: 15px !important;
-	padding-bottom: 25px !important;
 }
 .alive {
 	border-top:1px solid #F2F2F2 !important;

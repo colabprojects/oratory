@@ -2,7 +2,7 @@
 <!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
 <!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
 <!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
-<!--[if (gte IE 9)|!(IE)]><!--><html lang="en"> <!--<![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!--><html lang="en" ng-app="itemApp"> <!--<![endif]-->
 	<head>
 
 		<!-- Basic Page Needs
@@ -35,6 +35,10 @@
 		<!-- angularJS (manipulates some CSS..)
 		================================================== -->
 		<script type="text/javascript" src="js/angular.min.js"></script>
+		<script type="text/javascript" src="js/angularuirouter.min.js"></script>
+		<script type="text/javascript" src="js/angular-strap.js"></script>
+		<script type="text/javascript" src="js/angular-strap.tpl.js"></script>
+
 
 		<!--[if lt IE 9]>
 		<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
@@ -49,186 +53,10 @@
 	</head>
 
 	<!-- START OF THE BODY AND THE ITEM APP -->
-	<body ng-app="itemApp">
-		<div class="container" ng-controller="itemCtrl" id="itemCtrl">
-			<div class="sixteen columns">
-				<button ng-click='saveConfig()'>save config</button>
-				<div class="row remove-bottom">
-					<div id="email" class="email-field">
-						<!-- Required -->
-						<input id="req-email-input" ng-model="email" ng-change="reqCheck(); emailSuccess=false;" class ="remove-bottom add-top inline" type="text" placeholder="email" /><button id="email-button" class ="remove-bottom add-top" ng-click="setEmailCookie()" ng-hide="emailSuccess">save</button>
-					</div>
-				</div>
-				<div class="row">
-					<select id="page-name" ng-model="page" ng-change="changePage();" ng-options="p.name for p in pages" title="{{page.title}}"></select>
-					<span id="page-sub" ng-model="page">...{{page.sub}}</span>
-				</div>
-				<div class="row half-bottom">
-					<button ng-model="page" ng-click="addItemClick(page.type)" title="show form for adding thigs such as items, projects, books, etc." ng-hide="showForm">add</button><button ng-model="page" ng-click="searchItemClick(page.type)" ng-hide="showForm">search</button>
-				</div>
-
-				<!-- ADD FORM  -->
-				<div ng-show="showForm" id="add-form" class="row">
-					
-					<div class="six columns alpha">
-						<form action="">
-
-							<!-- Required -->
-							<label for="req-type-label">type</label>
-							<select ng-model="item.type" id="req-type-input" ng-change="reqCheck();" ng-options="t for t in types"></select>
-
-							<!-- Required -->
-							<label id="req-name-label" for="req-name-input">
-								name 
-								<span ng-show="imageSearchText"> - search: <a id="imageSearchLink" ng-href="{{imageSearchHref}}" target="_blank">{{imageSearchText}}</a></span>
-							</label>
-							<input type="text" id="req-name-input" ng-model="item.name" ng-change="reqCheck(); imageSearch();" />
-
-							<!-- inject the rest of the form elements depending on type -->
-							<div ng-repeat="field in typeFields[item.type]">
-
-								<!-- text -->
-								<label ng-if="fieldTypes[field]=='text'" id="req-{{field}}-label" for="req-{{field}}-input">{{field}}</label>
-								<input ng-if="fieldTypes[field]=='text'" type="text" id="req-{{field}}-input" ng-model="item[field]" ng-change="reqCheck();"/>
-
-								<!-- textarea -->
-								<label ng-if="fieldTypes[field]=='textarea'" for="{{field}}-input">{{field}}</label>
-								<textarea ng-if="fieldTypes[field]=='textarea'" id="{{field}}-input" ng-model="item[field]"></textarea>
-
-								<!-- radio -->
-								<fieldset ng-if="fieldTypes[field]=='radio'">
-								    <label for="{{radio[field].first}}">
-								    	<input type="radio" name="{{field}}" id="{{radio[field].first}}" value="{{radio[field].first}}" ng-model="item[field]" />
-								    	<span>{{radio[field].first}}</span>
-								    </label>
-								 
-								    <label for="{{radio[field].second}}">
-								    	<input type="radio" name="{{field}}" id="{{radio[field].second}}" value="{{radio[field].second}}" ng-model="item[field]"  />
-								    	<span>{{radio[field].second}}</span>
-								    </label>
-						    	</fieldset>
-
-						    	<!-- checkbox -->
-						    	<fieldset ng-if="fieldTypes[field]=='checkbox'">
-									<label for="{{field}}-check">
-										<input type="checkbox" ng-model="item[field]" value="false" />
-										<span>{{field}}</span>
-									</label>
-								</fieldset>
-
-							</div> <!-- end form element repeat -->
-
-							<label for="new-element-label">new element</label>
-						    <select ng-model="newElement.fieldType" id="new-element-label" ng-options="f for f in formFieldTypes" ng-change="showNewElement=true;"></select>
-						    <input ng-show="showNewElement" type="text" placeholder="new element name" ng-model="newElement.name">
-						    <button ng-show="showNewElement" ng-click="addFormElement('once')">add once</button>
-						    <button ng-show="showNewElement" ng-click="addFormElement('always')">add always</button>
-						    <button ng-show="showNewElement" ng-click="showNewElement=false;">remove</button>
-						    <br>
-
-							<!-- these fields are disabled via reqCheck() unless required fields meet criteria -->
-							<button id="addButton" type="submit" ng-click="addItem()" ng-hide="showUpdateButton">add</button>
-							<button id= "updateButton" type="submit" ng-click="updateItem()" ng-show="showUpdateButton">update</button>
-							<button id= "cancelButton" ng-click="showForm=false;">cancel</button>
-
-						</form>
-					</div>
-				</div> <!-- end add item form -->
-
-
-
-
-
-
-
-				<!-- SEARCH FORM -->
-				<div id="search-form" ng-show="showSearch" class="row">
-					<div class="six columns alpha">
-						<form action="">
-							<label for="searchName">name</label>
-							<input type="text" id="searchName" placeholder="search" ng-change="searchItems()" ng-model="searchItem.name">
-
-							<button id="searchButton" type="submit" ng-click="searchItems()">search</button>
-							<button id= "cancelButton" ng-click="cancelSearch()">cancel</button> <!-- probably could be the same cancel button function as add -->
-
-						</form>
-					</div>
-					<div id="searchResults" class="ten columns omega">
-						<div ng-repeat="loopsearch in searchResults">
-							<div class="row">
-								<div class="five columns">
-									<p>{{loopsearch.name}}</p>
-								</div>
-							</div>
-						</div> <!-- end search results repeat -->
-					</div> <!-- end search results -->
-				</div> <!-- end search form -->
-
-
-
-
-
-
-
-
-
-
-				
-				<!-- SHOW ALL THE ITEMS!! -->
-				<div ng-repeat="loopitem in items">
-					<div class="row item-row alive" id="{{loopitem.uid}}" style="border-left:3px solid {{colors[loopitem.type]}};">
-						<div class="one column alpha">
-							<h4 class="pad-left">
-								<input type="checkbox" ng-model="selected[loopitem.uid]">
-							</h4>
-						</div>
-						<div class="one columns" ng-show="selected[loopitem.uid]">
-							<button id="edit-button" ng-click="editItem(loopitem)" ng-hide="{{loopitem.lock}}" >edit</button>
-							<button id="delete-button" ng-click="pushToItem(loopitem, 'deleted', true)" ng-hide="{{loopitem.lock}}">delete</button>
-							<img id="lock-{{loopitem.uid}}" title="{{loopitem.name}} is locked by {{loopitem.lockedBy}}" class="pad-top" ng-show="{{loopitem.lock}}" src="images/lock.png"/>
-						</div>
-						<div class="two column">
-
-							<a href="/images/items/{{loopitem.uid}}/itemImage.jpg"><img id="image-{{loopitem.uid}}" class="pad-left" ng-src="{{loopitem.thumb}}" /></a>
-						</div>
-						<div class="three columns">
-							<h4 class="pad-left"><small class="small-type" style="background-color:{{colors[loopitem.type]}};">{{loopitem.type}}</small>{{loopitem.name}}</h4>
-						</div>
-						<div class="five columns">
-							<p class="pad-left">{{loopitem.description}}</p>
-						</div>
-						<div class="two columns">
-							<p class="pad-left">x {{loopitem.quantity}}</p>
-						</div>
-						<div class="one column omega">
-							<a class="item-link">ask</a> <!-- push comments to the item...? -->
-							<a class="item-link" ng-click="showItemHistory[loopitem.uid]=true; showHistory(loopitem)">old</a> 
-							<a class="item-link"><span ng-show="{{loopitem.flag}}" ng-click="pushToItem(loopitem, 'flag', false)"><img src="images/flag.gif"/></span><span ng-hide="{{loopitem.flag}}" ng-click="pushToItem(loopitem, 'flag', true)">flag</span></a>
-						</div>
-					</div>
-					<div class="row remove-all" ng-show="showItemHistory[loopitem.uid]">
-						<button ng-click="showItemHistory[loopitem.uid]=false;">hide</button>
-						<div class="item-history remove-all" id="history-{{loopitem.uid}}"></div>
-					</div>
-					<div class="row remove-all" id="alert-{{loopitem.uid}}" ng-show="{{loopitem.lock}}">
-						<p class="alert-lock">{{loopitem.name}} is locked by {{loopitem.lockedBy}}</p>
-					</div>
-					
-				</div> <!-- end item repeat -->
-
-			</div> <!-- end 16 col div -->
-
-			<!-- MAP AND CALENDAR CONTAINERS -->
-			<div id="map" ng-show="page.showMap">
-				<div id="insert-map"></div>
-			</div>
-			<div id="calendar" ng-show="page.showCalendar">
-				<div id="insert-calendar"></div>
-			</div>
-			<!-- end map/calendar -->
-
-		</div><!-- end item control container -->
-
+	<body>
+		<div class="container" ng-controller="itemCtrl">
+			<div ui-view></div>
+		</div>
 
 		<!-- End Document
 		================================================== -->
