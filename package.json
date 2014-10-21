@@ -20,6 +20,7 @@
     "gm":"*",
     "moment":"*",
     "q":"*",
+    "underscore":"*",
     "jquery.cookie":"*"
   },
   "scripts": {

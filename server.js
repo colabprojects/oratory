@@ -41,6 +41,7 @@ var fs = require('fs');
 var request = require('request');
 var q = require('q');
 var url = require('url');
+var _ = require('underscore');
 var moment = require('moment');
 //image manipulation (for thumbnails)
 var gm = require('gm').subClass({ imageMagick: true });
@@ -48,6 +49,53 @@ var gm = require('gm').subClass({ imageMagick: true });
 if (!fs.existsSync('/vagrant/www/images/items/')) {
 	fs.mkdir('/vagrant/www/images/items/');
 }
+//default item image:
+var defaultImage = 'images/default.jpg';
+
+var dbInfo = {
+    formElements:['text', 'textarea', 'url'],
+    types:[
+      {
+        name:'tool',
+        color:'#218559',
+        formFields:[
+          {name:'description',type:'textarea'}, 
+          {name:'location',type:'text'},
+          {name:'image search', type:'image-search'},
+          {name:'imageURL', type:'url'}
+        ]
+      },
+      {
+        name:'resource',
+        color:'#2CA4F9',
+        formFields:[
+          {name:'description',type:'textarea'}, 
+          {name:'location',type:'text'},
+          {name:'image search', type:'image-search'},
+          {name:'imageURL', type:'url'}
+        ]
+      },
+      {
+        name:'project',
+        color:'#EBB035',
+        formFields:[
+          {name:'description',type:'textarea'},
+		  {name:'image search', type:'image-search'},
+          {name:'imageURL', type:'url'}
+        ]
+      }, 
+      {
+        name:'book',
+        color:'#876f69',
+        formFields:[
+          {name:'description',type:'textarea'},
+          {name:'image search', type:'image-search'},
+          {name:'imageURL', type:'url'}
+        ]
+      }
+    ]
+};
+
 
 //API ---------------------------------------------------------------------------------------
 //ITEMS  --------------------------------
@@ -60,7 +108,7 @@ app.get('/api/getDatabase', function (req, res) {
 app.post('/api/getItems', express.json(), function (req, res) {
 	var query = {};
 	if (req.body.type) { query['type'] = req.body.type; }
-	else { query = { $or:[{'type':'item'}, {'type':'project'}, {'type':'book'}] }; }
+	else { query = { $or:_(dbInfo.types).map(function(item){ return {'type':item.name}; }) }; }
 	db.itemdb.find(query,function (err, docs) {
 		if(err){ console.log('(error getting items) '+err); }else{ res.send(docs); }
 	});
@@ -78,16 +126,6 @@ app.post('/api/getItem', express.json(), function (req, res) {
 	});
 });//end 'GET' (single) item - send the uid and retrieve item (untested - send multiple uid's?)
 
-app.post('/api/searchItems', express.json(), function (req, res) {
-	var query = {};
-	for (key in req.body) {
-		query[key] = RegExp('^'+req.body[key]);
-	}
-	db.itemdb.find(query, function (err, docs) {
-		if(err){ console.log('(error searching for item) '+err); }else { res.send(docs); }
-	});
-});//end SEARCH items
-
 app.post('/api/saveItem', express.json(), function (req, res) {
 	if (req.body.uid) {
 		db.itemdb.find({uid:req.body.uid}, function (err, check) {
@@ -98,6 +136,14 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 			delete req.body._id;
 			db.itemdb.insert({type:'history', forUID:req.body.uid, data:req.body }, function (err, doc) {});
 			req.body.posted=moment().format();
+			//check to see if new image was sent
+			if (check.imageURL!==req.body.imageURL){
+				//image is different
+				saveImage(req.body);
+				req.body.image = 'images/items/'+req.body.uid+'/itemImage.jpg';
+				req.body.thumb = 'images/items/'+req.body.uid+'/itemThumb.jpg';
+			}
+
 			db.itemdb.update({uid: req.body.uid}, req.body, function (err, doc) {
 				if(err){ console.log('(error updating item) '+err); }else{ res.send(doc); }
 			});
@@ -105,11 +151,29 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 	} else {
 		req.body.uid=generateUID();
 		req.body.posted=moment().format();
+		if (req.body.imageURL) {
+			//image url provided
+			saveImage(req.body);
+			req.body.image = 'images/items/'+req.body.uid+'/itemImage.jpg';
+			req.body.thumb = 'images/items/'+req.body.uid+'/itemThumb.jpg';
+		}else{
+			//no image, use default
+			req.body.image = defaultImage;
+			req.body.thumb = defaultImage;
+		}
 		db.itemdb.insert(req.body, function (err, doc) { 
 			if(err){ console.log('(error saving item) '+err); }else{ res.send(doc); } 
 		});
 	}
 });//end SAVE single item
+
+app.post('/api/deleteItem', express.json(), function (req, res){
+	req.body.deleted = true;
+	delete req.body._id;
+	db.itemdb.update({uid:req.body.uid}, req.body, function (err, doc){
+		if(err){ consold.log('(error deleting item) '+err); }else { res.send(doc); }
+	});
+});//end DELETE item
 
 app.post('/api/pushToItem', express.json(), function (req, res) {
 	var pushValue = {};
@@ -120,32 +184,6 @@ app.post('/api/pushToItem', express.json(), function (req, res) {
 	});
 
 });//end PUSH to single item
-
-
-/*
-app.post('/api/tempLock', express.json(), function (req, res) {
-	//send this object with email and uid
-	var lockValue = {};
-	lockValue.$set = {};
-	lockValue.$set['lock'] = true;
-	lockValue.$set['lockedBy'] = req.body.email 
-	db.itemdb.update({uid: req.body.uid}, lockValue, function (err, doc) {
-		if(err){ console.log('(error locking item) '+err); }else{ //unlock the item after short time
-			setTimeout(function (){
-				var unlockValue = {};
-				unlockValue.$set = {};
-				unlockValue.$set['lock'] = false;
-				unlockValue.$set['lockedBy'] = '';
-				db.itemdb.update({uid: req.body.uid}, unlockValue, function (err, doc) {
-					if(err){ console.log('(error unlocking item) '+err); }else{ }
-				});
-			}, 20000);
-			res.send(doc); 
-		}
-	});
-});
-*/
-
 
 app.post('/api/stageItem', express.json(), function (req, res) {
 	db.itemdb.insert({type:'staged', key:req.body.actionKey, modifiedItem:req.body.data}, function (err, doc) {
@@ -178,29 +216,29 @@ app.get('/api/unStage/:key/:decision', function (req, res) {
 
 
 //IMAGES --------------------------------
-app.post('/api/saveImage', express.json(), function (req, res) {
-	var deferred = q.defer();
-	request.get({url: url.parse(req.body.imageURL), encoding: 'binary'}, function (err, response, body) {
-		console.log('trying to save the image for item: '+req.body.name);
-		var path = '/vagrant/www/images/items/'+req.body.uid+'/';
+function saveImage(item) {
+	request.get({url: url.parse(item.imageURL), encoding: 'binary'}, function (err, response, body) {
+		console.log('trying to save the image for item: '+item.name);
+		var path = '/vagrant/www/images/items/'+item.uid+'/';
+		if (fs.exists(path, function (){ return true; })) {
+			//path exists (remove then make fresh)
+			fs.rmdir(path);
+		}
 		fs.mkdir(path);
 	    fs.writeFile(path+"itemImage.jpg", body, 'binary', function(err) {
-	    	if(err) { console.log(err); deferred.reject(res.send(500)); }else{ 
+	    	if(err) { console.log(err); }else{ 
 	    		//save image thumbnail
 	    		console.log("The file was saved!"); 
 	    		gm(path+'itemImage.jpg').resize('60','60').gravity('center').write(path+'itemThumb.jpg', function(err) {
-	    			if(err) { console.log(err); deferred.reject(res.send(500)); }else{ 
+	    			if(err) { console.log(err); }else{ 
 	    				//successful image save chain:
 	    				console.log("Image thumbnail saved"); 
-	    				deferred.resolve(res.send());
 	    			}
 	    		});//end save image thumb
 	    	}//end save image
 	    }); 
 	});
-
-	return deferred.promise;
-}); //end SAVE image
+}//end SAVE image
 
 
 //EMAILS --------------------------------
@@ -236,125 +274,14 @@ app.post('/api/saveLocation', express.json(), function (req, res) {
 	});
 });//end SAVE location
 
-
-//CONFIG --------------------------------
-app.get('/api/getConfig', function (req,res) {
-	db.itemdb.find({type:'config'}, function (err, doc) {
-		if(err){ console.log(err); }else{ res.send(doc); }
-	});
-});//end GET config
-app.post('/api/saveConfig', express.json(), function (req, res) {
-	db.itemdb.update({type:'config'}, req.body, function (err, doc) {
-		if(err){ console.log(err); }else{ res.send(doc); }
-	});
-
-});//end SAVE config
-app.get('/api/saveDefaultConfig', function (req, res) {
-	var defaultConfig = {};
-	defaultConfig.type='config';
-	defaultConfig.pages = [
-	  {
-	    'id':1, 
-	    'name':'everything', 
-	    'sub':'on The Land', 
-	    'title':'add anything and search everything', 
-	    'type':''
-	  },
-	  {
-	    'id':2, 
-	    'name':'inventory', 
-	    'sub':'of items and resources', 
-	    'title':'add and update items', 
-	    'type':'item'
-	  }, 
-	  {
-	    'id':3, 
-	    'name':'projects', 
-	    'sub':'being worked on and formulated', 
-	    'title':'add, participate in, or propose projects', 
-	    'type':'project'
-	  }, 
-	  {
-	    'id':4, 
-	    'name':'books', 
-	    'sub':'in the library on The Land', 
-	    'title':'add or browse books', 
-	    'type':'book'
-	  }, 
-	  {
-	    'id':5, 
-	    'name':'map', 
-	    'sub':'of The Land', 
-	    'title':'view and add stuff', 
-	    'type':'map',
-	    'showMap':true
-	  }, 
-	  {
-	    'id':6, 
-	    'name':'calendar', 
-	    'sub':'of events related to The Land', 
-	    'title':'see when people are coming or say when you are coming',
-	    'type':'calendar',
-	    'showCalendar':true
-	  }
-	];
-	 defaultConfig.defaults = {
-	  'item':{
-	    fields:['need','description','location'],
-	    color:'#218559',
-	    radio:{
-	      need:{first:'have', second:'want'}
-	    }
-	  },
-	  'project':{
-	    fields:['need','description','location'],
-	    color:'#EBB035'
-	  },
-	  'book':{
-	    fields:['need','description','location'],
-	    color:'#876f69'
-	  },
-	  'map':{
-
-	  },
-	  'calendar':{
-
-	  },
-	  'media':{
-
-	  },
-	  'money':{
-
-	  },
-	  'misc':{
-
-	  }
-	};
-	defaultConfig.fieldTypes = {
-	  'desc':'textarea', 
-	  'location':'text', 
-	  'need':'radio'
-	};
-	db.itemdb.remove({type:'config'})
-	db.itemdb.insert(defaultConfig, function (err, doc) {
-		if(err){ console.log(err); }else{ res.send(doc); }
-	});
-
-});//end SAVE default config
-
-
-//EXPERIMENTS --------------------------------
-app.get('/api/getScopeFunctions', function (req,res) {
-	fs.readFile('www/js/item.js', 'utf8', function (err,data) {
-		if (err) { console.log(err); }else{
-			matches = data.match(/\$scope\.[A-Za-z]+\s\=\sfunction\s\(/g);
-			bettermatches = [];
-			for (i=0; i <matches.length; i++) { bettermatches[i]=matches[i].match(/\w+\b/g)[1]; }
-			res.send(bettermatches);
-	    }
-	});
-
+app.get('/api/getDbInfo', function (req,res){
+	res.send(dbInfo);
 });
+
+
+
+
+
 
 function generateUID() {
   return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {

@@ -1,7 +1,7 @@
 <br>
-<input type="text" class="inline" ng-model="filter" placeholder="search"><button ui-sref="newItemForm">add</button>
+<input type="text" class="inline" ng-model="sharedData.filter" placeholder="search"><button ui-sref="newItemForm">add</button>
 
-<insert-form ng-if="showForm" form-item="formItem" filter="filter"></insert-form>
+<insert-form ng-if="showForm" form-item="formItem"></insert-form>
 
-<list-item ng-repeat="item in items | filter:filter" item="item"></list-item>
+<list-item ng-repeat="item in items | filter:sharedData.filter | filter:sharedData.pageFilter" item="item"></list-item>
 

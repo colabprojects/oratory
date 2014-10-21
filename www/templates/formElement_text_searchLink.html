@@ -1,7 +1,0 @@
-<!-- text -->
-<label for="form-{{field.name}}">
-	{{field.name}}
-	<span ng-show="imageSearch"> - search: <a ng-href="{{imageSearchHref}}" target="_blank">{{formItem[field.name]}}</a></span>
-</label>
-<input type="text" id="form-{{field.name}}" ng-model="formItem[field.name]" ng-change="imageSearch(formItem[field.name]);"/>
-
