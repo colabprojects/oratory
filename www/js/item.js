@@ -6,7 +6,7 @@ var email = $.cookie('email');
 var debug = {};
 
 //create the service for database interaction and info
-itemApp.factory('master', function($http, $q){
+itemApp.factory('master', function($http, $q, $state){
   var service = {};
 
   //------------------------------
@@ -49,12 +49,12 @@ itemApp.factory('master', function($http, $q){
 
   });
   
-  
   //SHARED DATA
   service.sharedData = {};
   service.sharedData.filter = '';
-  service.sharedData.pageFilter = '';
+  service.sharedData.pages = ['everything', 'inventory', 'projects','books'];
 
+  service.sharedData.changePage = function (page) { $state.go(page); };
   return service;
 });
 
@@ -63,11 +63,12 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
   $urlRouterProvider.when('/edit','/');
 
   $stateProvider
-    .state('default', {
+    .state('everything', {
       url: '/',
       templateUrl: 'templates/defaultView.html',
       controller: function($scope, master) {
         $scope.sharedData=master.sharedData;
+        $scope.sharedData.pageFilter = '';
       }
     })
     .state('newItemForm', {
@@ -98,6 +99,16 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         };
       }
     })
+    .state('books', {
+      url: '/books',
+      templateUrl:'templates/defaultView.html',
+      controller: function ($scope, master) {
+        $scope.sharedData=master.sharedData;
+        $scope.sharedData.pageFilter = function(item) {
+          return item.type==='book';
+        };
+      }
+    })
     .state('edit', {
       url: '/edit/:uid',
       resolve:{
@@ -123,8 +134,11 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
 itemApp.controller('itemCtrl', function ($scope, $http, $state, master) {
   $scope.dbInfo=master.getDbInfo;
   $scope.items = master.items;
+  $scope.sharedData = master.sharedData;
 
-  $scope.$on('cancelForm',function(){ $scope.showForm=false; $state.go('default'); });
+  $scope.$on('$stateChangeSuccess', function(event, toState){ $scope.page = toState.name; });
+
+  $scope.$on('cancelForm',function(){ $scope.showForm=false; $state.go('everything'); });
 
 });
 

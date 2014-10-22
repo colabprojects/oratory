@@ -1,3 +1,4 @@
+<select ng-if="page" id="page-name" ng-model='page' ng-options='page for page in sharedData.pages' ng-change='sharedData.changePage(page)'></select>
 <br>
 <input type="text" class="inline" ng-model="sharedData.filter" placeholder="search"><button ui-sref="newItemForm">add</button>
 
