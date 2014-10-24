@@ -92,6 +92,20 @@ var dbInfo = {
           {name:'image search', type:'image-search'},
           {name:'imageURL', type:'url'}
         ]
+      },
+      {
+        name:'event',
+        color:'#551A8B',
+        formFields:[
+          {name:'title', type:'text'},
+          {name:'description',type:'textarea'},
+          {name:'start', type:'text'},
+          {name:'end', type:'text'}
+        ]
+      },
+      {
+      	name:'deleted',
+      	color:'#FF2222'
       }
     ]
 };
@@ -127,6 +141,7 @@ app.post('/api/getItem', express.json(), function (req, res) {
 });//end 'GET' (single) item - send the uid and retrieve item (untested - send multiple uid's?)
 
 app.post('/api/saveItem', express.json(), function (req, res) {
+	var syncImagePromise;
 	if (req.body.uid) {
 		db.itemdb.find({uid:req.body.uid}, function (err, check) {
 			if (!check.length||check[0].uid!==req.body.uid) {
@@ -139,13 +154,14 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 			//check to see if new image was sent
 			if (check.imageURL!==req.body.imageURL){
 				//image is different
-				saveImage(req.body);
+				
+				syncImagePromise = saveImage(req.body);
 				req.body.image = 'images/items/'+req.body.uid+'/itemImage.jpg';
 				req.body.thumb = 'images/items/'+req.body.uid+'/itemThumb.jpg';
 			}
 
 			db.itemdb.update({uid: req.body.uid}, req.body, function (err, doc) {
-				if(err){ console.log('(error updating item) '+err); }else{ res.send(doc); }
+				if(err){ console.log('(error updating item) '+err); }else{ q.when(syncImagePromise).then(function(){res.send(doc)}); }
 			});
 		});
 	} else {
@@ -153,7 +169,7 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 		req.body.posted=moment().format();
 		if (req.body.imageURL) {
 			//image url provided
-			saveImage(req.body);
+			syncImagePromise = saveImage(req.body);
 			req.body.image = 'images/items/'+req.body.uid+'/itemImage.jpg';
 			req.body.thumb = 'images/items/'+req.body.uid+'/itemThumb.jpg';
 		}else{
@@ -162,13 +178,14 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 			req.body.thumb = defaultImage;
 		}
 		db.itemdb.insert(req.body, function (err, doc) { 
-			if(err){ console.log('(error saving item) '+err); }else{ res.send(doc); } 
+			if(err){ console.log('(error saving item) '+err); }else{ q.when(syncImagePromise).then(function(){res.send(doc)}); } 
 		});
 	}
 });//end SAVE single item
 
 app.post('/api/deleteItem', express.json(), function (req, res){
-	req.body.deleted = true;
+	req.body.oldType = req.body.type;
+	req.body.type = 'deleted';
 	delete req.body._id;
 	db.itemdb.update({uid:req.body.uid}, req.body, function (err, doc){
 		if(err){ consold.log('(error deleting item) '+err); }else { res.send(doc); }
@@ -217,6 +234,7 @@ app.get('/api/unStage/:key/:decision', function (req, res) {
 
 //IMAGES --------------------------------
 function saveImage(item) {
+	var saveImagePromise = q.defer();
 	request.get({url: url.parse(item.imageURL), encoding: 'binary'}, function (err, response, body) {
 		console.log('trying to save the image for item: '+item.name);
 		var path = '/vagrant/www/images/items/'+item.uid+'/';
@@ -226,18 +244,26 @@ function saveImage(item) {
 		}
 		fs.mkdir(path);
 	    fs.writeFile(path+"itemImage.jpg", body, 'binary', function(err) {
-	    	if(err) { console.log(err); }else{ 
+	    	if(err) { 
+	    		console.log(err); 
+	    		saveImagePromise.reject();
+	    	}else{ 
 	    		//save image thumbnail
 	    		console.log("The file was saved!"); 
 	    		gm(path+'itemImage.jpg').resize('60','60').gravity('center').write(path+'itemThumb.jpg', function(err) {
-	    			if(err) { console.log(err); }else{ 
+	    			if(err) { 
+	    				console.log(err); 
+	    				saveImagePromise.reject();
+	    			}else{ 
 	    				//successful image save chain:
+	    				saveImagePromise.resolve();
 	    				console.log("Image thumbnail saved"); 
 	    			}
 	    		});//end save image thumb
 	    	}//end save image
 	    }); 
 	});
+	return saveImagePromise.promise;
 }//end SAVE image
 
 

@@ -1,10 +1,10 @@
-<div class="row item-row alive" id="{{item.uid}}" style="border-left:3px solid {{color()}};">
+<div class="row item-row alive" id="{{item.uid}}" style="border-left:3px solid {{color(item)}};">
+	<item-priority item="item" ng-if="page == 'projects' && !sharedData.filter && item.type=='project'"></item-priority>
 	<div class="two column alpha">
-
 		<a href="{{item.image}}"><img id="image-{{item.uid}}" class="pad-left" ng-src="{{item.thumb}}" style=" max-height:60px; max-width:60px;"/></a>
 	</div>
 	<div class="five columns">
-		<h4 class="pad-left"><small class="small-type" style="background-color:{{color()}};">{{item.type}}</small>{{item.name}}</h4>
+		<h4 class="pad-left"><small class="small-type" style="background-color:{{color(item)}};">{{item.type}}</small>{{item.name}}</h4>
 	</div>
 	<div class="five columns">
 		<p class="pad-left">{{item.description}}</p>

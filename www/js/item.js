@@ -22,6 +22,11 @@ itemApp.factory('master', function($http, $q, $state){
   
   //------------------------------
 
+  service.color = function (item) { 
+    var type = _(service.getDbInfo.types).findWhere({name: item.type}); 
+    return type && type.color;
+  };
+
   service.saveItem = function(itemToBeSaved){
     return $http.post('/api/saveItem', itemToBeSaved).success(function (data) { 
       return service.refreshItems();
@@ -31,8 +36,12 @@ itemApp.factory('master', function($http, $q, $state){
   //------------------------------
 
   service.deleteItem = function(itemToBeDeleted){
-    $http.post('/api/deleteItem', itemToBeDeleted);
-  }
+    return $http.post('/api/deleteItem', itemToBeDeleted).success(function (data){
+      return service.refreshItems().then(function (data){
+        return $state.go('everything'); 
+      }); 
+    });
+  };
 
   //------------------------------
 
@@ -52,7 +61,12 @@ itemApp.factory('master', function($http, $q, $state){
   //SHARED DATA
   service.sharedData = {};
   service.sharedData.filter = '';
-  service.sharedData.pages = ['everything', 'inventory', 'projects','books'];
+  service.sharedData.deletedFilter = {};
+  service.sharedData.showDeleted = false;
+  service.sharedData.pages = ['everything', 'inventory', 'projects','books','map','calendar'];
+
+  service.sharedData.attachmentTypes = ['resource', 'tool', ''];
+  service.sharedData.formAttachments = [];
 
   service.sharedData.changePage = function (page) { $state.go(page); };
   return service;
@@ -69,6 +83,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       controller: function($scope, master) {
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = '';
+        $scope.sharedData.orderBy = '-posted';
       }
     })
     .state('newItemForm', {
@@ -85,7 +100,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       controller: function ($scope, master) {
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = function(item) {
-          return item.type==='tool' || item.type ==='resource';
+          return item.type === 'tool' || item.type ==='resource' || item.oldType === 'tool' || item.oldType === 'resource';
         };
       }
     })
@@ -94,8 +109,9 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       templateUrl:'templates/defaultView.html',
       controller: function ($scope, master) {
         $scope.sharedData=master.sharedData;
+        $scope.sharedData.orderBy = '-priority';
         $scope.sharedData.pageFilter = function(item) {
-          return item.type==='project';
+          return item.type==='project' || item.oldType === 'project';
         };
       }
     })
@@ -105,8 +121,48 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       controller: function ($scope, master) {
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = function(item) {
-          return item.type==='book';
+          return item.type==='book' || item.oldType === 'book';
         };
+      }
+    })
+    .state('map', {
+      url: '/map',
+      templateUrl:'templates/mapView.html',
+      controller: function ($scope, master) {
+        $scope.sharedData=master.sharedData;
+        $scope.insertMap = function() {
+          new GMaps({
+            div: '#insert-map',
+            lat: 36.375892,
+            lng: -85.586121
+            //mapTypeId: google.maps.MapTypeId.SATELLITE
+          });
+        };
+        $scope.insertMap();
+      }
+    })
+    .state('calendar', {
+      url: '/calendar',
+      resolve:{
+        allEvents: function ($http, $stateParams) {
+          return $http.post('/api/getItems', {type:'event'}).then(function (response){
+            return response.data;
+          });
+        }
+      },
+      templateUrl:'templates/calendarView.html',
+      controller: function ($scope, allEvents, master) {
+        $scope.insertCalendar= function() {
+          $scope.sharedData=master.sharedData;
+          debug=allEvents;
+          $('#insert-calendar').fullCalendar({
+            //settings
+            events: allEvents
+          });
+          //something about the scope.... this is my workaround:
+          setTimeout(function() { $('#insert-calendar').fullCalendar('render'); }, 100);
+        };
+        $scope.insertCalendar();
       }
     })
     .state('edit', {
@@ -136,9 +192,23 @@ itemApp.controller('itemCtrl', function ($scope, $http, $state, master) {
   $scope.items = master.items;
   $scope.sharedData = master.sharedData;
 
-  $scope.$on('$stateChangeSuccess', function(event, toState){ $scope.page = toState.name; });
+  $scope.$on('$stateChangeSuccess', function(event, toState, toParam, fromState, fromParam){ 
+    if (toState.name == 'newItemForm') {
+      if (fromState.name) { $scope.page = fromState.name; }else{ $scope.page = 'everything'; }
+    } else {
+      $scope.page = toState.name; 
+    }
+  });
 
   $scope.$on('cancelForm',function(){ $scope.showForm=false; $state.go('everything'); });
+
+  $scope.$watch('sharedData.showDeleted', function(hide) { 
+    if (hide) { 
+      master.sharedData.deletedFilter = {};
+    } else {
+      master.sharedData.deletedFilter = {type:'!deleted'};
+    }
+  })
 
 });
 
@@ -180,11 +250,19 @@ itemApp.directive('insertForm', function (master) {
       //db defaults for form
       scope.dbInfo=master.getDbInfo;
       scope.filter=master.sharedData.filter;
+      //setup form item
+      if(!scope.formItem) { scope.formItem={}; scope.formItem.name=scope.filter; }
+      if (scope.formItem.type != 'deleted') {
+        scope.dbInfo.formTypes = _.without(scope.dbInfo.types,_.findWhere(scope.dbInfo.types,{name:'deleted'}));
+      } else {
+        scope.dbInfo.formTypes = scope.dbInfo.types;
+      }
+
+      //init attachments
+      scope.formAttachments = {};
 
       scope.$on('cancelCustom',function(){ scope.showCustom=false; });
       scope.$on('newUrl', function(event, url){ scope.formItem.imageURL = url; })
-
-      if(!scope.formItem) { scope.formItem={}; scope.formItem.name=scope.filter; }
 
       scope.saveItem = function(itemToBeAdded) {
         //validate and add
@@ -226,6 +304,59 @@ itemApp.directive('customizeForm', function (master) {
   }
 });
 
+itemApp.directive('listAttachments', function ($filter, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      formItem:'='
+    },
+    templateUrl: 'templates/listAttachments.html',
+    link: function(scope, element, attrs) {
+      //db defaults for form
+      scope.dbInfo=master.getDbInfo;
+      //this copies a reference WRONG
+      //scope.items=master.items;
+      scope.items = _.chain(master.items)
+        .filter(function(item){ return item.type==='tool' || item.type ==='resource'; })
+        .map(function(item){ return angular.copy(item); }).value();
+
+      scope.$watch('items', function(){
+        scope.formItem.attachments=_.chain(scope.items)
+          .filter(function(item){ return item.checked; })
+          .map(function(item){ return item.uid; }).value();
+      },true);
+
+      scope.attachmentTypes=master.sharedData.attachmentTypes;
+
+      scope.addAttachments = function() {
+        _(scope.items).each(function(item){ 
+          item.checked = item.wasChecked = _(scope.formItem.attachments).find(function(attachment){
+            return attachment === item.uid;
+          })?true:false;
+        });
+      };
+
+      scope.addAttachments();
+
+      scope.showAddAttachmentForm = !scope.formItem.attachments || (scope.formItem.attachments.length === 0);
+    }
+  }
+});
+
+itemApp.directive('listAttachment', function ($state, $filter, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      attachment:'=',
+      editAttachment:'='
+    },
+    templateUrl: 'templates/listAttachment.html',
+    link: function(scope, element, attrs) {
+      scope.color = master.color;
+    }
+  }
+});
+
 itemApp.directive('imageSearch', function ($http, master) {
   return {
     restrict: 'E',
@@ -251,20 +382,34 @@ itemApp.directive('imageSearch', function ($http, master) {
   }
 });
 
-itemApp.directive('listItem', function ($state, master) {
+itemApp.directive('itemPriority', function ($state, master) {
   return {
     restrict: 'E',
     scope: {
       item:'='
     },
+    templateUrl: 'templates/itemPriority.html',
+    link: function(scope, element, attrs) {
+      scope.increase = function(amount) { 
+        scope.item.priority = scope.item.priority + amount; 
+      };
+    }
+  }
+});
+
+itemApp.directive('listItem', function ($state, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      item:'=',
+      page:'='
+    },
     templateUrl: 'templates/listItem.html',
     link: function(scope, element, attrs) {
-      scope.color = function () { 
-        if (scope.item.deleted) { return '#FF0000'; }else{
-          var type = _(master.getDbInfo.types).findWhere({name: scope.item.type}); 
-         return type && type.color;
-       } 
-      };
+      scope.sharedData = master.sharedData;
+      scope.color = master.color;
+
+      if ((!scope.item.priority)&&(scope.item.type=='project')) { scope.item.priority = 0; }
 
       scope.$watch('item.imageURL',function(url){
         scope.editThumb = url;

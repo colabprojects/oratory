@@ -31,6 +31,7 @@
     .column.omega, .columns.omega               { margin-right: 0; }
 
     /* Base Grid */
+    .container .half.column                     { width: 20px;  }
     .container .one.column,
     .container .one.columns                     { width: 40px;  }
     .container .two.columns                     { width: 100px; }

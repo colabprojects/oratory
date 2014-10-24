@@ -1,6 +1,6 @@
 <form name="form">
 	<label for="form-type">type</label>
-	<select id="form-type" name="formType" ng-model="formItem.type" ng-options="t.name as t.name for t in dbInfo.types" ng-class="{'req-alert-on-left':form.formType.$invalid}" required></select>
+	<select id="form-type" name="formType" ng-model="formItem.type" ng-options="t.name as t.name for t in dbInfo.formTypes" ng-class="{'req-alert-on-left':form.formType.$invalid}" required></select>
 
 	<label for="form-name">name</label>
 	<input id="form-name" name="formName" ng-change="showImages=true;" type="text" ng-model="formItem.name" ng-class="{'req-alert-on-left':form.formName.$invalid}" required>
@@ -8,6 +8,8 @@
 	<form-element ng-repeat="field in dbInfo.getFields(formItem.type)" field="field" form-item="formItem" form="form"></form-element>
 
 	<customize-form ng-if="showCustom" type="formItem.type"></customize-form>
+
+	<list-attachments ng-if="formItem.type=='project'" form-item="formItem" edit-attachments="true"></list-attachments>
 
 	<button type="submit" ng-click="saveItem(formItem);" class="inline" ng-disabled="form.$invalid">save</button>
 	<button ng-click="showCustom=true;" ng-hide="showCustom" ng-disabled="form.formType.$invalid">customize</button>
