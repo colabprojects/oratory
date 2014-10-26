@@ -220,9 +220,11 @@ app.post('/api/setPriority', express.json(), function (req, res){
 
 		 	//add up all priorities:
 		 	var totalPriority = _.reduce(newPriority, function(memo,element){ return memo + element.value; },0);
+
 		 	doc.totalPriority = totalPriority;
 
 		 	if (newPriority){
+		 		doc.priority=newPriority;
 			 	db.itemdb.update({uid:req.body.uid}, {$set:{priority:newPriority, totalPriority:totalPriority}}, function (err,doc2){
 			 		if(err){ console.log('(error updating priority) '+err); }else{ 
 			 			res.send(doc); 
