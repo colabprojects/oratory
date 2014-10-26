@@ -1,4 +1,6 @@
 <form name="form">
+	<p class="remove-all">adding as {{sharedData.email}}</p>
+
 	<label for="form-type">type</label>
 	<select id="form-type" name="formType" ng-model="formItem.type" ng-options="t.name as t.name for t in dbInfo.formTypes" ng-class="{'req-alert-on-left':form.formType.$invalid}" required></select>
 

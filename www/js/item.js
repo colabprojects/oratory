@@ -63,12 +63,27 @@ itemApp.factory('master', function($http, $q, $state){
   service.sharedData.filter = '';
   service.sharedData.deletedFilter = {};
   service.sharedData.showDeleted = false;
-  service.sharedData.pages = ['everything', 'inventory', 'projects','books','map','calendar'];
+  service.sharedData.pages = ['everything', 'inventory', 'project','books','map','calendar'];
 
   service.sharedData.attachmentTypes = ['resource', 'tool', ''];
   service.sharedData.formAttachments = [];
 
   service.sharedData.changePage = function (page) { $state.go(page); };
+
+  service.setItemPriorities = function (){
+    var who = service.sharedData.email;
+    var what = $state.current.name;
+    var priorityByEmail, priorityOfWhat;
+    priorityOfWhat = _.filter(service.items, function(item){ return item.type === what && item.priority });
+
+    _(priorityOfWhat).each(function(item){ 
+      if(!item.priorityByEmail){ item.priorityByEmail={}; }
+      var theP = _.find(item.priority, function(p){ return p.email === who; });
+      item.priorityByEmail[what] = (theP && theP.value) || 0;
+    });
+  };
+
+
   return service;
 });
 
@@ -89,8 +104,9 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     .state('newItemForm', {
       url: '/addItem',
       templateUrl:'templates/defaultView.html',
-      controller: function ($scope, master) {
+      controller: function ($scope, $state, master) {
         $scope.sharedData=master.sharedData;
+        if(!$scope.sharedData.email) { $state.go('everything'); }
         $scope.showForm=true;
       }
     })
@@ -104,12 +120,13 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         };
       }
     })
-    .state('projects', {
+    .state('project', {
       url: '/projects',
       templateUrl:'templates/defaultView.html',
       controller: function ($scope, master) {
         $scope.sharedData=master.sharedData;
-        $scope.sharedData.orderBy = '-priority';
+        $scope.sharedData.orderBy = '-totalPriority';
+        master.setItemPriorities($scope.sharedData.email, 'project');
         $scope.sharedData.pageFilter = function(item) {
           return item.type==='project' || item.oldType === 'project';
         };
@@ -200,6 +217,34 @@ itemApp.controller('itemCtrl', function ($scope, $http, $state, master) {
     }
   });
 
+  $scope.$watch('sharedData.email', function(email){
+    master.setItemPriorities();
+  });
+
+  if ($scope.email = $.cookie('email')) { $scope.emailSuccess = true; $scope.sharedData.email = $scope.email; };
+
+  $scope.setEmailCookie = function () {
+    if ($.cookie('email', $scope.email)) {
+      $scope.emailSuccess=true;
+      $scope.sharedData.email = $scope.email;
+    };
+  };//end setEmailCookie ---------------
+
+  $scope.removeEmail = function() {
+    $scope.emailSuccess = false;
+    $.removeCookie('email');
+    $scope.email = '';
+    $scope.sharedData.email = '';
+    $state.go('everything');
+  }
+
+  $scope.emailCompare = function() {
+    if ($scope.sharedData.email === $scope.email) {
+      $scope.emailSuccess=true;
+    }else{ $scope.emailSuccess = false; }
+  };
+  
+
   $scope.$on('cancelForm',function(){ $scope.showForm=false; $state.go('everything'); });
 
   $scope.$watch('sharedData.showDeleted', function(hide) { 
@@ -249,9 +294,17 @@ itemApp.directive('insertForm', function (master) {
     link: function(scope, element, attrs) {
       //db defaults for form
       scope.dbInfo=master.getDbInfo;
+      scope.sharedData = master.sharedData;
       scope.filter=master.sharedData.filter;
+
       //setup form item
-      if(!scope.formItem) { scope.formItem={}; scope.formItem.name=scope.filter; }
+      if(!scope.formItem) { 
+        scope.formItem={}; 
+        scope.formItem.name=scope.filter; 
+        //set email as owner
+        scope.formItem.owner = scope.sharedData.email;
+      }
+
       if (scope.formItem.type != 'deleted') {
         scope.dbInfo.formTypes = _.without(scope.dbInfo.types,_.findWhere(scope.dbInfo.types,{name:'deleted'}));
       } else {
@@ -338,7 +391,7 @@ itemApp.directive('listAttachments', function ($filter, master) {
 
       scope.addAttachments();
 
-      scope.showAddAttachmentForm = !scope.formItem.attachments || (scope.formItem.attachments.length === 0);
+      //scope.showAddAttachmentForm = !scope.formItem.attachments || (scope.formItem.attachments.length === 0);
     }
   }
 });
@@ -375,23 +428,38 @@ itemApp.directive('imageSearch', function ($http, master) {
         });
       });
 
-      scope.setImageUrl = function(url) {
+      scope.setImageUrl = function(url,index) {
         scope.$emit('newUrl', url);
+        $('.active-result').removeClass('active-result');
+        $('#result'+index).addClass('active-result');
       };
     }
   }
 });
 
-itemApp.directive('itemPriority', function ($state, master) {
+itemApp.directive('itemPriority', function ($state, $http, master) {
   return {
     restrict: 'E',
     scope: {
-      item:'='
+      item:'=',
+      type:'='
     },
     templateUrl: 'templates/itemPriority.html',
     link: function(scope, element, attrs) {
-      scope.increase = function(amount) { 
-        scope.item.priority = scope.item.priority + amount; 
+      scope.sharedData=master.sharedData;
+      scope.changePriority = function(how) { 
+        var temp = _.findWhere(scope.item.priority,{email:scope.sharedData.email});
+        if (temp) {userPriority=temp.value}else{userPriority=0;}
+        
+        $http.post('/api/setPriority',{
+          uid:scope.item.uid, 
+          email:scope.sharedData.email, 
+          value:(userPriority===how)?0:how
+        }).then(function(response){
+          angular.copy(response.data, scope.item);
+          master.setItemPriorities(); 
+        });
+
       };
     }
   }
@@ -402,14 +470,13 @@ itemApp.directive('listItem', function ($state, master) {
     restrict: 'E',
     scope: {
       item:'=',
-      page:'='
+      page:'=',
+      priority:'='
     },
     templateUrl: 'templates/listItem.html',
     link: function(scope, element, attrs) {
       scope.sharedData = master.sharedData;
       scope.color = master.color;
-
-      if ((!scope.item.priority)&&(scope.item.type=='project')) { scope.item.priority = 0; }
 
       scope.$watch('item.imageURL',function(url){
         scope.editThumb = url;
@@ -421,4 +488,17 @@ itemApp.directive('listItem', function ($state, master) {
 
     }
   }
+});
+
+itemApp.filter('regex', function() {
+  return function(input, field, regex) {
+    var patt = new RegExp(regex);      
+    var out = [];
+    for (var i = 0; i < input.length; i++){
+      if(patt.test(input[i][field])){
+        out.push(input[i]);
+      }
+    }      
+    return out;
+  };
 });

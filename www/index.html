@@ -56,6 +56,15 @@
 	<!-- START OF THE BODY AND THE ITEM APP -->
 	<body>
 		<div class="container" ng-controller="itemCtrl">
+			<div id="email" class="email-field">
+				<!-- auth (email for now but later should probably be some form of oauth) -->
+				<form name="emailForm">
+					<input id="email-input" ng-model="email" ng-change="emailCompare()" class ="remove-bottom add-top inline" type="email" placeholder="save email to add and edit stuff" ng-class="{'req-alert-on-left':emailForm.$invalid}" required/>
+					<button id="email-button" type="submit" class="remove-bottom add-top" ng-click="setEmailCookie()" ng-hide="emailSuccess" ng-disabled="emailForm.$invalid">save</button>
+					<button id="email-button" class="remove-bottom add-top" ng-click="removeEmail()" ng-show="emailSuccess">X</button>
+					
+				</form>
+			</div>
 			<div ui-view></div>
 		</div>
 

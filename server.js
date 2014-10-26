@@ -166,6 +166,7 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 		});
 	} else {
 		req.body.uid=generateUID();
+		req.body.totalPriority=0;
 		req.body.posted=moment().format();
 		if (req.body.imageURL) {
 			//image url provided
@@ -192,6 +193,47 @@ app.post('/api/deleteItem', express.json(), function (req, res){
 	});
 });//end DELETE item
 
+
+//needs in post:  {uid:uidofitem, email:usermakingedit, value:1or-1or0}
+app.post('/api/setPriority', express.json(), function (req, res){
+	var currentPriority;
+	db.itemdb.findOne({uid:req.body.uid},function (err, doc) {
+		if(err){ console.log('(error finding item) '+err); }
+		else { 
+			if (doc.priority){
+				//exists
+				currentPriority=doc.priority;
+			} else {
+				currentPriority=[];
+			}
+			//find if user already added
+			var userPriority = _.findWhere(currentPriority,{email:req.body.email});
+			if (userPriority) {
+		 		var index = currentPriority.indexOf(userPriority);
+		 		var newPriority = currentPriority;
+		 		newPriority[index] = {email:req.body.email, value:req.body.value};
+		 	} else {
+		 		//not added yet
+		 		var newPriority=currentPriority;
+		 		newPriority.push({email:req.body.email, value:req.body.value});
+		 	}
+
+		 	//add up all priorities:
+		 	var totalPriority = _.reduce(newPriority, function(memo,element){ return memo + element.value; },0);
+		 	doc.totalPriority = totalPriority;
+
+		 	if (newPriority){
+			 	db.itemdb.update({uid:req.body.uid}, {$set:{priority:newPriority, totalPriority:totalPriority}}, function (err,doc2){
+			 		if(err){ console.log('(error updating priority) '+err); }else{ 
+			 			res.send(doc); 
+			 		}
+			 	});
+			}
+		}
+	});
+});
+
+//of the form {pushToUID: something, push: thekey, value: thevalue}
 app.post('/api/pushToItem', express.json(), function (req, res) {
 	var pushValue = {};
 	pushValue.$set = {};
@@ -288,17 +330,6 @@ app.post('/api/sendEmail', express.json(), function (req, res){
 	
 
 //DICTIONARIES --------------------------------
-//locations:
-app.get('/api/getLocations', function (req,res) {
-	db.itemdb.find({type:'location'}, function (err, doc) {
-		if(err){ console.log(err); }else{ res.send(doc); }
-	});
-});//end GET locations
-app.post('/api/saveLocation', express.json(), function (req, res) {
-	db.itemdb.insert(req.body, function (err, doc) {
-		if(err){ console.log(err); }else{ res.send(doc); }
-	});
-});//end SAVE location
 
 app.get('/api/getDbInfo', function (req,res){
 	res.send(dbInfo);

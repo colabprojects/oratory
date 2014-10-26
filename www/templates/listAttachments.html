@@ -1,16 +1,16 @@
 <!--add/remove/list attachments -->
-<br>
+<p class="bold remove-all" style="font-size:13px;">attachments</p>
 <list-attachment edit-attachment='true' attachment='attachment' ng-repeat="attachment in items | filter:{wasChecked:true}"></list-attachment>
-<button ng-click="showAddAttachmentForm=true;" ng-show="!showAddAttachmentForm">add</button>
-<br>
+<button style="display:block;" ng-click="showAddAttachmentForm=true;" ng-show="!showAddAttachmentForm">add</button>
 <form name="formAttachments" ng-show="showAddAttachmentForm">
-	<p class="bold remove-all">edit attachments (depends on edit-attachments attribute)</p>
 	<!--attachment filter-->
 	<label for="form-attachment-type">filter</label>
-	<select id="form-attachment-type" class="inline" ng-model="attachmentType" name="formAttachmentType" ng-options="a for a in attachmentTypes" style="width:60px;"></select><input class="inline" type="text" style="width:150px" ng-model="textFilter"><br>
+	<select id="form-attachment-type" class="inline" ng-model="attachmentType" name="formAttachmentType" ng-options="a for a in attachmentTypes" style="width:60px;"></select><input class="inline" type="text" style="width:150px" ng-model="textFilter" placeholder="<--by type or search">
+
+	<br>
 
 	<!--list all possible attachments-->
-	<list-attachment edit-attachment='true' attachment="attachment" ng-repeat="attachment in items | filter:attachmentType | filter:textFilter"></list-attachment>
+	<list-attachment edit-attachment='true' attachment="attachment" ng-repeat="attachment in items | filter:{wasChecked:false} | filter:attachmentType | filter:textFilter"></list-attachment>
 
 
 	<button ng-click="addAttachments(); showAddAttachmentForm=false;" ng-disabled="formAttachment.$invalid">save attachments</button>

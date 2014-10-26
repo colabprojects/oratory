@@ -1,5 +1,5 @@
 <div class="row item-row alive" id="{{item.uid}}" style="border-left:3px solid {{color(item)}};">
-	<item-priority item="item" ng-if="page == 'projects' && !sharedData.filter && item.type=='project'"></item-priority>
+	<item-priority item="item" type="'project'" ng-if="page == 'project' && !sharedData.filter && item.type=='project' && sharedData.email"></item-priority>
 	<div class="two column alpha">
 		<a href="{{item.image}}"><img id="image-{{item.uid}}" class="pad-left" ng-src="{{item.thumb}}" style=" max-height:60px; max-width:60px;"/></a>
 	</div>
@@ -11,7 +11,7 @@
 	</div>
 	<div class="one columns">
 		<a class="item-link" ng-click="showDetail=true;">details</a>
-		<a class="item-link" ng-click="editItem(item);">edit</a>
+		<a class="item-link" ng-if="sharedData.email" ng-click="editItem(item);">edit</a>
 	</div>
 	
 </div>
