@@ -59,6 +59,7 @@ var dbInfo = {
         name:'tool',
         color:'#218559',
         formFields:[
+          {name:'need', type:'radio', options:['have','want'], default:'have'},
           {name:'description',type:'textarea'}, 
           {name:'location',type:'text'},
           {name:'image search', type:'image-search'},
@@ -69,6 +70,7 @@ var dbInfo = {
         name:'resource',
         color:'#2CA4F9',
         formFields:[
+          {name:'need', type:'radio', options:['have','want'], default:'have'},
           {name:'description',type:'textarea'}, 
           {name:'location',type:'text'},
           {name:'image search', type:'image-search'},
@@ -88,6 +90,7 @@ var dbInfo = {
         name:'book',
         color:'#876f69',
         formFields:[
+          {name:'need', type:'radio', options:['have','want'], default:'have'},
           {name:'description',type:'textarea'},
           {name:'image search', type:'image-search'},
           {name:'imageURL', type:'url'}
@@ -150,7 +153,7 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 			//it is there - update and store history
 			delete req.body._id;
 			db.itemdb.insert({type:'history', forUID:req.body.uid, data:req.body }, function (err, doc) {});
-			req.body.posted=moment().format();
+			req.body.edited=moment().format();
 			//check to see if new image was sent
 			if (check.imageURL!==req.body.imageURL){
 				//image is different
@@ -167,7 +170,10 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 	} else {
 		req.body.uid=generateUID();
 		req.body.totalPriority=0;
-		req.body.posted=moment().format();
+		req.body.created=moment().format();
+		//set owner as creator if not specified
+		if (!req.body.owner) { req.body.owner = req.body.createdBy; }
+
 		if (req.body.imageURL) {
 			//image url provided
 			syncImagePromise = saveImage(req.body);
@@ -179,7 +185,7 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 			req.body.thumb = defaultImage;
 		}
 		db.itemdb.insert(req.body, function (err, doc) { 
-			if(err){ console.log('(error saving item) '+err); }else{ q.when(syncImagePromise).then(function(){res.send(doc)}); } 
+			if(err){ console.log('(error saving item) '+err); }else{ q.when(syncImagePromise).then(function(){res.send(doc);}); } 
 		});
 	}
 });//end SAVE single item
@@ -192,6 +198,25 @@ app.post('/api/deleteItem', express.json(), function (req, res){
 		if(err){ consold.log('(error deleting item) '+err); }else { res.send(doc); }
 	});
 });//end DELETE item
+
+app.post('/api/requestLock', express.json(), function (req, res){
+	var syncLockPromise;
+	console.log('requesting lock for item: '+req.body.uid)
+	db.itemdb.findOne(req.body, function (err, item){
+		if(err){ console.log('(error requesting lock on item) '+err); }
+		else { 
+			if (item.lock){
+				//already has a lock
+				res.send(item);
+			} else {
+				//does not have lock yet
+				syncLockPromise = changeLock(item, true);
+				q.when(syncLockPromise).then(function(){res.send(item);});
+				
+			}
+		}
+	});
+});//end request lock item
 
 
 //needs in post:  {uid:uidofitem, email:usermakingedit, value:1or-1or0}
@@ -329,6 +354,27 @@ app.post('/api/sendEmail', express.json(), function (req, res){
 	});
     
 });
+
+//LOCKS --------------------------------
+function changeLock(item,value){
+	var changeLockPromise = q.defer();
+	if(value){
+		//lock item
+		db.itemdb.update({uid: item.uid}, {$set:{lock:true}}, function (err, doc) {
+			if(err){ 
+				console.log('(error locking item) '+err); 
+				changeLockPromise.reject();
+			} else {
+				//success
+				changeLockPromise.resolve();
+			}
+		});
+	} else {
+		//unlock item
+	}
+	return changeLockPromise.promise;
+}
+
 	
 
 //DICTIONARIES --------------------------------

@@ -63,7 +63,7 @@ itemApp.factory('master', function($http, $q, $state){
   service.sharedData.filter = '';
   service.sharedData.deletedFilter = {};
   service.sharedData.showDeleted = false;
-  service.sharedData.pages = ['everything', 'inventory', 'project','books','map','calendar'];
+  service.sharedData.pages = ['everything', 'inventory', 'projects','books','map','calendar'];
 
   service.sharedData.attachmentTypes = ['resource', 'tool', ''];
   service.sharedData.formAttachments = [];
@@ -73,6 +73,7 @@ itemApp.factory('master', function($http, $q, $state){
   service.setItemPriorities = function (){
     var who = service.sharedData.email;
     var what = $state.current.name;
+    if (what === 'projects') { what = 'project'; }
     var priorityByEmail, priorityOfWhat;
     priorityOfWhat = _.filter(service.items, function(item){ return item.type === what && item.priority });
 
@@ -120,7 +121,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         };
       }
     })
-    .state('project', {
+    .state('projects', {
       url: '/projects',
       templateUrl:'templates/defaultView.html',
       controller: function ($scope, master) {
@@ -185,7 +186,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     .state('edit', {
       url: '/edit/:uid',
       resolve:{
-        itemToBeEdit: function ($http, $stateParams) {
+        itemToBeEdit: function ($http, $stateParams, master) {
           return $http.post('/api/getItem', $stateParams).then(function (response){
             return response.data;
           });
@@ -280,6 +281,11 @@ itemApp.directive('formElement', function($http) {
       if (scope.field.type=='image-search') {
         scope.templateUrl = 'templates/formElement_image_search.html';
       }
+      if (scope.field.type=='radio') {
+        scope.templateUrl = 'templates/formElement_radio.html';
+        //defaults
+        if(scope.field.default) { scope.formItem[scope.field.name]=scope.field.default; }
+      }
     }
   }
 });
@@ -301,8 +307,8 @@ itemApp.directive('insertForm', function (master) {
       if(!scope.formItem) { 
         scope.formItem={}; 
         scope.formItem.name=scope.filter; 
-        //set email as owner
-        scope.formItem.owner = scope.sharedData.email;
+        
+        scope.formItem.createdBy = scope.sharedData.email;
       }
 
       if (scope.formItem.type != 'deleted') {
@@ -486,6 +492,19 @@ itemApp.directive('listItem', function ($state, master) {
         $state.go('edit',{uid: itemToBeEdit.uid});
       };
 
+    }
+  }
+});
+
+itemApp.directive('itemDetail', function ($state, $filter, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      item:'='
+    },
+    templateUrl: 'templates/itemDetail.html',
+    link: function(scope, element, attrs) {
+      
     }
   }
 });
