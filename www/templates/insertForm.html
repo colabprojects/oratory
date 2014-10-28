@@ -16,5 +16,5 @@
 	<button type="submit" ng-click="saveItem(formItem);" class="inline" ng-disabled="form.$invalid">save</button>
 	<button ng-click="showCustom=true;" ng-hide="showCustom" ng-disabled="form.formType.$invalid">customize</button>
 	<button ng-click="cancelCustom()" ng-show="showCustom">cancel custom</button>
-	<button ng-click="cancelForm()">cancel</button>
+	<button ng-click="cancelForm(formItem)">cancel</button>
 </form>

@@ -163,11 +163,15 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 				req.body.thumb = 'images/items/'+req.body.uid+'/itemThumb.jpg';
 			}
 
+			//remove edit lock
+			delete req.body.lock;
+
 			db.itemdb.update({uid: req.body.uid}, req.body, function (err, doc) {
 				if(err){ console.log('(error updating item) '+err); }else{ q.when(syncImagePromise).then(function(){res.send(doc)}); }
 			});
 		});
 	} else {
+		//brand new item!!!
 		req.body.uid=generateUID();
 		req.body.totalPriority=0;
 		req.body.created=moment().format();
@@ -201,23 +205,37 @@ app.post('/api/deleteItem', express.json(), function (req, res){
 
 app.post('/api/requestLock', express.json(), function (req, res){
 	var syncLockPromise;
-	console.log('requesting lock for item: '+req.body.uid)
-	db.itemdb.findOne(req.body, function (err, item){
-		if(err){ console.log('(error requesting lock on item) '+err); }
+	db.itemdb.findOne({uid:req.body.uid}, function (err, item){
+		if(err||!item){ console.log('(error requesting lock on item) '+err); }
 		else { 
 			if (item.lock){
 				//already has a lock
 				res.send(item);
 			} else {
 				//does not have lock yet
-				syncLockPromise = changeLock(item, true);
-				q.when(syncLockPromise).then(function(){res.send(item);});
+				syncLockPromise = changeLock(item,req.body.email, true);
+				q.when(syncLockPromise).then(function(){
+					res.send(item);
+				});
 				
 			}
 		}
 	});
 });//end request lock item
 
+app.post('/api/removeLock', express.json(), function (req, res){
+	var syncLockPromise;
+	console.log('removing lock for item: '+req.body.uid)
+	db.itemdb.findOne({uid:req.body.uid}, function (err, item){
+		if(err||!item){ console.log('(error removing lock on item) '+err); }
+		else { 
+			syncLockPromise = changeLock(item,req.body.email, false);
+			q.when(syncLockPromise).then(function(){
+				res.send(item);
+			});
+		}
+	});
+});//end remove lock item
 
 //needs in post:  {uid:uidofitem, email:usermakingedit, value:1or-1or0}
 app.post('/api/setPriority', express.json(), function (req, res){
@@ -356,22 +374,19 @@ app.post('/api/sendEmail', express.json(), function (req, res){
 });
 
 //LOCKS --------------------------------
-function changeLock(item,value){
+function changeLock(item,who,value){
 	var changeLockPromise = q.defer();
-	if(value){
-		//lock item
-		db.itemdb.update({uid: item.uid}, {$set:{lock:true}}, function (err, doc) {
-			if(err){ 
-				console.log('(error locking item) '+err); 
-				changeLockPromise.reject();
-			} else {
-				//success
-				changeLockPromise.resolve();
-			}
-		});
-	} else {
-		//unlock item
-	}
+
+	db.itemdb.update({uid: item.uid}, {$set:{lock:value, lockChangedBy:who}}, function (err, doc) {
+		if(err){ 
+			console.log('(error changing lock on item) '+err); 
+			changeLockPromise.reject();
+		} else {
+			//success
+			changeLockPromise.resolve();
+		}
+	});
+
 	return changeLockPromise.promise;
 }
 

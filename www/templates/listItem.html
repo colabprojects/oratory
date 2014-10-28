@@ -18,7 +18,7 @@
 	</div>
 	<div class="one columns">
 		<a class="item-link" ng-click="showDetail=!showDetail;">details</a>
-		<a class="item-link" ng-if="sharedData.email" ng-click="editItem(item);">edit</a>
+		<a class="item-link" ng-if="sharedData.email&&!item.lock" ng-click="editItem(item);">edit</a>
 	</div>
 	
 </div>

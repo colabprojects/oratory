@@ -96,7 +96,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     .state('everything', {
       url: '/',
       templateUrl: 'templates/defaultView.html',
-      controller: function($scope, master) {
+      controller: function($scope, $state, master) {
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = '';
         $scope.sharedData.orderBy = '-posted';
@@ -187,7 +187,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       url: '/edit/:uid',
       resolve:{
         itemToBeEdit: function ($http, $stateParams, master) {
-          return $http.post('/api/getItem', $stateParams).then(function (response){
+          return $http.post('/api/requestLock', {uid:$stateParams.uid,email:master.sharedData.email}).then(function (response){
             return response.data;
           });
         }
@@ -195,7 +195,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       templateUrl: 'templates/editView.html',
       controller: function ($scope, $state, itemToBeEdit, master) {
         $scope.sharedData=master.sharedData;
-        $scope.itemToBeEdit=itemToBeEdit;
+        debug=$scope.itemToBeEdit=itemToBeEdit;
         $scope.deleteItem=master.deleteItem;
 
       }
@@ -212,7 +212,11 @@ itemApp.controller('itemCtrl', function ($scope, $http, $state, master) {
 
   $scope.$on('$stateChangeSuccess', function(event, toState, toParam, fromState, fromParam){ 
     if (toState.name == 'newItemForm') {
-      if (fromState.name) { $scope.page = fromState.name; }else{ $scope.page = 'everything'; }
+      if (fromState.name) { 
+        $scope.page = fromState.name; 
+      }else{ 
+        $scope.page = 'everything'; 
+      }
     } else {
       $scope.page = toState.name; 
     }
@@ -246,7 +250,10 @@ itemApp.controller('itemCtrl', function ($scope, $http, $state, master) {
   };
   
 
-  $scope.$on('cancelForm',function(){ $scope.showForm=false; $state.go('everything'); });
+  $scope.$on('cancelForm',function(){ 
+    $scope.showForm=false; 
+    $state.go('everything'); 
+  });
 
   $scope.$watch('sharedData.showDeleted', function(hide) { 
     if (hide) { 
@@ -259,7 +266,7 @@ itemApp.controller('itemCtrl', function ($scope, $http, $state, master) {
 });
 
 //accepts a field array (of objects with a name and type)
-itemApp.directive('formElement', function($http) {
+itemApp.directive('formElement', function ($http) {
   return {
     restrict: 'E',
     scope: {
@@ -290,7 +297,7 @@ itemApp.directive('formElement', function($http) {
   }
 });
 
-itemApp.directive('insertForm', function (master) {
+itemApp.directive('insertForm', function (master, $http) {
   return {
     restrict: 'E',
     scope: {
@@ -331,7 +338,11 @@ itemApp.directive('insertForm', function (master) {
           scope.cancelForm(); 
         }
       };
-      scope.cancelForm = function(){
+      scope.cancelForm = function(item){
+        if(item){
+          //need to remove lock
+          $http.post('/api/removeLock', {uid:item.uid,email:master.sharedData.email})
+        }
         scope.$emit('cancelForm');
         scope.formItem={};
       };
