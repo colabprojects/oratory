@@ -378,7 +378,9 @@ itemApp.directive('listAttachments', function ($filter, master) {
   return {
     restrict: 'E',
     scope: {
-      formItem:'='
+      formItem:'=',
+      editAttachment:'=',
+      attachmentFilter:'='
     },
     templateUrl: 'templates/listAttachments.html',
     link: function(scope, element, attrs) {

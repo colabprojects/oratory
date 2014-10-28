@@ -1,6 +1,6 @@
 <select ng-if="page" id="page-name" ng-model='page' ng-options='page for page in sharedData.pages' ng-change='sharedData.changePage(page)'></select>
 <br>
-<input type="text" class="inline" ng-model="sharedData.filter" placeholder="search"><button class="remove-bottom" ui-sref="newItemForm" ng-disabled="!sharedData.email">add</button>
+<input type="text" class="inline" ng-model="sharedData.filter" placeholder="search {{page}}"><button class="remove-bottom" ui-sref="newItemForm" ng-disabled="!sharedData.email">add</button>
 <label for="showDeletedCheckbox" class="add-bottom">
   <input type="checkbox" id="showDeletedCheckbox" ng-model="sharedData.showDeleted" ng-change="$emit('showDeleted',showDeleted)" />
   <span>show deleted</span>

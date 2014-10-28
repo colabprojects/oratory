@@ -1,3 +1,18 @@
-<div ng-repeat='(key,value) in item'>
-	{{key}} = {{value}}
+<div class="row">
+	<div class="one-third column" style="overflow:hidden;">
+		<p class="half-bottom detail-header">raw data</p>
+		<div ng-repeat='(key,value) in item'>
+			{{key}} = {{value}}
+		</div>
+	</div>
+	<div ng-if="item.type==='project'" class="one-third column">
+		<p class="half-bottom detail-header">things we have</p>
+		<list-attachments ng-if="item.type=='project'" form-item="item" attachment-filter="{need:'have'}"></list-attachments>
+		<p class="add-top half-bottom detail-header">things we still need</p>
+		<list-attachments ng-if="item.type=='project'" form-item="item" attachment-filter="{need:'want'}"></list-attachments>
+	</div>
+	<div class="one-third column">
+		<p class="half-bottom detail-header">conversation</p>
+		<small>repeat comments</small>
+	</div>
 </div>
