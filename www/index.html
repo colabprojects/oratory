@@ -1,61 +1,36 @@
 <!DOCTYPE html>
-<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
-<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
-<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
-<!--[if (gte IE 9)|!(IE)]><!--><html lang="en" ng-app="itemApp"> <!--<![endif]-->
+<html lang="en" ng-app="app">
 	<head>
-
-		<!-- Basic Page Needs
-		================================================== -->
+		<!-- basic -->
 		<meta charset="utf-8">
 		<title>colabLife</title>
 		<meta name="description" content="stuff on the Land">
 		<meta name="author" content="freedom foundation">
-
-		<!-- Mobile Specific Metas
-		================================================== -->
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-		<!-- CSS
-		================================================== -->
-		<link rel="stylesheet" href="stylesheets/base.css">
-		<link rel="stylesheet" href="stylesheets/skeleton.css">
-		<link rel="stylesheet" href="stylesheets/layout.css">
-		<link rel="stylesheet" href="stylesheets/page.css">
-
-		<!-- maps -->
-		<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
-
-		<!-- calendar (need to put jquery here so fullcal can use it...?) -->
-		<link rel='stylesheet' href='js/fullcalendar/fullcalendar.css' />
-		<script src='js/jquery.min.js'></script>
-		<script src='js/underscore.min.js'></script>
-		<script src='js/moment.min.js'></script>
-		<script src='js/fullcalendar/fullcalendar.js'></script>
-
-		<!-- angularJS (manipulates some CSS..)
-		================================================== -->
-		<script type="text/javascript" src="js/angular.min.js"></script>
-		<script type="text/javascript" src="js/angularuirouter.min.js"></script>
-		<script type="text/javascript" src="js/angular-strap.js"></script>
-		<script type="text/javascript" src="js/angular-strap.tpl.js"></script>
-
+		<!-- css -->
+		<link rel="stylesheet" href="assets/dist/css/bootstrap.min.css">
+		<link rel="stylesheet" href="assets/dist/css/bootstrap-theme.min.css">
+		<link rel='stylesheet' href='assets/fullcalendar/fullcalendar.css' />
+		<link rel="stylesheet" href="app.css">
 
 		<!--[if lt IE 9]>
-		<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+			<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+			<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 		<![endif]-->
 
-		<!-- Favicons
-		================================================== -->
+		<!-- icons -->
 		<link rel="shortcut icon" href="images/favicon.ico">
 		<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
 		<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
 		<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
 	</head>
 
-	<!-- START OF THE BODY AND THE ITEM APP -->
-	<body>
-		<div class="container" ng-controller="itemCtrl">
+
+	<body ng-controller="appCtrl" role="document">
+
+		<div class="container">
+
 			<div id="email" class="email-field">
 				<!-- auth (email for now but later should probably be some form of oauth) -->
 				<form name="emailForm">
@@ -65,16 +40,31 @@
 					
 				</form>
 			</div>
+
+			<!-- page template -->
 			<div style="margin-bottom:100px;" ui-view></div>
-		</div>
 
-		<!-- End Document
-		================================================== -->
+		</div> <!-- end app control -->
 
-		<!-- Javascript
-		================================================== -->
-		<script src="js/jquery.cookie.js"></script>
-		<script src="js/gmaps.js"></script>
-		<script src="js/item.js"></script>
+
+
+
+		<!-- ================================================== -->
+
+		<!-- javascript -->
+		<script type="text/javascript" src='assets/js/jquery.min.js'></script>
+		<script type="text/javascript" src='assets/js/underscore.min.js'></script>
+		<script type="text/javascript" src='assets/js/moment.min.js'></script>
+		<script type="text/javascript" src="assets/dist/js/bootstrap.min.js"></script>
+	    <script type="text/javascript" src="assets/js/ie10.js"></script> <!-- IE10 viewport hack -->
+		<script type="text/javascript" src='assets/fullcalendar/fullcalendar.js'></script>
+		<script type="text/javascript" src="assets/js/jquery.cookie.js"></script>
+		<script type="text/javascript" src="assets/js/angular.min.js"></script>
+		<script type="text/javascript" src="assets/js/angularuirouter.min.js"></script>
+		<script type="text/javascript" src="assets/js/angular-strap.js"></script>
+		<script type="text/javascript" src="assets/js/angular-strap.tpl.js"></script>
+		<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+		<script type="text/javascript" src="assets/js/gmaps.js"></script>
+		<script type="text/javascript" src="app.js"></script>
 	</body>
 </html>

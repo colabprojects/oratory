@@ -1,5 +1,5 @@
 //the angular magic:
-var itemApp = angular.module('itemApp', ['ui.router','mgcrea.ngStrap']);
+var itemApp = angular.module('app', ['ui.router']);
 //cookies:
 var email = $.cookie('email');
 //debug:
@@ -9,8 +9,6 @@ var debug = {};
 itemApp.factory('master', function($http, $q, $state){
   var service = {};
 
-  //------------------------------
-
   service.items=[];
   service.refreshItems=function(){
     return $http.post('/api/getItems').then(function (response) {
@@ -19,8 +17,6 @@ itemApp.factory('master', function($http, $q, $state){
   };
   //init data
   service.refreshItems();
-  
-  //------------------------------
 
   service.color = function (item) { 
     var type = _(service.getDbInfo.types).findWhere({name: item.type}); 
@@ -31,9 +27,7 @@ itemApp.factory('master', function($http, $q, $state){
     return $http.post('/api/saveItem', itemToBeSaved).success(function (data) { 
       return service.refreshItems();
     });
-  };//END SAVE ITEM
-
-  //------------------------------
+  };
 
   service.deleteItem = function(itemToBeDeleted){
     return $http.post('/api/deleteItem', itemToBeDeleted).success(function (data){
@@ -43,12 +37,8 @@ itemApp.factory('master', function($http, $q, $state){
     });
   };
 
-  //------------------------------
-
-  //DB CONFIG
   service.getDbInfo = {};
   $http.get('/api/getDbInfo').then(function (response){
-
     angular.copy(response.data, service.getDbInfo);
 
     service.getDbInfo.getFields = function(type) { 
@@ -95,7 +85,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
   $stateProvider
     .state('everything', {
       url: '/',
-      templateUrl: 'templates/defaultView.html',
+      templateUrl: 'html/defaultView.html',
       controller: function($scope, $state, master) {
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = '';
@@ -104,7 +94,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     })
     .state('newItemForm', {
       url: '/addItem',
-      templateUrl:'templates/defaultView.html',
+      templateUrl:'html/defaultView.html',
       controller: function ($scope, $state, master) {
         $scope.sharedData=master.sharedData;
         if(!$scope.sharedData.email) { $state.go('everything'); }
@@ -113,7 +103,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     })
     .state('inventory', {
       url: '/inventory',
-      templateUrl:'templates/defaultView.html',
+      templateUrl:'html/defaultView.html',
       controller: function ($scope, master) {
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = function(item) {
@@ -123,7 +113,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     })
     .state('projects', {
       url: '/projects',
-      templateUrl:'templates/defaultView.html',
+      templateUrl:'html/defaultView.html',
       controller: function ($scope, master) {
         $scope.sharedData=master.sharedData;
         $scope.sharedData.orderBy = '-totalPriority';
@@ -135,7 +125,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     })
     .state('books', {
       url: '/books',
-      templateUrl:'templates/defaultView.html',
+      templateUrl:'html/defaultView.html',
       controller: function ($scope, master) {
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = function(item) {
@@ -145,7 +135,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     })
     .state('map', {
       url: '/map',
-      templateUrl:'templates/mapView.html',
+      templateUrl:'html/mapView.html',
       controller: function ($scope, master) {
         $scope.sharedData=master.sharedData;
         $scope.insertMap = function() {
@@ -168,7 +158,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
           });
         }
       },
-      templateUrl:'templates/calendarView.html',
+      templateUrl:'html/calendarView.html',
       controller: function ($scope, allEvents, master) {
         $scope.insertCalendar= function() {
           $scope.sharedData=master.sharedData;
@@ -192,7 +182,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
           });
         }
       },
-      templateUrl: 'templates/editView.html',
+      templateUrl: 'html/editView.html',
       controller: function ($scope, $state, itemToBeEdit, master) {
         $scope.sharedData=master.sharedData;
         debug=$scope.itemToBeEdit=itemToBeEdit;
@@ -205,7 +195,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
 
 });
 
-itemApp.controller('itemCtrl', function ($scope, $http, $state, master) {
+itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
   $scope.dbInfo=master.getDbInfo;
   $scope.items = master.items;
   $scope.sharedData = master.sharedData;
@@ -277,19 +267,19 @@ itemApp.directive('formElement', function ($http) {
     template: '<div ng-include="templateUrl"></div>',
     link: function(scope, element, attrs) {
       if (scope.field.type=='text') {
-        scope.templateUrl = 'templates/formElement_text.html';
+        scope.templateUrl = 'html/formElement_text.html';
       }
       if (scope.field.type=='textarea') {
-        scope.templateUrl = 'templates/formElement_textarea.html';
+        scope.templateUrl = 'html/formElement_textarea.html';
       }
       if (scope.field.type=='url') {
-        scope.templateUrl = 'templates/formElement_URL.html';
+        scope.templateUrl = 'html/formElement_URL.html';
       }
       if (scope.field.type=='image-search') {
-        scope.templateUrl = 'templates/formElement_image_search.html';
+        scope.templateUrl = 'html/formElement_image_search.html';
       }
       if (scope.field.type=='radio') {
-        scope.templateUrl = 'templates/formElement_radio.html';
+        scope.templateUrl = 'html/formElement_radio.html';
         //defaults
         if(scope.field.default) { scope.formItem[scope.field.name]=scope.field.default; }
       }
@@ -303,7 +293,7 @@ itemApp.directive('insertForm', function (master, $http) {
     scope: {
       formItem:'='
     },
-    templateUrl: 'templates/insertForm.html',
+    templateUrl: 'html/insertForm.html',
     link: function(scope, element, attrs) {
       //db defaults for form
       scope.dbInfo=master.getDbInfo;
@@ -359,7 +349,7 @@ itemApp.directive('customizeForm', function (master) {
     scope: {
       type:'='
     },
-    templateUrl: 'templates/customizeForm.html',
+    templateUrl: 'html/customizeForm.html',
     link: function(scope, element, attrs) {
       //db defaults for form
       scope.dbInfo=master.getDbInfo;
@@ -382,7 +372,7 @@ itemApp.directive('listAttachments', function ($filter, master) {
       editAttachment:'=',
       attachmentFilter:'='
     },
-    templateUrl: 'templates/listAttachments.html',
+    templateUrl: 'html/listAttachments.html',
     link: function(scope, element, attrs) {
       //db defaults for form
       scope.dbInfo=master.getDbInfo;
@@ -422,7 +412,7 @@ itemApp.directive('listAttachment', function ($state, $filter, master) {
       attachment:'=',
       editAttachment:'='
     },
-    templateUrl: 'templates/listAttachment.html',
+    templateUrl: 'html/listAttachment.html',
     link: function(scope, element, attrs) {
       scope.color = master.color;
     }
@@ -435,7 +425,7 @@ itemApp.directive('imageSearch', function ($http, master) {
     scope: {
       searchTerm:'='
     },
-    templateUrl: 'templates/imageSearch.html',
+    templateUrl: 'html/imageSearch.html',
     link: function(scope, element, attrs) {
 
       scope.results = [];
@@ -463,7 +453,7 @@ itemApp.directive('itemPriority', function ($state, $http, master) {
       item:'=',
       type:'='
     },
-    templateUrl: 'templates/itemPriority.html',
+    templateUrl: 'html/itemPriority.html',
     link: function(scope, element, attrs) {
       scope.sharedData=master.sharedData;
       scope.changePriority = function(how) { 
@@ -492,7 +482,7 @@ itemApp.directive('listItem', function ($state, master) {
       page:'=',
       priority:'='
     },
-    templateUrl: 'templates/listItem.html',
+    templateUrl: 'html/listItem.html',
     link: function(scope, element, attrs) {
       scope.sharedData = master.sharedData;
       scope.color = master.color;
@@ -515,7 +505,7 @@ itemApp.directive('itemDetail', function ($state, $filter, master) {
     scope: {
       item:'='
     },
-    templateUrl: 'templates/itemDetail.html',
+    templateUrl: 'html/itemDetail.html',
     link: function(scope, element, attrs) {
       
     }
