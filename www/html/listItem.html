@@ -1,26 +1,42 @@
-<div class="row item-row alive" id="{{item.uid}}" style="border-left:3px solid {{color(item)}};">
-	<div class='half column alpha' ng-if="item.lock">
-		<img src="images/lock.png">
+<div class="row" id="{{item.uid}}" style="background:rgba({{colors.r}},{{colors.g}},{{colors.b}},.15);">
+	<div class="container list-item-wrapper" style="border-left:3px solid rgb({{colors.r}},{{colors.g}},{{colors.b}});">
+		
+		<div id="push-wrapper-{{item.uid}}" style="position: relative; overflow: hidden; width: 100%;">
+			<div class="push-canvas">
+				<div class="more-stuff">	
+  					<button class="btn btn-sm btn-default margin-top-sm" ng-click="editItem(item); showForm();">edit</a>
+				</div>
+				<div class="the-stuff">
+					<div class="col-xs-1 list-priority" ng-if="page == 'projects' && !sharedData.filter && item.type=='project' && sharedData.email">
+						<item-priority item="item" type="'project'"></item-priority>
+					</div>
+
+					<div class="col-xs-2 list-img">
+						<a class="thumbnail" href="{{item.image}}">
+							<img id="image-{{item.uid}}" class="pad-left" ng-src="{{item.thumb}}">
+						</a>
+					</div>
+					
+					<div class="col-xs-9 col-md-6 toggle-push pointer"ng-click="showMore(item.uid)">
+						<div class="row">
+							<h4>
+								<span class="label list-label" style="background-color:rgb({{colors.r}},{{colors.g}},{{colors.b}});">{{item.type}}</span>{{item.name}}
+								<small><span class="item-need-{{item.need}}" ng-if="item.need === 'have'"> &#10003;have</span></small>
+								<small><span class="item-need-{{item.need}}" ng-if="item.need === 'want'"> &#x2717;need</span></small>
+							</h4>
+						</div>
+						<div class="row">
+							{{item.description}}
+							<p class="show-more-detail">more<span class="caret"></span></p>
+						</div>
+
+					</div>
+				</div>
+			</div><!-- push canvas div -->
+		
+		</div><!-- push wrapper div -->
+
 	</div>
-	<item-priority item="item" type="'project'" ng-if="page == 'projects' && !sharedData.filter && item.type=='project' && sharedData.email"></item-priority>
-	<div class="two column alpha">
-		<a href="{{item.image}}"><img id="image-{{item.uid}}" class="pad-left" ng-src="{{item.thumb}}" style=" max-height:60px; max-width:60px;"/></a>
-	</div>
-	<div class="five columns" ng-click="showDetail=!showDetail;">
-		<h4 class="pad-left"><small class="small-type" style="background-color:{{color(item)}};">{{item.type}}</small>{{item.name}}</h4>
-		<h6 class="pad-left">
-			<span class="item-need-{{item.need}}" ng-if="item.need === 'have'"> &#10003; we have this</span>
-			<span class="item-need-{{item.need}}" ng-if="item.need === 'want'"> &#x2717; we do not have this</span>
-		</h6>
-	</div>
-	<div class="five columns" ng-click="showDetail=!showDetail;">
-		<p class="pad-left">{{item.description}}</p>
-	</div>
-	<div class="one columns">
-		<a class="item-link" ng-click="showDetail=!showDetail;">details</a>
-		<a class="item-link" ng-if="sharedData.email&&!item.lock" ng-click="editItem(item);">edit</a>
-	</div>
-	
 </div>
 <item-detail ng-show='showDetail' item='item'></item-detail>
 

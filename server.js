@@ -57,7 +57,7 @@ var dbInfo = {
     types:[
       {
         name:'tool',
-        color:'#218559',
+        color:{r:'76',g:'164',b:'84'},
         formFields:[
           {name:'need', type:'radio', options:['have','want'], default:'have'},
           {name:'description',type:'textarea'}, 
@@ -68,7 +68,7 @@ var dbInfo = {
       },
       {
         name:'resource',
-        color:'#2CA4F9',
+        color:{r:'68',g:'114',b:'185'},
         formFields:[
           {name:'need', type:'radio', options:['have','want'], default:'have'},
           {name:'description',type:'textarea'}, 
@@ -79,7 +79,7 @@ var dbInfo = {
       },
       {
         name:'project',
-        color:'#EBB035',
+        color:{r:'225',g:'135',b:'40'},
         formFields:[
           {name:'description',type:'textarea'},
 		  {name:'image search', type:'image-search'},
@@ -88,7 +88,7 @@ var dbInfo = {
       }, 
       {
         name:'book',
-        color:'#876f69',
+        color:{r:'190',g:'76',b:'57'},
         formFields:[
           {name:'need', type:'radio', options:['have','want'], default:'have'},
           {name:'description',type:'textarea'},
@@ -98,7 +98,7 @@ var dbInfo = {
       },
       {
         name:'event',
-        color:'#551A8B',
+        color:{r:'147',g:'81',b:'166'},
         formFields:[
           {name:'title', type:'text'},
           {name:'description',type:'textarea'},
@@ -108,7 +108,7 @@ var dbInfo = {
       },
       {
       	name:'deleted',
-      	color:'#FF2222'
+      	color:{r:'225',g:'20',b:'20'}
       }
     ]
 };

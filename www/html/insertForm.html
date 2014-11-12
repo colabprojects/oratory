@@ -1,22 +1,30 @@
 <form name="form">
 	<p class="remove-all">adding as {{sharedData.email}}</p>
+    <div class="form-group">
+        <label for="form-type">type</label>
+        <select id="form-type" class="form-control" name="formType" ng-model="formItem.type" ng-options="t.name as t.name for t in dbInfo.formTypes" ng-class="{'req-alert-on-left':form.formType.$invalid}" required></select>
+    </div>
+    <div class="form-group">
+        <label for="form-name">name</label>
+		<input id="form-name" class="form-control" name="formName" ng-change="showImages=true;" type="text" ng-model="formItem.name" ng-class="{'req-alert-on-left':form.formName.$invalid}" required>
+    </div>
 
-	<label for="form-type">type</label>
-	<select id="form-type" name="formType" ng-model="formItem.type" ng-options="t.name as t.name for t in dbInfo.formTypes" ng-class="{'req-alert-on-left':form.formType.$invalid}" required></select>
-
-	<label for="form-name">name</label>
-	<input id="form-name" name="formName" ng-change="showImages=true;" type="text" ng-model="formItem.name" ng-class="{'req-alert-on-left':form.formName.$invalid}" required>
-
-	<form-element ng-repeat="field in dbInfo.getFields(formItem.type)" field="field" form-item="formItem" form="form"></form-element>
+    <form-element ng-repeat="field in dbInfo.getFields(formItem.type)" field="field" form-item="formItem" form="form"></form-element>
 
 	<customize-form ng-if="showCustom" type="formItem.type"></customize-form>
 
 	<list-attachments ng-if="formItem.type=='project'" form-item="formItem" edit-attachment="true"></list-attachments>
 
-	<div class="add-top">
-		<button type="submit" ng-click="saveItem(formItem);" class="inline" ng-disabled="form.$invalid">save</button>
-		<button ng-click="showCustom=true;" ng-hide="showCustom" ng-disabled="form.formType.$invalid">customize</button>
-		<button ng-click="cancelCustom()" ng-show="showCustom">cancel custom</button>
-		<button ng-click="cancelForm(formItem)">cancel</button>
-	</div>
+    <button type="submit" ng-click="saveItem(formItem);" class="btn btn-default" ng-disabled="form.$invalid">save</button>
+	<button class="btn btn-default" ng-click="showCustom=true;" ng-hide="showCustom" ng-disabled="form.formType.$invalid">customize</button>
+	<button class="btn btn-default" ng-click="cancelCustom()" ng-show="showCustom">cancel custom</button>
+	<button class="btn btn-default" ng-click="cancelForm(formItem)">cancel</button>
 </form>
+
+
+
+
+
+
+
+

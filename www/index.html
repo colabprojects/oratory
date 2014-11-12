@@ -1,70 +1,53 @@
 <!DOCTYPE html>
 <html lang="en" ng-app="app">
-	<head>
-		<!-- basic -->
-		<meta charset="utf-8">
-		<title>colabLife</title>
-		<meta name="description" content="stuff on the Land">
-		<meta name="author" content="freedom foundation">
-		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<head>
+	<!-- basic -->
+	<meta charset="utf-8">
+	<title>colabLife</title>
+	<meta name="description" content="stuff on the Land">
+	<meta name="author" content="freedom foundation">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-		<!-- css -->
-		<link rel="stylesheet" href="assets/dist/css/bootstrap.min.css">
-		<link rel="stylesheet" href="assets/dist/css/bootstrap-theme.min.css">
-		<link rel='stylesheet' href='assets/fullcalendar/fullcalendar.css' />
-		<link rel="stylesheet" href="app.css">
+	<!-- css -->
+	<link rel="stylesheet" href="assets/dist/css/bootstrap.min.css">
+	<link rel="stylesheet" href="assets/jasny-bootstrap/css/jasny-bootstrap.min.css">
 
-		<!--[if lt IE 9]>
-			<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-			<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-		<![endif]-->
+	<link rel='stylesheet' href='assets/fullcalendar/fullcalendar.css' />
+	<link rel="stylesheet" href="app.css">
 
-		<!-- icons -->
-		<link rel="shortcut icon" href="images/favicon.ico">
-		<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
-		<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
-		<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
-	</head>
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+<![endif]-->
 
-
-	<body ng-controller="appCtrl" role="document">
-
-		<div class="container">
-
-			<div id="email" class="email-field">
-				<!-- auth (email for now but later should probably be some form of oauth) -->
-				<form name="emailForm">
-					<input id="email-input" ng-model="email" ng-change="emailCompare()" class ="remove-bottom add-top inline" type="email" placeholder="save email to add and edit stuff" ng-class="{'req-alert-on-left':emailForm.$invalid}" required/>
-					<button id="email-button" type="submit" class="remove-bottom add-top" ng-click="setEmailCookie()" ng-hide="emailSuccess" ng-disabled="emailForm.$invalid">save</button>
-					<button id="email-button" class="remove-bottom add-top" ng-click="removeEmail()" ng-show="emailSuccess">X</button>
-					
-				</form>
-			</div>
-
-			<!-- page template -->
-			<div style="margin-bottom:100px;" ui-view></div>
-
-		</div> <!-- end app control -->
+<!-- icons -->
+<link rel="shortcut icon" href="images/favicon.ico">
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+</head>
 
 
+<body ng-controller="appCtrl">
+	<div id="site-wrapper" ui-view></div>
 
+	<!-- ================================================== -->
 
-		<!-- ================================================== -->
-
-		<!-- javascript -->
-		<script type="text/javascript" src='assets/js/jquery.min.js'></script>
-		<script type="text/javascript" src='assets/js/underscore.min.js'></script>
-		<script type="text/javascript" src='assets/js/moment.min.js'></script>
-		<script type="text/javascript" src="assets/dist/js/bootstrap.min.js"></script>
-	    <script type="text/javascript" src="assets/js/ie10.js"></script> <!-- IE10 viewport hack -->
-		<script type="text/javascript" src='assets/fullcalendar/fullcalendar.js'></script>
-		<script type="text/javascript" src="assets/js/jquery.cookie.js"></script>
-		<script type="text/javascript" src="assets/js/angular.min.js"></script>
-		<script type="text/javascript" src="assets/js/angularuirouter.min.js"></script>
-		<script type="text/javascript" src="assets/js/angular-strap.js"></script>
-		<script type="text/javascript" src="assets/js/angular-strap.tpl.js"></script>
-		<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
-		<script type="text/javascript" src="assets/js/gmaps.js"></script>
-		<script type="text/javascript" src="app.js"></script>
-	</body>
+	<!-- javascript -->
+	<script type="text/javascript" src='assets/js/jquery.min.js'></script>
+	<script type="text/javascript" src='assets/js/underscore.min.js'></script>
+	<script type="text/javascript" src='assets/js/moment.min.js'></script>
+	<script type="text/javascript" src="assets/dist/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="assets/jasny-bootstrap/js/jasny-bootstrap.min.js"></script>
+	<script type="text/javascript" src="assets/js/ie10.js"></script> <!-- IE10 viewport hack -->
+	<script type="text/javascript" src='assets/fullcalendar/fullcalendar.js'></script>
+	<script type="text/javascript" src="assets/js/jquery.cookie.js"></script>
+	<script type="text/javascript" src="assets/js/angular.min.js"></script>
+	<script type="text/javascript" src="assets/js/angularuirouter.min.js"></script>
+	<script type="text/javascript" src="assets/js/angular-strap.js"></script>
+	<script type="text/javascript" src="assets/js/angular-strap.tpl.js"></script>
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+	<script type="text/javascript" src="assets/js/gmaps.js"></script>
+	<script type="text/javascript" src="app.js"></script>
+</body>
 </html>

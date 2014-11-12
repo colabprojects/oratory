@@ -238,11 +238,14 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
       $scope.emailSuccess=true;
     }else{ $scope.emailSuccess = false; }
   };
+
+  $scope.showForm = function() {
+    $('#add-form').animate({top:'0px'});
+  }
   
 
   $scope.$on('cancelForm',function(){ 
-    $scope.showForm=false; 
-    $state.go('everything'); 
+    $('#add-form').animate({top:'-1000px'});
   });
 
   $scope.$watch('sharedData.showDeleted', function(hide) { 
@@ -484,8 +487,9 @@ itemApp.directive('listItem', function ($state, master) {
     },
     templateUrl: 'html/listItem.html',
     link: function(scope, element, attrs) {
+      scope.showMore = {};
       scope.sharedData = master.sharedData;
-      scope.color = master.color;
+      scope.colors = master.color(scope.item);
 
       scope.$watch('item.imageURL',function(url){
         scope.editThumb = url;
@@ -493,6 +497,17 @@ itemApp.directive('listItem', function ($state, master) {
 
       scope.editItem = function(itemToBeEdit) {
         $state.go('edit',{uid: itemToBeEdit.uid});
+      };
+
+      scope.showMore = function(uid) {
+        if ($('#push-wrapper-'+uid).hasClass('show-more')) {
+          // Do things on Nav Close
+          $('#push-wrapper-'+uid).removeClass('show-more');
+        } else {
+          // Do things on Nav Open
+          $('#push-wrapper-'+uid).addClass('show-more');
+        }
+
       };
 
     }

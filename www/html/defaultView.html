@@ -1,13 +1,41 @@
-<select ng-if="page" id="page-name" ng-model='page' ng-options='page for page in sharedData.pages' ng-change='sharedData.changePage(page)'></select>
-<br>
-<input type="text" class="inline" ng-model="sharedData.filter" placeholder="search {{page}}"><button class="remove-bottom" ui-sref="newItemForm" ng-disabled="!sharedData.email">add</button>
-<label for="showDeletedCheckbox" class="add-bottom">
-  <input type="checkbox" id="showDeletedCheckbox" ng-model="sharedData.showDeleted" ng-change="$emit('showDeleted',showDeleted)" />
-  <span>show deleted</span>
-</label>
+<div id="sidebar-wrapper" class="navmenu navmenu-default navmenu-fixed-left offcanvas">
+	<a class="navmenu-brand" href="#">THE LAND</a>
+	<a class="filter-toggle" ng-click="hideFilters=!hideFilters">filters<span class="caret"></span></a>
+	<div id="moreFilters" ng-if="hideFilters">
+		<input type="checkbox" id="showDeletedCheckbox" ng-model="sharedData.showDeleted" ng-change="$emit('showDeleted',showDeleted)" />
+		<span>show deleted</span>
+	</div>
+</div>
 
+<div class="navbar navbar-default navbar-fixed-top">
+	<form class="head-form">
+		<div class="input-group">
+			<div class="input-group-btn">
+				<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+					{{page}} <span class="caret"></span>
+				</button>
+				<ul class="dropdown-menu" role="menu">
+					<li ng-repeat="p in sharedData.pages" ng-if="p!==page"><a ng-click="sharedData.changePage(p)">{{p}}</a></li>
+				</ul>
+			</div>
+			<input type="text" class="form-control translucent" placeholder="search or add to {{page}}" ng-model="sharedData.filter">
+			<div class="input-group-btn">
+				<button type="button" class="btn btn-info" ng-click="showForm()">add</button>
+			</div>
+		</div>
+	</form>
+</div>
 
-<insert-form ng-if="showForm" form-item="formItem"></insert-form>
+<div id="drawer">
+	<button id="sidebar-button" type="button" class="btn btn-default" data-toggle="offcanvas" data-target=".navmenu" data-canvas="body">
+		<span class="glyphicon glyphicon-chevron-right"></span>
+	</button>
+</div>
+
+<div id="add-form">
+	<insert-form form-item="formItem"></insert-form>
+</div>
 
 <list-item ng-repeat="item in items | orderBy:sharedData.orderBy | filter:sharedData.filter | filter:sharedData.pageFilter | filter:sharedData.deletedFilter" item="item" page="page" priority="priorityTime"></list-item>
+
 
