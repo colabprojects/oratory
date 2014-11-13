@@ -26,6 +26,10 @@ app.configure(function(){
     app.use(express.static(__dirname + '/www'));
     app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 });
+
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+
 //email auth
 var nodemailer = require('nodemailer');
 var smtpTransport = require('nodemailer-smtp-transport');
@@ -237,6 +241,24 @@ app.post('/api/removeLock', express.json(), function (req, res){
 	});
 });//end remove lock item
 
+app.post('/api/pickLock', express.json(), function (req, res){
+	var syncLockPromise;
+	console.log('breaking lock for item: '+req.body.uid)
+	db.itemdb.findOne({uid:req.body.uid}, function (err, item){
+		if(err||!item){ console.log('(error removing lock on item) '+err); }
+		else { 
+			if((item.owner)||(item.owner===req.body.email)||(item.lockChangedBy===req.body.email)){
+				syncLockPromise = changeLock(item,req.body.email, false);
+				q.when(syncLockPromise).then(function(){
+					res.send(item);
+				});
+			} else { 
+				//send the owner an email 
+			}
+		}
+	});
+});//end break lock item
+
 //needs in post:  {uid:uidofitem, email:usermakingedit, value:1or-1or0}
 app.post('/api/setPriority', express.json(), function (req, res){
 	var currentPriority;
@@ -399,7 +421,15 @@ app.get('/api/getDbInfo', function (req,res){
 });
 
 
+//SOCKETS --------------------------------
 
+io.on('connection', function(socket){
+  console.log('a user connected');
+  socket.on('message', function(msg){
+    console.log('message: ' + msg);
+    io.emit('message', msg);
+  });
+});
 
 
 
@@ -410,4 +440,4 @@ function generateUID() {
   });
 }
 
-app.listen(80);
+http.listen(80);

@@ -1,5 +1,7 @@
 //the angular magic:
 var itemApp = angular.module('app', ['ui.router']);
+//socket magic:
+var socket = io();
 //cookies:
 var email = $.cookie('email');
 //debug:
@@ -52,8 +54,11 @@ itemApp.factory('master', function($http, $q, $state){
   service.sharedData = {};
   service.sharedData.filter = '';
   service.sharedData.deletedFilter = {};
+  if (email) { service.sharedData.email = email; }
   service.sharedData.showDeleted = false;
   service.sharedData.pages = ['everything', 'inventory', 'projects','books','map','calendar'];
+
+  service.sharedData.notIncluded = ['name','type','uid','image','thumb','need'];
 
   service.sharedData.attachmentTypes = ['resource', 'tool', ''];
   service.sharedData.formAttachments = [];
@@ -90,15 +95,6 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = '';
         $scope.sharedData.orderBy = '-posted';
-      }
-    })
-    .state('newItemForm', {
-      url: '/addItem',
-      templateUrl:'html/defaultView.html',
-      controller: function ($scope, $state, master) {
-        $scope.sharedData=master.sharedData;
-        if(!$scope.sharedData.email) { $state.go('everything'); }
-        $scope.showForm=true;
       }
     })
     .state('inventory', {
@@ -216,36 +212,30 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
     master.setItemPriorities();
   });
 
-  if ($scope.email = $.cookie('email')) { $scope.emailSuccess = true; $scope.sharedData.email = $scope.email; };
-
-  $scope.setEmailCookie = function () {
-    if ($.cookie('email', $scope.email)) {
-      $scope.emailSuccess=true;
-      $scope.sharedData.email = $scope.email;
-    };
-  };//end setEmailCookie ---------------
-
-  $scope.removeEmail = function() {
-    $scope.emailSuccess = false;
-    $.removeCookie('email');
-    $scope.email = '';
-    $scope.sharedData.email = '';
-    $state.go('everything');
-  }
-
-  $scope.emailCompare = function() {
-    if ($scope.sharedData.email === $scope.email) {
-      $scope.emailSuccess=true;
-    }else{ $scope.emailSuccess = false; }
-  };
-
+ 
   $scope.showForm = function() {
     $('#add-form').animate({top:'0px'});
-  }
+  };
   
+  $scope.setEmailCookie = function(email) {
+    if ($.cookie('email', email)) {
+      $scope.emailSuccess=true;
+      $scope.sharedData.email = email;
+    };
+  };
+
+  $scope.removeEmail = function() {
+    $.removeCookie('email');
+    $scope.sharedData.email = '';
+  }
 
   $scope.$on('cancelForm',function(){ 
-    $('#add-form').animate({top:'-1000px'});
+    if ($state.current.name==='edit') {
+      $state.go('everything');
+      //add alert
+    } else {
+      $('#add-form').animate({top:'-1000px'});
+    }
   });
 
   $scope.$watch('sharedData.showDeleted', function(hide) { 
@@ -290,7 +280,7 @@ itemApp.directive('formElement', function ($http) {
   }
 });
 
-itemApp.directive('insertForm', function (master, $http) {
+itemApp.directive('insertForm', function (master, $state, $http) {
   return {
     restrict: 'E',
     scope: {
@@ -334,7 +324,9 @@ itemApp.directive('insertForm', function (master, $http) {
       scope.cancelForm = function(item){
         if(item){
           //need to remove lock
-          $http.post('/api/removeLock', {uid:item.uid,email:master.sharedData.email})
+          $http.post('/api/removeLock', {uid:item.uid,email:master.sharedData.email}).then(function (res){
+            _(master.items).findWhere({uid:res.data.uid}).lock = false;
+          });
         }
         scope.$emit('cancelForm');
         scope.formItem={};
@@ -417,7 +409,7 @@ itemApp.directive('listAttachment', function ($state, $filter, master) {
     },
     templateUrl: 'html/listAttachment.html',
     link: function(scope, element, attrs) {
-      scope.color = master.color;
+      scope.colors = master.color(scope.attachment);
     }
   }
 });
@@ -443,7 +435,7 @@ itemApp.directive('imageSearch', function ($http, master) {
       scope.setImageUrl = function(url,index) {
         scope.$emit('newUrl', url);
         $('.active-result').removeClass('active-result');
-        $('#result'+index).addClass('active-result');
+        $('#result-'+index).addClass('active-result');
       };
     }
   }
@@ -477,7 +469,7 @@ itemApp.directive('itemPriority', function ($state, $http, master) {
   }
 });
 
-itemApp.directive('listItem', function ($state, master) {
+itemApp.directive('listItem', function ($state, $http, master) {
   return {
     restrict: 'E',
     scope: {
@@ -487,7 +479,7 @@ itemApp.directive('listItem', function ($state, master) {
     },
     templateUrl: 'html/listItem.html',
     link: function(scope, element, attrs) {
-      scope.showMore = {};
+      scope.showMoreDetail = {};
       scope.sharedData = master.sharedData;
       scope.colors = master.color(scope.item);
 
@@ -499,7 +491,14 @@ itemApp.directive('listItem', function ($state, master) {
         $state.go('edit',{uid: itemToBeEdit.uid});
       };
 
-      scope.showMore = function(uid) {
+      scope.pickLock = function (itemToPick) {
+        $http.post('/api/pickLock', {uid:itemToPick.uid,email:master.sharedData.email}).then(function (res){
+          scope.showOptions(res.data.uid);
+          _(master.items).findWhere({uid:res.data.uid}).lock = false;
+        });
+      };
+
+      scope.showOptions = function(uid) {
         if ($('#push-wrapper-'+uid).hasClass('show-more')) {
           // Do things on Nav Close
           $('#push-wrapper-'+uid).removeClass('show-more');
@@ -509,6 +508,11 @@ itemApp.directive('listItem', function ($state, master) {
         }
 
       };
+
+      scope.showMoreDetail = function(uid) {
+        scope.showMoreDetail[uid]=!scope.showMoreDetail[uid];
+
+      }
 
     }
   }

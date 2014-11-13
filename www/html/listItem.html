@@ -1,37 +1,51 @@
-<div class="row" id="{{item.uid}}" style="background:rgba({{colors.r}},{{colors.g}},{{colors.b}},.15);">
+<div class="row" id="{{item.uid}}" style="background:rgba({{colors.r}},{{colors.g}},{{colors.b}},.18);">
 	<div class="container list-item-wrapper" style="border-left:3px solid rgb({{colors.r}},{{colors.g}},{{colors.b}});">
 		
-		<div id="push-wrapper-{{item.uid}}" style="position: relative; overflow: hidden; width: 100%;">
+		<div id="push-wrapper-{{item.uid}}" class="push-wrapper">
 			<div class="push-canvas">
 				<div class="more-stuff">	
-  					<button class="btn btn-sm btn-default margin-top-sm" ng-click="editItem(item); showForm();">edit</a>
+  					<button ng-if="!item.lock" class="btn btn-sm btn-default margin-top-sm" ng-click="editItem(item); showForm();">edit</button>
+  					<button ng-if="item.lock" class="btn btn-sm btn-default margin-top-sm" ng-click="pickLock(item)">pick</button>
 				</div>
 				<div class="the-stuff">
-					<div class="col-xs-1 list-priority" ng-if="page == 'projects' && !sharedData.filter && item.type=='project' && sharedData.email">
-						<item-priority item="item" type="'project'"></item-priority>
-					</div>
+					<div class="row">
+						<div ng-if="item.lock" class="col-xs-1 list-lock">
+							<a title="locked by {{item.lockChangedBy}}"><img src="images/lock.png">
+						</div>
+						<div class="col-xs-1 list-priority" ng-if="page == 'projects' && !sharedData.filter && item.type=='project' && sharedData.email && !item.lock">
+							<item-priority item="item" type="'project'"></item-priority>
+						</div>
 
-					<div class="col-xs-2 list-img">
-						<a class="thumbnail" href="{{item.image}}">
-							<img id="image-{{item.uid}}" class="pad-left" ng-src="{{item.thumb}}">
-						</a>
+						<div class="col-xs-2 list-img">
+							<a class="thumbnail" href="{{item.image}}">
+								<img id="image-{{item.uid}}" class="pad-left" ng-src="{{item.thumb}}">
+							</a>
+						</div>
+						
+						<div class="col-xs-8 col-md-10 pointer">
+							<div style="overflow:hidden; min-height:58px;">
+								<div class="row pointer" ng-click="showOptions(item.uid)">
+									<h4>
+										<span class="label list-label" style="background-color:rgb({{colors.r}},{{colors.g}},{{colors.b}});">{{item.type}}</span>{{item.name}}
+										<small><span class="item-need-{{item.need}}" ng-if="item.need === 'have'"> &#10003;have</span></small>
+										<small><span class="item-need-{{item.need}}" ng-if="item.need === 'want'"> &#x2717;need</span></small>
+									</h4>
+								</div>
+								<div class="row pointer" ng-click="showOptions(item.uid)">
+									{{item.description}}
+								</div>
+							</div>
+							<div class="row">
+								<p class="show-more-detail" ng-click="showMoreDetail(item.uid);">more<span class="caret"></span></p>
+							</div>
+						</div>
+					</div>
+					<div ng-if="showMoreDetail[item.uid]" class="row more-detail">
+						<item-detail item="item"></item-detail>
 					</div>
 					
-					<div class="col-xs-9 col-md-6 toggle-push pointer"ng-click="showMore(item.uid)">
-						<div class="row">
-							<h4>
-								<span class="label list-label" style="background-color:rgb({{colors.r}},{{colors.g}},{{colors.b}});">{{item.type}}</span>{{item.name}}
-								<small><span class="item-need-{{item.need}}" ng-if="item.need === 'have'"> &#10003;have</span></small>
-								<small><span class="item-need-{{item.need}}" ng-if="item.need === 'want'"> &#x2717;need</span></small>
-							</h4>
-						</div>
-						<div class="row">
-							{{item.description}}
-							<p class="show-more-detail">more<span class="caret"></span></p>
-						</div>
-
-					</div>
-				</div>
+				
+				</div><!-- the-stuff -->
 			</div><!-- push canvas div -->
 		
 		</div><!-- push wrapper div -->

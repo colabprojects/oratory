@@ -11,9 +11,9 @@
 
     <form-element ng-repeat="field in dbInfo.getFields(formItem.type)" field="field" form-item="formItem" form="form"></form-element>
 
-	<customize-form ng-if="showCustom" type="formItem.type"></customize-form>
-
 	<list-attachments ng-if="formItem.type=='project'" form-item="formItem" edit-attachment="true"></list-attachments>
+
+    <customize-form ng-if="showCustom" type="formItem.type"></customize-form>
 
     <button type="submit" ng-click="saveItem(formItem);" class="btn btn-default" ng-disabled="form.$invalid">save</button>
 	<button class="btn btn-default" ng-click="showCustom=true;" ng-hide="showCustom" ng-disabled="form.formType.$invalid">customize</button>

@@ -1,9 +1,20 @@
 <div id="sidebar-wrapper" class="navmenu navmenu-default navmenu-fixed-left offcanvas">
 	<a class="navmenu-brand" href="#">THE LAND</a>
-	<a class="filter-toggle" ng-click="hideFilters=!hideFilters">filters<span class="caret"></span></a>
-	<div id="moreFilters" ng-if="hideFilters">
-		<input type="checkbox" id="showDeletedCheckbox" ng-model="sharedData.showDeleted" ng-change="$emit('showDeleted',showDeleted)" />
-		<span>show deleted</span>
+	<div class="container" style="width:300px;">
+		<a class="filter-toggle" ng-click="hideFilters=!hideFilters">filters<span class="caret"></span></a>
+		<div id="moreFilters" ng-if="hideFilters">
+			<input type="checkbox" id="showDeletedCheckbox" ng-model="sharedData.showDeleted" ng-change="$emit('showDeleted',showDeleted)" />
+			<span style="color:#777;">show deleted</span>
+		</div>
+		<form name="emailForm">
+			who are you
+			<input id="email-input" ng-model="email" class="form-control" type="email" placeholder="save email to add and edit stuff" ng-class="{'req-alert-on-left':emailForm.$invalid}" required/>
+			<button id="email-button" type="submit" class="btn btn-default" ng-click="setEmailCookie(email)" ng-hide="emailSuccess" ng-disabled="emailForm.$invalid">save cookie</button>
+			<button id="email-button" class="btn btn-default" ng-click="removeEmail()">remove cookie</button>
+		</form>
+		<p style="color:#777; padding-top:10px;">adding shit as: {{sharedData.email}}</p>
+		<div id="socket-messages" style="color:#777;">
+		</div>
 	</div>
 </div>
 
@@ -26,16 +37,16 @@
 	</form>
 </div>
 
+<div id="add-form">
+	<insert-form form-item="formItem"></insert-form>
+</div>
+
+<div style="padding-top:65px;">
+	<list-item ng-repeat="item in items | orderBy:sharedData.orderBy | filter:sharedData.filter | filter:sharedData.pageFilter | filter:sharedData.deletedFilter" item="item" page="page" priority="priorityTime"></list-item>
+</div>
+
 <div id="drawer">
 	<button id="sidebar-button" type="button" class="btn btn-default" data-toggle="offcanvas" data-target=".navmenu" data-canvas="body">
 		<span class="glyphicon glyphicon-chevron-right"></span>
 	</button>
 </div>
-
-<div id="add-form">
-	<insert-form form-item="formItem"></insert-form>
-</div>
-
-<list-item ng-repeat="item in items | orderBy:sharedData.orderBy | filter:sharedData.filter | filter:sharedData.pageFilter | filter:sharedData.deletedFilter" item="item" page="page" priority="priorityTime"></list-item>
-
-

@@ -21,7 +21,9 @@
     "moment":"*",
     "q":"*",
     "underscore":"*",
-    "jquery.cookie":"*"
+    "jquery.cookie":"*",
+    "socket.io":"*",
+    "http":"*"
   },
   "scripts": {
     "start": ""

@@ -2,9 +2,15 @@
 	<p>item is locked by {{itemToBeEdit.lockChangedBy}}</p>
 </div>
 <div ng-if="!itemToBeEdit.lock||itemToBeEdit.lockChangedBy===sharedData.email">
-	<button ng-click="deleteItem(itemToBeEdit)">delete</button>
 	<list-item item="itemToBeEdit"></list-item>
-	<insert-form form-item="itemToBeEdit"></insert-form>
+	<div class="container">
+		<div class="row">
+			<div class="col-xs-12 col-md-6">
+				<button class="btn btn-default" ng-click="deleteItem(itemToBeEdit)">delete</button>
+				<insert-form form-item="itemToBeEdit"></insert-form>
+			</div>
+		</div>
+	</div>
 </div>
 
 

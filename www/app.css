@@ -1,5 +1,4 @@
 html, body { height: 100%; }
-body { padding: 65px 0 0 0; }
 .row { margin:0; }
 .thumbnail { margin:5px 0; }
 #site-wrapper { padding-bottom:75px; }
@@ -18,6 +17,12 @@ body { padding: 65px 0 0 0; }
 	border-bottom: 1px solid #CCC;
 	border-right: 1px solid #CCC;
 	border-bottom-right-radius:10px; 
+}
+
+.push-wrapper {
+	position: relative; 
+	overflow: hidden; 
+	width: 100%;
 }
 
 .list-item-wrapper {
@@ -68,15 +73,20 @@ body { padding: 65px 0 0 0; }
 .list-img { margin-left:15px; max-width:70px; padding:0; }
 .list-priority { max-width:30px; padding:0; }
 .list-label { margin-right:10px; font-size:11px; }
+.list-lock { width:25px; text-align:center; padding: 15px 0 0 5px; }
+
+.attachment-label { margin:0 8px; }
 
 .navbar-toggle { float: left; margin-left: 15px; }
 .btn-info { background-color: rgb(255,200,0); border-color:#EDA891; }
 .margin-top-sm { margin-top:8px; }
+.margin-md { margin-bottom: 15px; margin-top:15px; }
 .navbar-default { background:transparent; border:none;}
 
 .pointer { cursor:pointer; }
 
 .show-more-detail { color:#AAA; font-size:9px; }
+.more-detail {  }
 
 .head-pad { padding:0 10px !important; }
 .filter-toggle:hover { text-decoration:none; cursor: pointer; }

@@ -1,6 +1,7 @@
 
 	<form name="formCustom">
 		<label for="form-add-name">add</label>
-		<select id="form-add-type" name="formAddType" ng-model="formAdd.type" ng-options="a for a in dbInfo.formElements" ng-class="{'req-alert-on-left':formCustom.formAddType.$invalid}" required></select>
-		<input id="form-add-name" type="text" name="formAddName" ng-model="formAdd.name" placeholder="name of element" style="display:inline; width:170px;" ng-class="{'req-alert-on-left':formCustom.formAddName.$invalid}" required><button ng-click="addCustomElement()" ng-disabled="formCustom.$invalid">add</button>
+		<select id="form-add-type" class="form-control" name="formAddType" ng-model="formAdd.type" ng-options="a for a in dbInfo.formElements" ng-class="{'req-alert-on-left':formCustom.formAddType.$invalid}" required></select>
+		<input id="form-add-name" class="form-control" type="text" name="formAddName" ng-model="formAdd.name" placeholder="name of element" ng-class="{'req-alert-on-left':formCustom.formAddName.$invalid}" required>
+		<button class="btn btn-default margin-md" ng-click="addCustomElement()" ng-disabled="formCustom.$invalid">add</button>
 	</form>
