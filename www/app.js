@@ -27,7 +27,7 @@ itemApp.factory('master', function($http, $q, $state){
 
   service.saveItem = function(itemToBeSaved){
     return $http.post('/api/saveItem', itemToBeSaved).success(function (data) { 
-      return service.refreshItems();
+      
     });
   };
 
@@ -211,7 +211,6 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
   $scope.$watch('sharedData.email', function(email){
     master.setItemPriorities();
   });
-
  
   $scope.showForm = function() {
     $('#add-form').animate({top:'0px'});
@@ -244,7 +243,20 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
     } else {
       master.sharedData.deletedFilter = {type:'!deleted'};
     }
-  })
+  });
+
+  socket.on('new', function(item){
+    $('#socket-messages').append('<p>new item! '+item.name+' was added by '+item.createdBy+'...</p>');
+    master.items.push(item);
+    $scope.$digest();
+
+  });
+  socket.on('update', function(item){
+    angular.copy(item, _(master.items).findWhere({uid:item.uid}));
+    $('#socket-messages').append('<p>updated item! '+item.name+' was updated by '+item.createdBy+'...</p>');
+    master.items.push(item);
+    $scope.$digest();
+  });
 
 });
 
@@ -291,7 +303,6 @@ itemApp.directive('insertForm', function (master, $state, $http) {
       //db defaults for form
       scope.dbInfo=master.getDbInfo;
       scope.sharedData = master.sharedData;
-      scope.filter=master.sharedData.filter;
 
       //setup form item
       if(!scope.formItem) { 
@@ -316,6 +327,11 @@ itemApp.directive('insertForm', function (master, $state, $http) {
       scope.saveItem = function(itemToBeAdded) {
         //validate and add
         if (scope.form.$valid) { 
+          if(!itemToBeAdded.createdBy) { 
+            itemToBeAdded.createdBy = scope.sharedData.email; 
+          } else {
+            itemToBeAdded.updatedBy = scope.sharedData.email;
+          }
           master.saveItem(itemToBeAdded); 
           master.sharedData.filter=''; 
           scope.cancelForm(); 

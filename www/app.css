@@ -3,6 +3,8 @@ html, body { height: 100%; }
 .thumbnail { margin:5px 0; }
 #site-wrapper { padding-bottom:75px; }
 #sidebar-wrapper { background-color:#373737; box-shadow: inset -10px 0px 20px #222; }
+.map { height:100%; width:100%; position:absolute; }
+
 
 #add-form { 
 	position:fixed; 
@@ -79,8 +81,11 @@ html, body { height: 100%; }
 
 .navbar-toggle { float: left; margin-left: 15px; }
 .btn-info { background-color: rgb(255,200,0); border-color:#EDA891; }
+
 .margin-top-sm { margin-top:8px; }
 .margin-md { margin-bottom: 15px; margin-top:15px; }
+.pad-top { padding-top:15px; }
+
 .navbar-default { background:transparent; border:none;}
 
 .pointer { cursor:pointer; }

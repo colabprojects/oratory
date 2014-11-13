@@ -171,7 +171,11 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 			delete req.body.lock;
 
 			db.itemdb.update({uid: req.body.uid}, req.body, function (err, doc) {
-				if(err){ console.log('(error updating item) '+err); }else{ q.when(syncImagePromise).then(function(){res.send(doc)}); }
+				if(err){ console.log('(error updating item) '+err); }else{ q.when(syncImagePromise).then(function(){
+						io.emit('update', req.body);
+						res.send(doc)
+					}); 
+				}
 			});
 		});
 	} else {
@@ -193,7 +197,15 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 			req.body.thumb = defaultImage;
 		}
 		db.itemdb.insert(req.body, function (err, doc) { 
-			if(err){ console.log('(error saving item) '+err); }else{ q.when(syncImagePromise).then(function(){res.send(doc);}); } 
+			if(err){ console.log('(error saving item) '+err); }else{ 
+				q.when(syncImagePromise).then(function(){
+					
+						console.log('item: ' + doc.uid);
+					    io.emit('new', doc);
+
+					res.send(doc);
+				}); 
+			} 
 		});
 	}
 });//end SAVE single item
@@ -229,16 +241,19 @@ app.post('/api/requestLock', express.json(), function (req, res){
 
 app.post('/api/removeLock', express.json(), function (req, res){
 	var syncLockPromise;
-	console.log('removing lock for item: '+req.body.uid)
-	db.itemdb.findOne({uid:req.body.uid}, function (err, item){
-		if(err||!item){ console.log('(error removing lock on item) '+err); }
-		else { 
-			syncLockPromise = changeLock(item,req.body.email, false);
-			q.when(syncLockPromise).then(function(){
-				res.send(item);
-			});
-		}
-	});
+	if (req.body.uid) {
+		console.log('removing lock for item: '+req.body.uid)
+		db.itemdb.findOne({uid:req.body.uid}, function (err, item){
+			console.log(item)
+			if(err||!item){ console.log('(error removing lock on item) '+err); }
+			else { 
+				syncLockPromise = changeLock(item,req.body.email, false);
+				q.when(syncLockPromise).then(function(){
+					res.send(item);
+				});
+			}
+		});
+	}
 });//end remove lock item
 
 app.post('/api/pickLock', express.json(), function (req, res){
@@ -429,6 +444,13 @@ io.on('connection', function(socket){
     console.log('message: ' + msg);
     io.emit('message', msg);
   });
+
+
+  socket.on('update', function(msg){
+    console.log('message: ' + msg);
+    io.emit('update', msg);
+  });
+
 });
 
 
