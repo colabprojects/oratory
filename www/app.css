@@ -1,4 +1,4 @@
-html, body { height: 100%; overflow-x:hidden; }
+html, body { height: 100%; }
 .row { margin:0; }
 .thumbnail { margin:5px 0; }
 #site-wrapper { padding-bottom:75px; }
@@ -29,7 +29,7 @@ html, body { height: 100%; overflow-x:hidden; }
 	width: 100%;
 }
 
-.list-wrapper { background: #FFF; }
+.list-wrapper { background: #FFF; overflow:hidden;}
 .list-item-wrapper {
 	position:relative;
 	padding-left:0;
