@@ -1,7 +1,7 @@
 //the angular magic:
 var itemApp = angular.module('app', ['ui.router']);
 //socket magic:
-var socket = io();
+//var socket = io();
 //cookies:
 var email = $.cookie('email');
 //debug:
@@ -244,7 +244,7 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
       master.sharedData.deletedFilter = {type:'!deleted'};
     }
   });
-
+  /*
   socket.on('new', function(item){
     $('#socket-messages').append('<p>new item! '+item.name+' was added by '+item.createdBy+'...</p>');
     master.items.push(item);
@@ -257,7 +257,7 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
     master.items.push(item);
     $scope.$digest();
   });
-
+  */
 });
 
 //accepts a field array (of objects with a name and type)
