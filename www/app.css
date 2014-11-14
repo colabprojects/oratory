@@ -4,7 +4,9 @@ html, body { height: 100%; }
 #site-wrapper { padding-bottom:75px; }
 #sidebar-wrapper { background-color:#373737; box-shadow: inset -10px 0px 20px #222; }
 .map { height:100%; width:100%; position:absolute; }
-
+#trees {
+	height:65px;
+}
 
 #add-form { 
 	position:fixed; 
@@ -27,7 +29,9 @@ html, body { height: 100%; }
 	width: 100%;
 }
 
+.list-wrapper { background: #FFF; }
 .list-item-wrapper {
+	position:relative;
 	padding-left:0;
 	background-color:#FFF; 
 }
@@ -91,12 +95,12 @@ html, body { height: 100%; }
 .pointer { cursor:pointer; }
 
 .show-more-detail { color:#AAA; font-size:9px; }
-.more-detail {  }
+.more-detail { box-shadow: inset 0px 4px 10px #AAA; padding:15px 10px; }
 
 .head-pad { padding:0 10px !important; }
 .filter-toggle:hover { text-decoration:none; cursor: pointer; }
 .translucent { background:rgba(255, 255, 255, 0.95); }
-.head-form { margin:15px; max-width:500px; box-shadow: 2px 1px 6px #DDD; border-radius: 4px; }
+.head-form { margin:15px; max-width:500px; box-shadow: 2px 4px 10px rgba(0,0,0,.4); border-radius: 4px; }
 
 #sidebar-button { 
 	padding:20px 3px; 

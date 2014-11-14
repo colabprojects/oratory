@@ -40,11 +40,6 @@
 							</div>
 						</div>
 					</div>
-					<div ng-if="showMoreDetail[item.uid]" class="row more-detail">
-						<item-detail item="item"></item-detail>
-					</div>
-					
-				
 				</div><!-- the-stuff -->
 			</div><!-- push canvas div -->
 		
@@ -52,5 +47,9 @@
 
 	</div>
 </div>
-<item-detail ng-show='showDetail' item='item'></item-detail>
+<div ng-if="showMoreDetail[item.uid]" id="detail-{{item.uid}}" class="row more-detail" style="background:rgba({{colors.r}},{{colors.g}},{{colors.b}},.08);">
+	<div class="container list-item-wrapper">
+		<item-detail item="item"></item-detail>
+	</div>
+</div>
 

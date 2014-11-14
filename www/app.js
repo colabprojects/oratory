@@ -491,13 +491,16 @@ itemApp.directive('listItem', function ($state, $http, master) {
     scope: {
       item:'=',
       page:'=',
-      priority:'='
+      priority:'=',
+      trees:'='
     },
     templateUrl: 'html/listItem.html',
     link: function(scope, element, attrs) {
       scope.showMoreDetail = {};
       scope.sharedData = master.sharedData;
       scope.colors = master.color(scope.item);
+
+      if (scope.trees) { scope.sharedData.trees = scope.colors; }
 
       scope.$watch('item.imageURL',function(url){
         scope.editThumb = url;

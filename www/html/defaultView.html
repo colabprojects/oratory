@@ -41,8 +41,13 @@
 	<insert-form form-item="formItem"></insert-form>
 </div>
 
-<div style="padding-top:65px;">
-	<list-item ng-repeat="item in items | orderBy:sharedData.orderBy | filter:sharedData.filter | filter:sharedData.pageFilter | filter:sharedData.deletedFilter" item="item" page="page" priority="priorityTime"></list-item>
+<div class="list-wrapper">
+	<div style="min-width:1000px;">
+		<div id="trees" class="row" style="background:rgba({{sharedData.trees.r}},{{sharedData.trees.g}},{{sharedData.trees.b}},.18);">
+			<img src="images/trees.png" style="width:100%;">
+		</div>
+	</div>
+	<list-item ng-repeat="item in items | orderBy:sharedData.orderBy | filter:sharedData.filter | filter:sharedData.pageFilter | filter:sharedData.deletedFilter" item="item" page="page" priority="priorityTime" trees="$first"></list-item>
 </div>
 
 <div id="drawer">
