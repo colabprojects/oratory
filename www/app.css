@@ -86,9 +86,10 @@ html, body { height: 100%; }
 .navbar-toggle { float: left; margin-left: 15px; }
 .btn-info { background-color: rgb(255,200,0); border-color:#EDA891; }
 
-.margin-top-sm { margin-top:8px; }
+.opt-button { margin:7px 10px 0 10px; }
 .margin-md { margin-bottom: 15px; margin-top:15px; }
 .pad-top { padding-top:15px; }
+.remove-round { border-radius: 0; border-right:0; }
 
 .navbar-default { background:transparent; border:none;}
 

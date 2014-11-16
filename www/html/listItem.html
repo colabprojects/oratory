@@ -4,8 +4,9 @@
 		<div id="push-wrapper-{{item.uid}}" class="push-wrapper">
 			<div class="push-canvas">
 				<div class="more-stuff">	
-  					<button ng-if="!item.lock" class="btn btn-sm btn-default margin-top-sm" ng-click="editItem(item); showForm();">edit</button>
-  					<button ng-if="item.lock" class="btn btn-sm btn-default margin-top-sm" ng-click="pickLock(item)">pick</button>
+  					<button ng-if="!item.lock" class="btn btn-sm btn-default opt-button" ng-click="editItem(item)">edit</button>
+  					<button class="btn btn-sm btn-default opt-button" ng-click="viewItem(item)">view</button>
+  					<button ng-if="item.lock" class="btn btn-sm btn-default opt-button" ng-click="pickLock(item)">pick</button>
 				</div>
 				<div class="the-stuff">
 					<div class="row">
@@ -23,20 +24,20 @@
 						</div>
 						
 						<div class="col-xs-8 col-md-10 pointer">
-							<div style="overflow:hidden; min-height:58px;">
-								<div class="row pointer" ng-click="showOptions(item.uid)">
+							<div style="overflow:hidden; min-height:58px;" ng-click="showMoreDetails(item.uid)">
+								<div class="row">
 									<h4>
 										<span class="label list-label" style="background-color:rgb({{colors.r}},{{colors.g}},{{colors.b}});">{{item.type}}</span>{{item.name}}
 										<small><span class="item-need-{{item.need}}" ng-if="item.need === 'have'"> &#10003;have</span></small>
 										<small><span class="item-need-{{item.need}}" ng-if="item.need === 'want'"> &#x2717;need</span></small>
 									</h4>
 								</div>
-								<div class="row pointer" ng-click="showOptions(item.uid)">
+								<div class="row">
 									{{item.description}}
 								</div>
 							</div>
 							<div class="row">
-								<p class="show-more-detail" ng-click="showMoreDetail(item.uid);">more<span class="caret"></span></p>
+								<p class="show-more-detail" ng-click="showOptions(item.uid)">options</p>
 							</div>
 						</div>
 					</div>

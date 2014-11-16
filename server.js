@@ -307,6 +307,7 @@ app.post('/api/setPriority', express.json(), function (req, res){
 		 		doc.priority=newPriority;
 			 	db.itemdb.update({uid:req.body.uid}, {$set:{priority:newPriority, totalPriority:totalPriority}}, function (err,doc2){
 			 		if(err){ console.log('(error updating priority) '+err); }else{ 
+			 			io.emit('update', doc);
 			 			res.send(doc); 
 			 		}
 			 	});
@@ -315,6 +316,30 @@ app.post('/api/setPriority', express.json(), function (req, res){
 	});
 });
 
+app.post('/api/addComment', express.json(), function (req, res) {
+	
+	db.itemdb.findOne({uid:req.body.uid}, function (err, item){
+		if(err){ console.log('(error finding item) '+err); }
+		else { 
+			if(!item.comments) { item.comments = []; }
+			var timeTime = moment().format();
+			item.comments.push({words:req.body.comment, by:req.body.email, time:timeTime});
+
+			var pushValue = {};
+			pushValue.$set = {};
+			pushValue.$set['comments'] = item.comments; 
+			db.itemdb.update({uid: req.body.uid}, pushValue, function (err, doc) {
+				if(err){ console.log('(error updating comments) '+err); }else{ 
+					io.emit('update', item);
+					res.send(doc); 
+				}
+			});
+		}
+	});
+
+});//end add comment
+
+/*
 //of the form {pushToUID: something, push: thekey, value: thevalue}
 app.post('/api/pushToItem', express.json(), function (req, res) {
 	var pushValue = {};
@@ -325,6 +350,7 @@ app.post('/api/pushToItem', express.json(), function (req, res) {
 	});
 
 });//end PUSH to single item
+*/
 
 app.post('/api/stageItem', express.json(), function (req, res) {
 	db.itemdb.insert({type:'staged', key:req.body.actionKey, modifiedItem:req.body.data}, function (err, doc) {

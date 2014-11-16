@@ -1,7 +1,7 @@
 //the angular magic:
 var itemApp = angular.module('app', ['ui.router']);
 //socket magic:
-//var socket = io();
+var socket = io();
 //cookies:
 var email = $.cookie('email');
 //debug:
@@ -64,6 +64,11 @@ itemApp.factory('master', function($http, $q, $state){
   service.sharedData.formAttachments = [];
 
   service.sharedData.changePage = function (page) { $state.go(page); };
+  service.sharedData.scrollTop = function () {
+    $('html, body').animate({
+        scrollTop: $("#site-wrapper").offset().top
+    }, 1000);
+  };
 
   service.setItemPriorities = function (){
     var who = service.sharedData.email;
@@ -95,7 +100,9 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = '';
         $scope.sharedData.orderBy = '-posted';
+        $scope.sharedData.viewFilter = '';
       }
+
     })
     .state('inventory', {
       url: '/inventory',
@@ -105,6 +112,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         $scope.sharedData.pageFilter = function(item) {
           return item.type === 'tool' || item.type ==='resource' || item.oldType === 'tool' || item.oldType === 'resource';
         };
+        $scope.sharedData.viewFilter = '';
       }
     })
     .state('projects', {
@@ -117,6 +125,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         $scope.sharedData.pageFilter = function(item) {
           return item.type==='project' || item.oldType === 'project';
         };
+        $scope.sharedData.viewFilter = '';
       }
     })
     .state('books', {
@@ -127,6 +136,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         $scope.sharedData.pageFilter = function(item) {
           return item.type==='book' || item.oldType === 'book';
         };
+        $scope.sharedData.viewFilter = '';
       }
     })
     .state('map', {
@@ -183,6 +193,25 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         $scope.sharedData=master.sharedData;
         debug=$scope.itemToBeEdit=itemToBeEdit;
         $scope.deleteItem=master.deleteItem;
+
+      }
+    })
+    .state('view', {
+      url: '/view/:uid',
+      resolve:{
+        itemToBeView: function ($http, $stateParams, master) {
+          return $http.post('/api/getItem', {uid:$stateParams.uid}).then(function (response){
+            return response.data;
+          });
+        }
+      },
+      templateUrl: 'html/defaultView.html',
+      controller: function ($scope, $state, itemToBeView, master) {
+        $scope.sharedData=master.sharedData;
+        $scope.itemToBeView=itemToBeView;
+        $scope.deleteItem=master.deleteItem;
+        $scope.sharedData.viewFilter = itemToBeView.uid;
+
 
       }
     });
@@ -244,7 +273,7 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
       master.sharedData.deletedFilter = {type:'!deleted'};
     }
   });
-  /*
+
   socket.on('new', function(item){
     $('#socket-messages').append('<p>new item! '+item.name+' was added by '+item.createdBy+'...</p>');
     master.items.push(item);
@@ -253,11 +282,9 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
   });
   socket.on('update', function(item){
     angular.copy(item, _(master.items).findWhere({uid:item.uid}));
-    $('#socket-messages').append('<p>updated item! '+item.name+' was updated by '+item.createdBy+'...</p>');
-    master.items.push(item);
     $scope.$digest();
   });
-  */
+
 });
 
 //accepts a field array (of objects with a name and type)
@@ -500,6 +527,8 @@ itemApp.directive('listItem', function ($state, $http, master) {
       scope.sharedData = master.sharedData;
       scope.colors = master.color(scope.item);
 
+      if (scope.page === 'view') { scope.showMoreDetail[scope.item.uid]=true; }
+
       if (scope.trees) { 
         scope.sharedData.trees = scope.colors; 
         $('body').css('background','rgba('+scope.sharedData.trees.r+','+scope.sharedData.trees.g+','+scope.sharedData.trees.b+',.18)'); 
@@ -511,6 +540,10 @@ itemApp.directive('listItem', function ($state, $http, master) {
 
       scope.editItem = function(itemToBeEdit) {
         $state.go('edit',{uid: itemToBeEdit.uid});
+      };
+
+      scope.viewItem = function(itemToBeView) {
+        $state.go('view',{uid: itemToBeView.uid});
       };
 
       scope.pickLock = function (itemToPick) {
@@ -531,7 +564,7 @@ itemApp.directive('listItem', function ($state, $http, master) {
 
       };
 
-      scope.showMoreDetail = function(uid) {
+      scope.showMoreDetails = function(uid) {
         scope.showMoreDetail[uid]=!scope.showMoreDetail[uid];
 
       }
@@ -540,7 +573,7 @@ itemApp.directive('listItem', function ($state, $http, master) {
   }
 });
 
-itemApp.directive('itemDetail', function ($state, $filter, master) {
+itemApp.directive('itemDetail', function ($state, $filter, $http, master) {
   return {
     restrict: 'E',
     scope: {
@@ -548,7 +581,24 @@ itemApp.directive('itemDetail', function ($state, $filter, master) {
     },
     templateUrl: 'html/itemDetail.html',
     link: function(scope, element, attrs) {
-      
+      scope.addComment = function(item){
+          $http.post('/api/addComment', {uid:item.uid,email:master.sharedData.email,comment:scope.comment}).then(function(res){
+            scope.comment='';
+          });
+
+      }
+    }
+  }
+});
+
+itemApp.directive('showComment', function ($state, $filter, $http, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      comment:'='
+    },
+    templateUrl: 'html/showComment.html',
+    link: function(scope, element, attrs) {
     }
   }
 });

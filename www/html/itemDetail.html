@@ -1,5 +1,5 @@
 <div class="row">
-	<div class="col-xs-12 col-md-4" style="overflow:hidden;">
+	<div class="col-xs-12 col-md-4">
 		<p class="half-bottom detail-header">raw data</p>
 		<div ng-repeat='(key,value) in item'>
 			{{key}} = {{value}}
@@ -13,6 +13,10 @@
 	</div>
 	<div class="col-xs-12 col-md-4">
 		<p class="half-bottom detail-header">conversation</p>
-		<small>repeat comments</small>
+		<textarea class="form-control" ng-model="comment" placeholder="add something"></textarea>
+		<button ng-if="comment" ng-click="addComment(item)" class="btn btn-default">add comment</button>
+
+		<show-comment ng-repeat="comment in item.comments" comment="comment"></show-comment>
+
 	</div>
 </div>
