@@ -236,7 +236,7 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
       lockedItem=_($scope.items).findWhere({uid:fromParam.uid})
       if (lockedItem.lock){
         //lock is true and have to remove
-        if (!toParam.chain) {
+        if (toParam.chain!=='true') {
           //not chaining items
           console.log('shit is still locked');
           $http.post('/api/removeLock', {uid:lockedItem.uid, email:master.sharedData.email}).then(function (res){
