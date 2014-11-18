@@ -18,6 +18,8 @@
         <img src="about:blank" alt="" id="show-picture">
     </div>
 
+    <p id="error"></p>
+
     <form-element ng-repeat="field in dbInfo.getFields(formItem.type)" field="field" form-item="formItem" form="form"></form-element>
 
 	<list-attachments ng-if="formItem.type=='project'" form-item="formItem" edit-attachment="true"></list-attachments>
