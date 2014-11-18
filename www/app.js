@@ -230,7 +230,7 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
 
   $scope.$on('$stateChangeSuccess', function(event, toState, toParam, fromState, fromParam){ 
     $scope.page = toState.name;   
-    /*
+  
     if ((fromState.name === 'edit')) {
       //remove lock if someone hits "back"
       lockedItem=_($scope.items).findWhere({uid:fromParam.uid})
@@ -245,7 +245,7 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
         }
       }
     }
-    */
+
   });
 
   $scope.$watch('sharedData.email', function(email){
