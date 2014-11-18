@@ -439,13 +439,18 @@ app.post('/api/sendEmail', express.json(), function (req, res){
 //LOCKS --------------------------------
 function changeLock(item,who,value){
 	var changeLockPromise = q.defer();
+	var time = moment().format();
+	item.lock=value;
+	item.lockChangedBy=who;
+	item.lockChangedAt=time;
 
-	db.itemdb.update({uid: item.uid}, {$set:{lock:value, lockChangedBy:who}}, function (err, doc) {
+	db.itemdb.update({uid: item.uid}, {$set:{lock:value, lockChangedBy:who, lockChangedAt:time}}, function (err, doc) {
 		if(err){ 
 			console.log('(error changing lock on item) '+err); 
 			changeLockPromise.reject();
 		} else {
 			//success
+			io.emit('update',item);
 			changeLockPromise.resolve();
 		}
 	});

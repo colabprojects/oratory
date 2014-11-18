@@ -4,8 +4,8 @@
 		<div id="push-wrapper-{{item.uid}}" class="push-wrapper">
 			<div class="push-canvas">
 				<div class="more-stuff">	
-  					<button ng-if="!item.lock" class="btn btn-sm btn-default opt-button" ng-click="editItem(item)">edit</button>
-  					<button class="btn btn-sm btn-default opt-button" ng-click="viewItem(item)">view</button>
+  					<a ui-sref="edit({uid:item.uid,chain:false})"><button ng-if="!item.lock" class="btn btn-sm btn-default opt-button">edit</button></a>
+  					<a ui-sref="view({uid:item.uid})"><button class="btn btn-sm btn-default opt-button">view</button></a>
   					<button ng-if="item.lock" class="btn btn-sm btn-default opt-button" ng-click="pickLock(item)">pick</button>
 				</div>
 				<div class="the-stuff">
@@ -48,8 +48,8 @@
 
 	</div>
 </div>
-<div ng-if="showMoreDetail[item.uid]" id="detail-{{item.uid}}" class="row more-detail" style="background:rgba({{colors.r}},{{colors.g}},{{colors.b}},.08);">
-	<div class="container list-item-wrapper">
+<div ng-if="sharedData.showMoreDetail[item.uid]" id="detail-{{item.uid}}" class="row more-detail" style="background:rgba({{colors.r}},{{colors.g}},{{colors.b}},.08);">
+	<div class="container">
 		<item-detail item="item"></item-detail>
 	</div>
 </div>

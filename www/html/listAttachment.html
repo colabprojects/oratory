@@ -1,4 +1,7 @@
-<h6>
+<h6 class="pointer">
 	<input ng-if="editAttachment" type="checkbox" id="{{attachment.uid}}" ng-model="attachment.checked">
-	<span class="label attachment-label" style="background-color:rgb({{colors.r}},{{colors.g}},{{colors.b}});">{{attachment.type}}</span>{{attachment.name}}
+	<a ui-sref='view({uid: attachment.uid})'>
+		<span class="label attachment-label" style="background-color:rgb({{colors.r}},{{colors.g}},{{colors.b}});">{{attachment.type}}</span>{{attachment.name}}
+	</a>
+	<button ng-if="editAttachment" class="btn btn-xs btn-default" ui-sref="edit({uid:attachment.uid,chain:true})">edit</button>
 </h6>

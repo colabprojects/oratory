@@ -12,6 +12,9 @@ itemApp.factory('master', function($http, $q, $state){
   var service = {};
 
   service.items=[];
+  service.item={};
+
+
   service.refreshItems=function(){
     return $http.post('/api/getItems').then(function (response) {
       return angular.copy(response.data, service.items);
@@ -26,9 +29,7 @@ itemApp.factory('master', function($http, $q, $state){
   };
 
   service.saveItem = function(itemToBeSaved){
-    return $http.post('/api/saveItem', itemToBeSaved).success(function (data) { 
-      
-    });
+    return $http.post('/api/saveItem', itemToBeSaved);
   };
 
   service.deleteItem = function(itemToBeDeleted){
@@ -54,6 +55,7 @@ itemApp.factory('master', function($http, $q, $state){
   service.sharedData = {};
   service.sharedData.filter = '';
   service.sharedData.deletedFilter = {};
+  service.sharedData.showMoreDetail={};
   if (email) { service.sharedData.email = email; }
   service.sharedData.showDeleted = false;
   service.sharedData.pages = ['everything', 'inventory', 'projects','books','map','calendar'];
@@ -99,7 +101,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       controller: function($scope, $state, master) {
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = '';
-        $scope.sharedData.orderBy = '-posted';
+        $scope.sharedData.orderBy = '-edited';
         $scope.sharedData.viewFilter = '';
       }
 
@@ -180,7 +182,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       }
     })
     .state('edit', {
-      url: '/edit/:uid',
+      url: '/edit/:uid/:chain',
       resolve:{
         itemToBeEdit: function ($http, $stateParams, master) {
           return $http.post('/api/requestLock', {uid:$stateParams.uid,email:master.sharedData.email}).then(function (response){
@@ -192,6 +194,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       controller: function ($scope, $state, itemToBeEdit, master) {
         $scope.sharedData=master.sharedData;
         debug=$scope.itemToBeEdit=itemToBeEdit;
+        master.item=$scope.itemToBeEdit;
         $scope.deleteItem=master.deleteItem;
 
       }
@@ -210,7 +213,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         $scope.sharedData=master.sharedData;
         $scope.itemToBeView=itemToBeView;
         $scope.deleteItem=master.deleteItem;
-        $scope.sharedData.viewFilter = itemToBeView.uid;
+        $scope.sharedData.viewFilter = {uid:itemToBeView.uid};
 
 
       }
@@ -226,15 +229,23 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
   $scope.sharedData = master.sharedData;
 
   $scope.$on('$stateChangeSuccess', function(event, toState, toParam, fromState, fromParam){ 
-    if (toState.name == 'newItemForm') {
-      if (fromState.name) { 
-        $scope.page = fromState.name; 
-      }else{ 
-        $scope.page = 'everything'; 
+    $scope.page = toState.name;   
+    /*
+    if ((fromState.name === 'edit')) {
+      //remove lock if someone hits "back"
+      lockedItem=_($scope.items).findWhere({uid:fromParam.uid})
+      if (lockedItem.lock){
+        //lock is true and have to remove
+        if (!toParam.chain) {
+          //not chaining items
+          console.log('shit is still locked');
+          $http.post('/api/removeLock', {uid:lockedItem.uid, email:master.sharedData.email}).then(function (res){
+            lockedItem.lock = false;
+          });
+        }
       }
-    } else {
-      $scope.page = toState.name; 
     }
+    */
   });
 
   $scope.$watch('sharedData.email', function(email){
@@ -259,8 +270,8 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
 
   $scope.$on('cancelForm',function(){ 
     if ($state.current.name==='edit') {
-      $state.go('everything');
       //add alert
+      window.history.back();
     } else {
       $('#add-form').animate({top:'-1000px'});
     }
@@ -278,12 +289,15 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
     $('#socket-messages').append('<p>new item! '+item.name+' was added by '+item.createdBy+'...</p>');
     master.items.push(item);
     $scope.$digest();
-
   });
+  
   socket.on('update', function(item){
+    console.log('UPDATE!');
     angular.copy(item, _(master.items).findWhere({uid:item.uid}));
+    //if (item.uid == master.item.uid) { angular.copy(item,master.item); }
     $scope.$digest();
   });
+
 
 });
 
@@ -538,14 +552,6 @@ itemApp.directive('listItem', function ($state, $http, master) {
         scope.editThumb = url;
       });
 
-      scope.editItem = function(itemToBeEdit) {
-        $state.go('edit',{uid: itemToBeEdit.uid});
-      };
-
-      scope.viewItem = function(itemToBeView) {
-        $state.go('view',{uid: itemToBeView.uid});
-      };
-
       scope.pickLock = function (itemToPick) {
         $http.post('/api/pickLock', {uid:itemToPick.uid,email:master.sharedData.email}).then(function (res){
           scope.showOptions(res.data.uid);
@@ -565,7 +571,7 @@ itemApp.directive('listItem', function ($state, $http, master) {
       };
 
       scope.showMoreDetails = function(uid) {
-        scope.showMoreDetail[uid]=!scope.showMoreDetail[uid];
+        scope.sharedData.showMoreDetail[uid]=!scope.sharedData.showMoreDetail[uid];
 
       }
 
@@ -581,6 +587,8 @@ itemApp.directive('itemDetail', function ($state, $filter, $http, master) {
     },
     templateUrl: 'html/itemDetail.html',
     link: function(scope, element, attrs) {
+      scope.showRaw = {};
+
       scope.addComment = function(item){
           $http.post('/api/addComment', {uid:item.uid,email:master.sharedData.email,comment:scope.comment}).then(function(res){
             scope.comment='';
