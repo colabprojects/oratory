@@ -17,9 +17,9 @@
     "method-override": "^1.0.0",
     "moment": "*",
     "mongojs": "*",
-    "ncp": "^1.0.1",
     "q": "*",
     "request": "*",
+    "save-to": "^1.0.3",
     "socket.io": "*",
     "underscore": "*"
   },

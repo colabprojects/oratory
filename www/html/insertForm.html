@@ -9,6 +9,15 @@
 		<input id="form-name" class="form-control" name="formName" ng-change="showImages=true;" type="text" ng-model="formItem.name" ng-class="{'req-alert-on-left':form.formName.$invalid}" required>
     </div>
 
+    <div class="form-group">
+        <label for="camera-thing">use your camera</label>
+        <input type="file" id="take-picture" accept="image/*">
+    </div>
+
+    <div>
+        <img src="about:blank" alt="" id="show-picture">
+    </div>
+
     <form-element ng-repeat="field in dbInfo.getFields(formItem.type)" field="field" form-item="formItem" form="form"></form-element>
 
 	<list-attachments ng-if="formItem.type=='project'" form-item="formItem" edit-attachment="true"></list-attachments>

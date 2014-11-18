@@ -298,8 +298,15 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
   
   socket.on('update', function(item){
     console.log('UPDATE!');
-    master.sharedData.randomNumber++;
     angular.copy(item, _(master.items).findWhere({uid:item.uid}));
+    //if (item.uid == master.item.uid) { angular.copy(item,master.item); }
+    $scope.$digest();
+  });
+
+  socket.on('lockChange', function(item){
+    console.log('lock changed! - '+item.name+' is now '+item.lock);
+
+    _(master.items).findWhere({uid:item.uid}).lock = item.lock;
     //if (item.uid == master.item.uid) { angular.copy(item,master.item); }
     $scope.$digest();
   });

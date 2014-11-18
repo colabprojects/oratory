@@ -48,13 +48,11 @@ var q = require('q');
 var url = require('url');
 var _ = require('underscore');
 var moment = require('moment');
-var ncp = require('ncp').ncp;
 //image manipulation (for thumbnails)
 var gm = require('gm').subClass({ imageMagick: true });
 //make directory for item images:
-if (!fs.existsSync('/vagrant/www/images/items/')) {
-	fs.mkdir(__dirname + '/www/images/items/', function(err){if(err){console.log(err);}});
-	fs.mkdir(__dirname + '/www/images/history/', function(err){if(err){console.log(err);}});
+if (!fs.existsSync('/vagrant/www/media/images')) {
+	fs.mkdir('/vagrant/www/media/images/');
 }
 //default item image:
 var defaultImage = 'images/default.jpg';
@@ -162,7 +160,6 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 			//it is there
 			//add new uid to the history object
 			var historyItem;
-			var historicalImage=false;
 			historyItem=check[0];
 			historyItem.uid=generateUID();
 			historyItem.historical=true;
@@ -170,19 +167,14 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 			delete req.body._id;
 
 			req.body.edited=moment().format();
+
 			//check to see if new image was sent
 			if (check.imageURL!==req.body.imageURL){
-				//image is different
-				if(check[0].image!==defaultImage) {
-					
-					historicalImage = true;
-					historyItem.image='images/history/'+historyItem.uid+'/itemImage.jpg';
-					historyItem.thumb='images/history/'+historyItem.uid+'/itemThumb.jpg';
-				}
-
-				syncImagePromise = saveImage(req.body, historicalImage, historyItem.uid);
-				req.body.image = 'images/items/'+req.body.uid+'/itemImage.jpg';
-				req.body.thumb = 'images/items/'+req.body.uid+'/itemThumb.jpg';
+				console.log('saving new item image')
+				var mediaUID = generateUID();
+				syncImagePromise = saveImage(req.body.imageURL,mediaUID);
+				req.body.image = 'media/images/'+mediaUID+'/image.jpg';
+				req.body.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
 			}
 
 			//remove edit lock
@@ -191,7 +183,11 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 			//update and store history
 			db.itemdb.insert({type:'history', forUID:req.body.uid, historyItem:historyItem }, function (err, doc) {});
 			db.itemdb.update({uid: req.body.uid}, req.body, function (err, doc) {
-				if(err){ console.log('(error updating item) '+err); }else{ q.when(syncImagePromise).then(function(){
+				if(err){ 
+					console.log('(error updating item) '+err); 
+				}else{ 
+					q.when(syncImagePromise).then(function(){
+						console.log('sending new update io.emit');
 						io.emit('update', req.body);
 						res.send(doc)
 					}); 
@@ -209,9 +205,10 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 
 		if (req.body.imageURL) {
 			//image url provided
-			syncImagePromise = saveImage(req.body);
-			req.body.image = 'images/items/'+req.body.uid+'/itemImage.jpg';
-			req.body.thumb = 'images/items/'+req.body.uid+'/itemThumb.jpg';
+			var mediaUID = generateUID();
+			syncImagePromise = saveImage(req.body.imageURL,mediaUID);
+			req.body.image = 'media/images/'+mediaUID+'/image.jpg';
+			req.body.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
 		}else{
 			//no image, use default
 			req.body.image = defaultImage;
@@ -247,6 +244,7 @@ app.post('/api/requestLock', express.json(), function (req, res){
 		else { 
 			if (item.lock){
 				//already has a lock
+				console.log('we are here....')
 				res.send(item);
 			} else {
 				//does not have lock yet
@@ -403,52 +401,42 @@ app.get('/api/unStage/:key/:decision', function (req, res) {
 
 
 //IMAGES --------------------------------
-function saveImage(item,historicalImage,historyUID) {
+//takes a where (url), a uid to use, and who (opt - used for user added)
+//returns an object with promise and uid
+function saveImage(where,theUID,who) {
+	//images
 	var saveImagePromise = q.defer();
-	request.get({url: url.parse(item.imageURL), encoding: 'binary'}, function (err, response, body) {
-
-		console.log('trying to save the image for item: '+item.name);
-		var path = __dirname + '/www/images/items/'+item.uid+'/';
-
-		//save historical image if necessary
-		if(historicalImage){
-
-			var historyPath = __dirname+'/www/images/history/'+historyUID+'/';
-			fs.mkdir(historyPath, function(err){
-				ncp(path, historyPath, function (err) {
-					if (err) {console.error(err); } 
-				});
-			});
-
-		} else {	 
-			fs.mkdir(path, function(err) { 
-				if(err){ console.log('error making path in items/ :'+err); } 
-			});
-		}
-		setTimeout(function(){ 
-			fs.writeFile(path+"itemImage.jpg", body, 'binary', function(err) {
-		    	if(err) { 
-		    		console.log('error writing path: '+err); 
-		    		saveImagePromise.reject();
-		    	}else{ 
-		    		//save image thumbnail
-		    		console.log("The file was saved!"); 
-		    		gm(path+'itemImage.jpg').resize('60','60').gravity('center').write(path+'itemThumb.jpg', function(err) {
-		    			if(err) { 
-		    				console.log('erro saving image: '+err); 
-		    				saveImagePromise.reject();
-		    			}else{ 
-		    				//successful image save chain:
-		    				saveImagePromise.resolve();
-		    				console.log("Image thumbnail saved"); 
-		    			}
-		    		});//end save image thumb
-		    	}//end save image
-	    	});
-    	},2000);
-
-
+	request.get({url: url.parse(where), encoding: 'binary'}, function (err, response, body) {
+		console.log('trying to save image uid: '+theUID);
+		var path = '/vagrant/www/media/images/'+theUID+'/';
+		fs.mkdir(path, function(err){
+			if (err) {
+				console.log('error saving image: '+err); 
+	    		saveImagePromise.reject();
+			} else {
+				fs.writeFile(path+"image.jpg", body, 'binary', function(err) {
+			    	if(err) { 
+			    		console.log('error saving image: '+err); 
+			    		saveImagePromise.reject();
+			    	}else{ 
+			    		//save image thumbnail
+			    		console.log("the image was saved!"); 
+			    		gm(path+'image.jpg').resize('60','60').gravity('center').write(path+'thumb.jpg', function(err) {
+			    			if(err) { 
+			    				console.log('error saving thumb: '+err); 
+			    				saveImagePromise.reject();
+			    			}else{ 
+			    				//successful image save chain:
+			    				saveImagePromise.resolve();
+			    				console.log("the image thumb was saved!"); 
+			    			}
+			    		});//end save image thumb
+			    	}//end save image
+		    	});
+			}
+		});
 	});
+
 	return saveImagePromise.promise;
 }//end SAVE image
 
@@ -486,7 +474,7 @@ function changeLock(item,who,value){
 			changeLockPromise.reject();
 		} else {
 			//success
-			io.emit('update',item);
+			io.emit('lockChange',item);
 			changeLockPromise.resolve();
 		}
 	});
@@ -507,17 +495,6 @@ app.get('/api/getDbInfo', function (req,res){
 
 io.on('connection', function(socket){
   console.log('a user connected');
-  socket.on('message', function(msg){
-    console.log('message: ' + msg);
-    io.emit('message', msg);
-  });
-
-
-  socket.on('update', function(msg){
-    console.log('message: ' + msg);
-    io.emit('update', msg);
-  });
-
 });
 
 
