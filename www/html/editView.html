@@ -1,13 +1,14 @@
-<div ng-if="itemToBeEdit.lock">
-	<p>item is locked by {{itemToBeEdit.lockChangedBy}}</p>
+<div ng-if="item.lock">
+	<p>item is locked by {{item.lockChangedBy}}</p>
 </div>
-<div ng-if="!itemToBeEdit.lock||itemToBeEdit.lockChangedBy===sharedData.email">
-	<list-item item="itemToBeEdit"></list-item>
+<p ng-if="isOwner">you are an owner of this item</p>
+<div ng-if="!item.lock||item.lockChangedBy===sharedData.email">
+	<list-item item="item"></list-item>
 	<div class="container">
 		<div class="row">
 			<div class="col-xs-12 col-md-6">
-				<button class="btn btn-default" ng-click="deleteItem(itemToBeEdit)">delete</button>
-				<insert-form form-item="itemToBeEdit"></insert-form>
+				<button class="btn btn-default" ng-click="deleteItem(item)">delete</button>
+				<insert-form form-item="item" is-owner="isOwner"></insert-form>
 			</div>
 		</div>
 	</div>

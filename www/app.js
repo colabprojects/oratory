@@ -194,29 +194,33 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       templateUrl: 'html/editView.html',
       controller: function ($scope, $state, itemToBeEdit, master) {
         $scope.sharedData=master.sharedData;
-        debug=$scope.itemToBeEdit=itemToBeEdit;
-        master.item=$scope.itemToBeEdit;
+        master.item=$scope.item=itemToBeEdit;
         $scope.deleteItem=master.deleteItem;
+
+        //check if owner if not - propose changes only
+        $scope.isOwner=false;
+        if ( _($scope.item.owners).findWhere({owner:$scope.sharedData.email}) ) {
+          $scope.isOwner=true;
+        };
+
 
       }
     })
     .state('view', {
       url: '/view/:uid',
-      resolve:{
-        itemToBeView: function ($http, $stateParams, master) {
-          return $http.post('/api/getItem', {uid:$stateParams.uid}).then(function (response){
-            return response.data;
+      templateUrl: 'html/defaultView.html',
+      controller: function ($scope, $state, $stateParams, $http, master) {
+        $scope.sharedData=master.sharedData;
+        $scope.sharedData.viewFilter = {uid:$stateParams.uid};
+        $scope.sharedData.showMoreDetail[$stateParams.uid]=true;
+
+        $scope.getHistory = function() {
+          $scope.history=[];
+          $http.post('/api/getItemHistory', {uid:$stateParams.uid}).then(function (response){
+            _.map(response.data, function(item){ $scope.history.push(item.historyItem); });
+            debug=$scope.history;
           });
         }
-      },
-      templateUrl: 'html/defaultView.html',
-      controller: function ($scope, $state, itemToBeView, master) {
-        $scope.sharedData=master.sharedData;
-        $scope.itemToBeView=itemToBeView;
-        $scope.deleteItem=master.deleteItem;
-        $scope.sharedData.viewFilter = {uid:itemToBeView.uid};
-
-
       }
     });
     
@@ -339,7 +343,8 @@ itemApp.directive('insertForm', function (master, $state, $http) {
   return {
     restrict: 'E',
     scope: {
-      formItem:'='
+      formItem:'=',
+      isOwner:'='
     },
     templateUrl: 'html/insertForm.html',
     link: function(scope, element, attrs) {
@@ -373,7 +378,7 @@ itemApp.directive('insertForm', function (master, $state, $http) {
           if(!itemToBeAdded.createdBy) { 
             itemToBeAdded.createdBy = scope.sharedData.email; 
           } else {
-            itemToBeAdded.updatedBy = scope.sharedData.email;
+            itemToBeAdded.editedBy = scope.sharedData.email;
           }
           master.saveItem(itemToBeAdded); 
           master.sharedData.filter=''; 

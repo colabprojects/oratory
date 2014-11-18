@@ -8,19 +8,20 @@
     "url": ""
   },
   "dependencies": {
-    "express": "3.x",
     "body-parser": "^1.1.2",
     "errorhandler": "^1.0.1",
+    "express": "3.x",
+    "gm": "*",
+    "http": "*",
+    "jquery.cookie": "*",
     "method-override": "^1.0.0",
+    "moment": "*",
     "mongojs": "*",
-    "request":"*", 
-    "gm":"*",
-    "moment":"*",
-    "q":"*",
-    "underscore":"*",
-    "jquery.cookie":"*",
-    "socket.io":"*",
-    "http":"*"
+    "ncp": "^1.0.1",
+    "q": "*",
+    "request": "*",
+    "socket.io": "*",
+    "underscore": "*"
   },
   "scripts": {
     "start": ""

@@ -13,6 +13,7 @@
 
 console.log('server running');
 
+
 //CONFIG -------------------------------------------------------------------------------------
 //database
 var mongojs = require('mongojs');
@@ -47,11 +48,13 @@ var q = require('q');
 var url = require('url');
 var _ = require('underscore');
 var moment = require('moment');
+var ncp = require('ncp').ncp;
 //image manipulation (for thumbnails)
 var gm = require('gm').subClass({ imageMagick: true });
 //make directory for item images:
 if (!fs.existsSync('/vagrant/www/images/items/')) {
-	fs.mkdir('/vagrant/www/images/items/');
+	fs.mkdir(__dirname + '/www/images/items/', function(err){if(err){console.log(err);}});
+	fs.mkdir(__dirname + '/www/images/history/', function(err){if(err){console.log(err);}});
 }
 //default item image:
 var defaultImage = 'images/default.jpg';
@@ -137,7 +140,9 @@ app.post('/api/getItems', express.json(), function (req, res) {
 
 app.post('/api/getItemHistory', express.json(), function (req, res) {
 	db.itemdb.find({type:'history', forUID:req.body.uid},function (err, docs) {
-		if(err){ console.log('(error getting item history) '+err); }else{ res.send(docs); }
+		if(err){ console.log('(error getting item history) '+err); }else{ 
+			res.send(docs); 
+		}
 	});
 });//end GET item history
 
@@ -154,15 +159,28 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 			if (!check.length||check[0].uid!==req.body.uid) {
 				return res.send(500);
 			}
-			//it is there - update and store history
+			//it is there
+			//add new uid to the history object
+			var historyItem;
+			var historicalImage=false;
+			historyItem=check[0];
+			historyItem.uid=generateUID();
+			historyItem.historical=true;
+
 			delete req.body._id;
-			db.itemdb.insert({type:'history', forUID:req.body.uid, data:req.body }, function (err, doc) {});
+
 			req.body.edited=moment().format();
 			//check to see if new image was sent
 			if (check.imageURL!==req.body.imageURL){
 				//image is different
-				
-				syncImagePromise = saveImage(req.body);
+				if(check[0].image!==defaultImage) {
+					
+					historicalImage = true;
+					historyItem.image='images/history/'+historyItem.uid+'/itemImage.jpg';
+					historyItem.thumb='images/history/'+historyItem.uid+'/itemThumb.jpg';
+				}
+
+				syncImagePromise = saveImage(req.body, historicalImage, historyItem.uid);
 				req.body.image = 'images/items/'+req.body.uid+'/itemImage.jpg';
 				req.body.thumb = 'images/items/'+req.body.uid+'/itemThumb.jpg';
 			}
@@ -170,6 +188,8 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 			//remove edit lock
 			delete req.body.lock;
 
+			//update and store history
+			db.itemdb.insert({type:'history', forUID:req.body.uid, historyItem:historyItem }, function (err, doc) {});
 			db.itemdb.update({uid: req.body.uid}, req.body, function (err, doc) {
 				if(err){ console.log('(error updating item) '+err); }else{ q.when(syncImagePromise).then(function(){
 						io.emit('update', req.body);
@@ -183,8 +203,9 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 		req.body.uid=generateUID();
 		req.body.totalPriority=0;
 		req.body.created=moment().format();
+		req.body.edited='never';
 		//set owner as creator if not specified
-		if (!req.body.owner) { req.body.owner = req.body.createdBy; }
+		if (!req.body.owners) { req.body.owners =[]; req.body.owners.push({owner:req.body.createdBy}); }
 
 		if (req.body.imageURL) {
 			//image url provided
@@ -244,7 +265,6 @@ app.post('/api/removeLock', express.json(), function (req, res){
 	if (req.body.uid) {
 		console.log('removing lock for item: '+req.body.uid)
 		db.itemdb.findOne({uid:req.body.uid}, function (err, item){
-			console.log(item)
 			if(err||!item){ console.log('(error removing lock on item) '+err); }
 			else { 
 				syncLockPromise = changeLock(item,req.body.email, false);
@@ -383,35 +403,51 @@ app.get('/api/unStage/:key/:decision', function (req, res) {
 
 
 //IMAGES --------------------------------
-function saveImage(item) {
+function saveImage(item,historicalImage,historyUID) {
 	var saveImagePromise = q.defer();
 	request.get({url: url.parse(item.imageURL), encoding: 'binary'}, function (err, response, body) {
+
 		console.log('trying to save the image for item: '+item.name);
-		var path = '/vagrant/www/images/items/'+item.uid+'/';
-		if (fs.exists(path, function (){ return true; })) {
-			//path exists (remove then make fresh)
-			fs.rmdir(path);
+		var path = __dirname + '/www/images/items/'+item.uid+'/';
+
+		//save historical image if necessary
+		if(historicalImage){
+
+			var historyPath = __dirname+'/www/images/history/'+historyUID+'/';
+			fs.mkdir(historyPath, function(err){
+				ncp(path, historyPath, function (err) {
+					if (err) {console.error(err); } 
+				});
+			});
+
+		} else {	 
+			fs.mkdir(path, function(err) { 
+				if(err){ console.log('error making path in items/ :'+err); } 
+			});
 		}
-		fs.mkdir(path);
-	    fs.writeFile(path+"itemImage.jpg", body, 'binary', function(err) {
-	    	if(err) { 
-	    		console.log(err); 
-	    		saveImagePromise.reject();
-	    	}else{ 
-	    		//save image thumbnail
-	    		console.log("The file was saved!"); 
-	    		gm(path+'itemImage.jpg').resize('60','60').gravity('center').write(path+'itemThumb.jpg', function(err) {
-	    			if(err) { 
-	    				console.log(err); 
-	    				saveImagePromise.reject();
-	    			}else{ 
-	    				//successful image save chain:
-	    				saveImagePromise.resolve();
-	    				console.log("Image thumbnail saved"); 
-	    			}
-	    		});//end save image thumb
-	    	}//end save image
-	    }); 
+		setTimeout(function(){ 
+			fs.writeFile(path+"itemImage.jpg", body, 'binary', function(err) {
+		    	if(err) { 
+		    		console.log('error writing path: '+err); 
+		    		saveImagePromise.reject();
+		    	}else{ 
+		    		//save image thumbnail
+		    		console.log("The file was saved!"); 
+		    		gm(path+'itemImage.jpg').resize('60','60').gravity('center').write(path+'itemThumb.jpg', function(err) {
+		    			if(err) { 
+		    				console.log('erro saving image: '+err); 
+		    				saveImagePromise.reject();
+		    			}else{ 
+		    				//successful image save chain:
+		    				saveImagePromise.resolve();
+		    				console.log("Image thumbnail saved"); 
+		    			}
+		    		});//end save image thumb
+		    	}//end save image
+	    	});
+    	},2000);
+
+
 	});
 	return saveImagePromise.promise;
 }//end SAVE image

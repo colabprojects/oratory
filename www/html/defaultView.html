@@ -46,11 +46,10 @@
 </div>
 
 <div id="add-form">
-	<insert-form form-item="formItem"></insert-form>
+	<insert-form form-item="formItem" is-owner="true"></insert-form>
 </div>
 
 <div class="list-wrapper">
-
 	<div id="trees" class="row" style="background:rgba({{sharedData.trees.r}},{{sharedData.trees.g}},{{sharedData.trees.b}},.18);">
 		<div style="min-width:1100px;">
 			<!--<img src="images/trees.png" style="width:100%;">-->
@@ -65,3 +64,20 @@
 		<span class="glyphicon glyphicon-chevron-right"></span>
 	</button>
 </div>
+
+<div id="history" ng-if="page==='view'">
+	<button class="btn btn-default" ng-click="showHistory=!showHistory; getHistory();">show history</button>
+
+	<div ng-if="showHistory">
+		<div ng-repeat="oldItem in history">
+			<list-item item="oldItem"></list-item>
+		</div>
+	</div>
+
+</div>
+
+
+
+
+
+

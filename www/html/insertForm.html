@@ -15,7 +15,8 @@
 
     <customize-form ng-if="showCustom" type="formItem.type"></customize-form>
 
-    <button type="submit" ng-click="saveItem(formItem);" class="btn btn-default" ng-disabled="form.$invalid">save</button>
+    <button type="submit" ng-click="saveItem(formItem);" ng-if="isOwner" class="btn btn-default" ng-disabled="form.$invalid">save</button>
+    <button type="submit" ng-click="stageItem(formItem);" ng-if="!isOwner" class="btn btn-default" ng-disabled="form.$invalid">propose edit</button>
 	<button class="btn btn-default" ng-click="showCustom=true;" ng-hide="showCustom" ng-disabled="form.formType.$invalid">customize</button>
 	<button class="btn btn-default" ng-click="cancelCustom()" ng-show="showCustom">cancel custom</button>
 	<button class="btn btn-default" ng-click="cancelForm(formItem)">cancel</button>

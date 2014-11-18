@@ -78,7 +78,7 @@ html, body { height: 100%; }
 }
 
 .list-img { margin-left:15px; max-width:70px; padding:0; }
-.list-priority { max-width:30px; padding:0; }
+.list-priority { max-width:30px; padding: 5px 0 0 10px; }
 .list-label { margin-right:10px; font-size:11px; }
 .list-lock { width:25px; text-align:center; padding: 15px 0 0 5px; }
 
