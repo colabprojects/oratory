@@ -56,6 +56,7 @@ itemApp.factory('master', function($http, $q, $state){
   service.sharedData.filter = '';
   service.sharedData.deletedFilter = {};
   service.sharedData.showMoreDetail={};
+  service.sharedData.randomNumber=0;
   if (email) { service.sharedData.email = email; }
   service.sharedData.showDeleted = false;
   service.sharedData.pages = ['everything', 'inventory', 'projects','books','map','calendar'];
@@ -293,6 +294,7 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
   
   socket.on('update', function(item){
     console.log('UPDATE!');
+    master.sharedData.randomNumber++;
     angular.copy(item, _(master.items).findWhere({uid:item.uid}));
     //if (item.uid == master.item.uid) { angular.copy(item,master.item); }
     $scope.$digest();
@@ -574,11 +576,6 @@ itemApp.directive('listItem', function ($state, $http, master) {
         scope.sharedData.showMoreDetail[uid]=!scope.sharedData.showMoreDetail[uid];
 
       };
-
-      scope.random = function() {
-        return Math.random();
-      };
-
     }
   }
 });
