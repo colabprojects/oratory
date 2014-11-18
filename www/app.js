@@ -573,7 +573,11 @@ itemApp.directive('listItem', function ($state, $http, master) {
       scope.showMoreDetails = function(uid) {
         scope.sharedData.showMoreDetail[uid]=!scope.sharedData.showMoreDetail[uid];
 
-      }
+      };
+
+      scope.random = function() {
+        return Math.random();
+      };
 
     }
   }
