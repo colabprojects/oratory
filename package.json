@@ -8,6 +8,7 @@
     "url": ""
   },
   "dependencies": {
+    "binaryjs": "^0.2.1",
     "body-parser": "^1.1.2",
     "errorhandler": "^1.0.1",
     "express": "3.x",
