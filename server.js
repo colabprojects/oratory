@@ -155,9 +155,10 @@ app.post('/api/saveItem', express.json(), function (req, res) {
 	//new media
 	if(req.body.newMedia) {
 		userMediaUID=generateUID();
+		console.log('media url: '+req.body.mediaUrl);
 		saveImage(req.body.mediaUrl,userMediaUID);
 		delete req.body.newMedia;
-		if(!req.body.media) { req.body.media = {}; }
+		if(!req.body.media) { req.body.media = []; }
 		req.body.media.push({image:'media/images/'+userMediaUID+'/image.jpg',thumb:'media/images/'+userMediaUID+'/thumb.jpg',});
 	}
 
