@@ -570,7 +570,7 @@ itemApp.directive('listItem', function ($state, $http, master) {
 
       if (scope.trees) { 
         scope.sharedData.trees = scope.colors; 
-        $('body').css('background','rgba('+scope.sharedData.trees.r+','+scope.sharedData.trees.g+','+scope.sharedData.trees.b+',.18)'); 
+        $('body').css('background','rgba('+scope.sharedData.trees.r+','+scope.sharedData.trees.g+','+scope.sharedData.trees.b+',.05)'); 
       }
 
       scope.$watch('item.imageURL',function(url){
