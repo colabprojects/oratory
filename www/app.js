@@ -192,10 +192,11 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         }
       },
       templateUrl: 'html/editView.html',
-      controller: function ($scope, $state, itemToBeEdit, master) {
+      controller: function ($scope, $state, $stateParams, itemToBeEdit, master) {
         $scope.sharedData=master.sharedData;
         master.item=$scope.item=itemToBeEdit;
-        $scope.deleteItem=master.deleteItem;
+        $scope.page=$state.current.name;
+        $scope.sharedData.showMoreDetail[$stateParams.uid]=true;
 
         //check if owner if not - propose changes only
         $scope.isOwner=false;
@@ -299,7 +300,7 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
   socket.on('update', function(item){
     console.log('UPDATE!');
     angular.copy(item, _(master.items).findWhere({uid:item.uid}));
-    //if (item.uid == master.item.uid) { angular.copy(item,master.item); }
+    if (item.uid == master.item.uid) { angular.copy(item,master.item); }
     $scope.$digest();
   });
 
@@ -340,7 +341,7 @@ itemApp.directive('formElement', function ($http) {
       if (scope.field.type=='radio') {
         scope.templateUrl = 'html/formElement_radio.html';
         //defaults
-        if(scope.field.default) { scope.formItem[scope.field.name]=scope.field.default; }
+        if((scope.field.default)&&(scope.formItem[!scope.field.name])) { scope.formItem[scope.field.name]=scope.field.default; }
       }
     }
   }
@@ -397,6 +398,11 @@ itemApp.directive('insertForm', function (master, $state, $http) {
           scope.cancelForm(); 
         }
       };
+
+      scope.stageItem = function(item){
+        
+      }
+
       scope.cancelForm = function(item){
         if(item){
           //need to remove lock
@@ -628,6 +634,31 @@ itemApp.directive('showComment', function ($state, $filter, $http, master) {
     }
   }
 });
+
+itemApp.directive('itemToolbar', function ($state, $http, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      item:'=',
+      isOwner:'='
+    },
+    templateUrl: 'html/itemToolbar.html',
+    link: function(scope, element, attrs) {
+      scope.sharedData = master.sharedData;
+      scope.colors = master.color(scope.item);
+      scope.deleteItem=master.deleteItem;
+
+      scope.addOwner = function(){
+
+      };
+
+
+
+    }
+  }
+});
+
+
 
 itemApp.filter('regex', function() {
   return function(input, field, regex) {

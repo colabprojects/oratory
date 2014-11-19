@@ -82,6 +82,8 @@ html, body { height: 100%; }
 .list-label { margin-right:10px; font-size:11px; }
 .list-lock { width:25px; text-align:center; padding: 15px 0 0 5px; }
 
+.edit-view { width:100%; }
+
 .attachment-label { margin:0 8px; }
 
 .navbar-toggle { float: left; margin-left: 15px; }
@@ -91,6 +93,7 @@ html, body { height: 100%; }
 .margin-md { margin-bottom: 15px; margin-top:15px; }
 .pad-top { padding-top:15px; }
 .remove-round { border-radius: 0; border-right:0; }
+.width100 { width:100% !important; }
 
 .navbar-default { background:transparent; border:none;}
 
