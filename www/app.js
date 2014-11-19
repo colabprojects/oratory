@@ -387,6 +387,11 @@ itemApp.directive('insertForm', function (master, $state, $http) {
           } else {
             itemToBeAdded.editedBy = scope.sharedData.email;
           }
+          if($('#show-picture').attr('src')!=='about:blank') {
+            //camera was used
+            itemToBeAdded.newMedia=true;
+            itemToBeAdded.mediaUrl=$('#show-picture').attr('src');
+          }
           master.saveItem(itemToBeAdded); 
           master.sharedData.filter=''; 
           scope.cancelForm(); 

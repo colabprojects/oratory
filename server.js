@@ -152,6 +152,15 @@ app.post('/api/getItem', express.json(), function (req, res) {
 
 app.post('/api/saveItem', express.json(), function (req, res) {
 	var syncImagePromise;
+	//new media
+	if(req.body.newMedia) {
+		userMediaUID=generateUID();
+		saveImage(req.body.mediaUrl,userMediaUID);
+		delete req.body.newMedia;
+		if(!req.body.media) { req.body.media = {}; }
+		req.body.media.push({image:'media/images/'+userMediaUID+'/image.jpg',thumb:'media/images/'+userMediaUID+'/thumb.jpg',});
+	}
+
 	if (req.body.uid) {
 		db.itemdb.find({uid:req.body.uid}, function (err, check) {
 			if (!check.length||check[0].uid!==req.body.uid) {
