@@ -14,7 +14,6 @@ itemApp.factory('master', function($http, $q, $state){
   service.items=[];
   service.item={};
 
-
   service.refreshItems=function(){
     return $http.post('/api/getItems').then(function (response) {
       return angular.copy(response.data, service.items);
@@ -35,7 +34,7 @@ itemApp.factory('master', function($http, $q, $state){
   service.deleteItem = function(itemToBeDeleted){
     return $http.post('/api/deleteItem', itemToBeDeleted).success(function (data){
       return service.refreshItems().then(function (data){
-        return $state.go('everything'); 
+        return window.history.back(); 
       }); 
     });
   };
@@ -56,7 +55,6 @@ itemApp.factory('master', function($http, $q, $state){
   service.sharedData.filter = '';
   service.sharedData.deletedFilter = {};
   service.sharedData.showMoreDetail={};
-  service.sharedData.randomNumber=0;
   if (email) { service.sharedData.email = email; }
   service.sharedData.showDeleted = false;
   service.sharedData.pages = ['everything', 'inventory', 'projects','books','map','calendar'];
@@ -171,7 +169,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       controller: function ($scope, allEvents, master) {
         $scope.insertCalendar= function() {
           $scope.sharedData=master.sharedData;
-          debug=allEvents;
+          allEvents;
           $('#insert-calendar').fullCalendar({
             //settings
             events: allEvents
@@ -189,19 +187,26 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
           return $http.post('/api/requestLock', {uid:$stateParams.uid,email:master.sharedData.email}).then(function (response){
             return response.data;
           });
+        },
+        allChanges: function ($http, $stateParams, master) {
+          return $http.post('/api/getItems', {type:'staged',forUID:$stateParams.uid}).then(function (response){
+            return response.data;
+          });
         }
       },
       templateUrl: 'html/editView.html',
-      controller: function ($scope, $state, $stateParams, itemToBeEdit, master) {
+      controller: function ($scope, $state, $stateParams, itemToBeEdit, allChanges, master) {
         $scope.sharedData=master.sharedData;
         master.item=$scope.item=itemToBeEdit;
         $scope.page=$state.current.name;
         $scope.sharedData.showMoreDetail[$stateParams.uid]=true;
+        $scope.allChanges=_(allChanges).where({forUID:$stateParams.uid});
 
         //check if owner if not - propose changes only
         $scope.isOwner=false;
-        if ( _($scope.item.owners).findWhere({owner:$scope.sharedData.email}) ) {
+        if ( _.contains($scope.item.owners, $scope.sharedData.email)) {
           $scope.isOwner=true;
+          console.log('is owner: '+$scope.isOwner+'because '+$scope.sharedData.email+' is found in '+$scope.item.owners);
         };
 
 
@@ -209,17 +214,23 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     })
     .state('view', {
       url: '/view/:uid',
-      templateUrl: 'html/defaultView.html',
-      controller: function ($scope, $state, $stateParams, $http, master) {
+      resolve:{
+        itemToBeView: function ($http, $stateParams, master) {
+          return $http.post('/api/getItem', {uid:$stateParams.uid}).then(function (response){
+            return response.data;
+          });
+        }
+      },
+      templateUrl: 'html/viewView.html',
+      controller: function ($scope, $state, $stateParams, $http, itemToBeView, master) {
         $scope.sharedData=master.sharedData;
-        $scope.sharedData.viewFilter = {uid:$stateParams.uid};
         $scope.sharedData.showMoreDetail[$stateParams.uid]=true;
+        master.item=$scope.item=itemToBeView;
 
         $scope.getHistory = function() {
           $scope.history=[];
           $http.post('/api/getItemHistory', {uid:$stateParams.uid}).then(function (response){
             _.map(response.data, function(item){ $scope.history.push(item.historyItem); });
-            debug=$scope.history;
           });
         }
       }
@@ -233,6 +244,7 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
   $scope.dbInfo=master.getDbInfo;
   $scope.items = master.items;
   $scope.sharedData = master.sharedData;
+  $scope.sharedData.options=false;
 
   $scope.$on('$stateChangeSuccess', function(event, toState, toParam, fromState, fromParam){ 
     $scope.page = toState.name;   
@@ -257,6 +269,10 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
   $scope.$watch('sharedData.email', function(email){
     master.setItemPriorities();
   });
+
+  $scope.showOptions = function(){
+    $scope.sharedData.options=!$scope.sharedData.options;
+  }
  
   $scope.showForm = function() {
     $('#add-form').animate({top:'0px'});
@@ -312,6 +328,24 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
     $scope.$digest();
   });
 
+  socket.on('priorityChange', function(item){
+    console.log('priority changed! - '+item.name+' is now '+item.totalPriority);
+    angular.copy(item,_(master.items).findWhere({uid:item.uid}));
+    master.setItemPriorities(); 
+    $scope.$digest();
+  });
+
+  socket.on('comment', function(item){
+    console.log('new comment for '+item.name+'!');
+    angular.copy(item,_(master.items).findWhere({uid:item.uid}));
+    master.setItemPriorities(); 
+    $scope.$digest();
+  });
+
+  socket.on('proposedChange', function(forUID){
+    _(master.items).findWhere({uid:forUID}).proposedChanges=true;
+    $scope.$digest();
+  });
 
 });
 
@@ -364,8 +398,6 @@ itemApp.directive('insertForm', function (master, $state, $http) {
       if(!scope.formItem) { 
         scope.formItem={}; 
         scope.formItem.name=scope.filter; 
-        
-        scope.formItem.createdBy = scope.sharedData.email;
       }
 
       if (scope.formItem.type != 'deleted') {
@@ -388,19 +420,20 @@ itemApp.directive('insertForm', function (master, $state, $http) {
           } else {
             itemToBeAdded.editedBy = scope.sharedData.email;
           }
-          if($('#show-picture').attr('src')!=='about:blank') {
-            //camera was used
-            itemToBeAdded.newMedia=true;
-            itemToBeAdded.mediaUrl=$('#show-picture').attr('src');
-          }
+
           master.saveItem(itemToBeAdded); 
           master.sharedData.filter=''; 
           scope.cancelForm(); 
         }
       };
 
-      scope.stageItem = function(item){
-        
+      scope.stageItemChanges = function(item){
+        if (scope.form.$valid) {
+          item.proposedBy = scope.sharedData.email;
+          $http.post('/api/stageItemChanges',item).then(function(response){
+              scope.cancelForm();
+          });
+        }
       }
 
       scope.cancelForm = function(item){
@@ -541,11 +574,13 @@ itemApp.directive('itemPriority', function ($state, $http, master) {
           uid:scope.item.uid, 
           email:scope.sharedData.email, 
           value:(userPriority===how)?0:how
-        }).then(function(response){
+        })
+        /*
+        .then(function(response){
           angular.copy(response.data, scope.item);
           master.setItemPriorities(); 
         });
-
+        */
       };
     }
   }
@@ -557,8 +592,7 @@ itemApp.directive('listItem', function ($state, $http, master) {
     scope: {
       item:'=',
       page:'=',
-      priority:'=',
-      trees:'='
+      priority:'='
     },
     templateUrl: 'html/listItem.html',
     link: function(scope, element, attrs) {
@@ -567,11 +601,6 @@ itemApp.directive('listItem', function ($state, $http, master) {
       scope.colors = master.color(scope.item);
 
       if (scope.page === 'view') { scope.showMoreDetail[scope.item.uid]=true; }
-
-      if (scope.trees) { 
-        scope.sharedData.trees = scope.colors; 
-        $('body').css('background','rgba('+scope.sharedData.trees.r+','+scope.sharedData.trees.g+','+scope.sharedData.trees.b+',.05)'); 
-      }
 
       scope.$watch('item.imageURL',function(url){
         scope.editThumb = url;
@@ -612,6 +641,7 @@ itemApp.directive('itemDetail', function ($state, $filter, $http, master) {
     templateUrl: 'html/itemDetail.html',
     link: function(scope, element, attrs) {
       scope.showRaw = {};
+      scope.colors = master.color(scope.item);
 
       scope.addComment = function(item){
           $http.post('/api/addComment', {uid:item.uid,email:master.sharedData.email,comment:scope.comment}).then(function(res){
@@ -619,18 +649,6 @@ itemApp.directive('itemDetail', function ($state, $filter, $http, master) {
           });
 
       }
-    }
-  }
-});
-
-itemApp.directive('showComment', function ($state, $filter, $http, master) {
-  return {
-    restrict: 'E',
-    scope: {
-      comment:'='
-    },
-    templateUrl: 'html/showComment.html',
-    link: function(scope, element, attrs) {
     }
   }
 });
@@ -652,11 +670,114 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
 
       };
 
+      scope.goBack = function(){
+        window.history.back();
+      }
+    }
+  }
+});
+
+itemApp.directive('itemProposedChanges', function ($state, $http, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      item:'=',
+      allChanges:'=',
+      isOwner:'='
+    },
+    templateUrl: 'html/itemProposedChanges.html',
+    link: function(scope, element, attrs) {
+      debug=scope.allChanges;
+    }
+  }
+});
+
+itemApp.directive('itemChange', function ($state, $http, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      original:'=',
+      changed:'=',
+      key:'=',
+      isOwner:'='
+    },
+    templateUrl: 'html/itemChange.html',
+    link: function(scope, element, attrs) {
+      scope.changedFields = [];
+      scope.item=master.item;
+      scope.sharedData=master.sharedData;
+
+      for (key in scope.changed){
+        if (angular.toJson(scope.changed[key])!==angular.toJson(scope.original[key])){
+          //console.log('difference in '+key+' is '+JSON.stringify(scope.changed[key])+' -- original:'+JSON.stringify(scope.original[key]));
+          if((key!=='lockChangedBy')&&(key!=='lockChangedAt')&&(key!=='edited')&&(key!=='editedBy')&&(key!=='image')&&(key!=='lock')&&(key!=='imageURL')&&(key!=='owners')) {
+            
+            var dildo = {};
+            dildo[key]=scope.changed[key];
+            console.log(dildo);
+            scope.changedFields.push(dildo);
+          }
+        }
+      }
+      debug=scope.changedFields;
+      //check to see if dildo is empty
+      
+
+      scope.mergeChange = function (field, value, yesno){
+        console.log(field+" is going to be "+value);
+        console.log(scope.item)
+        if (field==='thumb'){
+          //special image handling
+          scope.item['thumb']=value;
+          scope.item['image']=scope.changed['image'];
+          scope.item['imageURL']=scope.changed['imageURL'];
+
+        } else {
+          //standard update
+          scope.item[field]=value;
+        }
+
+        //change decision
+        //(key, email, field, decision)
+        var decisionObj = {}
+        decisionObj['key']=scope.key;
+        decisionObj['email']=scope.sharedData.email;
+        decisionObj['field']=field;
+        decisionObj['decision']=yesno;
+
+        $http.post('/api/decision',decisionObj).then(function (response){
+          master.saveItem(scope.item);
+        })
+
+        /*
+        var findValue={};
+        findValue[field]=value;
+        console.log('findvalue='+JSON.stringify(findValue))
+        delete _.findWhere(scope.changedFields, findValue);
+        */
+      };
+
+
 
 
     }
   }
 });
+
+
+itemApp.directive('showComment', function ($state, $filter, $http, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      comment:'='
+    },
+    templateUrl: 'html/showComment.html',
+    link: function(scope, element, attrs) {
+    }
+  }
+});
+
+
 
 
 

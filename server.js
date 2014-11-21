@@ -1,10 +1,8 @@
 //be careful with plurals - all the singular words are dealing with one object, and the plurals are dealing with multiple
 //database types:
 //	item
-//	location
 //	staged
 //	history
-//  stageLock
 //  settings
 //allowable push changes:
 //	lock
@@ -12,6 +10,17 @@
 //	comment
 
 console.log('server running');
+
+//new media
+/*
+if(req.body.newMedia) {
+	userMediaUID=generateUID();
+	console.log('media url: '+req.body.mediaUrl);
+	delete req.body.newMedia;
+	if(!req.body.media) { req.body.media = []; }
+	req.body.media.push({image:'media/images/'+userMediaUID+'/image.jpg',thumb:'media/images/'+userMediaUID+'/thumb.jpg',});
+}
+*/
 
 
 //CONFIG -------------------------------------------------------------------------------------
@@ -48,6 +57,7 @@ var q = require('q');
 var url = require('url');
 var _ = require('underscore');
 var moment = require('moment');
+var jquery = require('jquery');
 //image manipulation (for thumbnails)
 var gm = require('gm').subClass({ imageMagick: true });
 //make directory for item images:
@@ -56,7 +66,6 @@ if (!fs.existsSync('/vagrant/www/media/images')) {
 }
 //default item image:
 var defaultImage = 'images/default.jpg';
-var BinaryServer = require('binaryjs').BinaryServer;
 
 var dbInfo = {
     formElements:['text', 'textarea', 'url'],
@@ -152,100 +161,142 @@ app.post('/api/getItem', express.json(), function (req, res) {
 });//end 'GET' (single) item - send the uid and retrieve item (untested - send multiple uid's?)
 
 app.post('/api/saveItem', express.json(), function (req, res) {
-	var syncImagePromise;
-	//new media
-	/*
-	if(req.body.newMedia) {
-		userMediaUID=generateUID();
-		console.log('media url: '+req.body.mediaUrl);
-		delete req.body.newMedia;
-		if(!req.body.media) { req.body.media = []; }
-		req.body.media.push({image:'media/images/'+userMediaUID+'/image.jpg',thumb:'media/images/'+userMediaUID+'/thumb.jpg',});
-	}
-	*/
+	var syncItemPromise;
 	if (req.body.uid) {
 		db.itemdb.find({uid:req.body.uid}, function (err, check) {
 			if (!check.length||check[0].uid!==req.body.uid) {
 				return res.send(500);
 			}
 			//it is there
-			//add new uid to the history object
-			var historyItem;
-			historyItem=check[0];
-			historyItem.uid=generateUID();
-			historyItem.historical=true;
-
-			delete req.body._id;
-
-			req.body.edited=moment().format();
-
-			//check to see if new image was sent
-			if (check.imageURL!==req.body.imageURL){
-				console.log('saving new item image')
-				var mediaUID = generateUID();
-				syncImagePromise = saveImage(req.body.imageURL,mediaUID);
-				req.body.image = 'media/images/'+mediaUID+'/image.jpg';
-				req.body.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
-			}
-
-			//remove edit lock
-			delete req.body.lock;
-
-			//update and store history
-			db.itemdb.insert({type:'history', forUID:req.body.uid, historyItem:historyItem }, function (err, doc) {});
-			db.itemdb.update({uid: req.body.uid}, req.body, function (err, doc) {
-				if(err){ 
-					console.log('(error updating item) '+err); 
-				}else{ 
-					q.when(syncImagePromise).then(function(){
-						console.log('sending new update io.emit');
-						io.emit('update', req.body);
-						res.send(doc)
-					}); 
-				}
-			});
+			syncItemPromise=updateItem(req.body, check[0]);
+			q.when(syncItemPromise).then(function(){
+				res.send(200);
+			}); 
 		});
 	} else {
 		//brand new item!!!
-		req.body.uid=generateUID();
-		req.body.totalPriority=0;
-		req.body.created=moment().format();
-		req.body.edited='never';
-		//set owner as creator if not specified
-		if (!req.body.owners) { req.body.owners =[]; req.body.owners.push({owner:req.body.createdBy}); }
-
-		if (req.body.imageURL) {
-			//image url provided
-			var mediaUID = generateUID();
-			syncImagePromise = saveImage(req.body.imageURL,mediaUID);
-			req.body.image = 'media/images/'+mediaUID+'/image.jpg';
-			req.body.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
-		}else{
-			//no image, use default
-			req.body.image = defaultImage;
-			req.body.thumb = defaultImage;
-		}
-		db.itemdb.insert(req.body, function (err, doc) { 
-			if(err){ console.log('(error saving item) '+err); }else{ 
-				q.when(syncImagePromise).then(function(){
-					
-						console.log('item: ' + doc.uid);
-					    io.emit('new', doc);
-
-					res.send(doc);
-				}); 
-			} 
-		});
+		syncItemPromise=newItem(req.body);
+		q.when(syncItemPromise).then(function(){
+			res.send(200);
+		}); 
+		
 	}
 });//end SAVE single item
 
+app.post('/api/stageItemChanges', express.json(), function (req, res) {
+	var newItem=req.body;
+	if (newItem.uid) {
+		db.itemdb.find({uid:newItem.uid}, function (err, check) {
+			if (!check.length||check[0].uid!==newItem.uid) {
+				return res.send(500);
+			}
+			//it is there
+			var originalItem=check[0];
+			var proposer = newItem.proposedBy;
+			if(proposer){
+				newKey=generateKey();
+				delete newItem.proposedBy;
+
+				var stagedChanges=[];
+
+				//save image if one
+				if (originalItem.imageURL!==newItem.imageURL){
+					console.log('saving new item image')
+					var mediaUID = generateUID();
+					saveImage(newItem.imageURL,mediaUID);
+					newItem.image = 'media/images/'+mediaUID+'/image.jpg';
+					newItem.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
+				}
+				
+
+				for (key in newItem){
+					if (JSON.stringify(newItem[key])!==JSON.stringify(originalItem[key])){
+						//console.log('difference in '+key+' is '+JSON.stringify(scope.changed[key])+' -- original:'+JSON.stringify(scope.original[key]));
+						if((key!=='lockChangedBy')&&(key!=='lockChangedAt')&&(key!=='edited')&&(key!=='editedBy')&&(key!=='image')&&(key!=='lock')&&(key!=='imageURL')&&(key!=='owners')) {
+							var aChange = {};
+							_.map(originalItem.owners, function(owner) { aChange[owner]=''; });
+							aChange['what']=key;
+							aChange['value']=newItem[key];
+							stagedChanges.push(aChange);
+						}
+					}
+				}
+
+
+				if (stagedChanges.length!==0){
+					db.itemdb.insert({type:'staged', forUID:newItem.uid, key:newKey, proposed:moment().format(), proposedBy:proposer, changes:stagedChanges}, function (err, doc) {
+						if(err){ 
+							console.log('(error staging item changes) '+err); 
+						}else{ 
+							originalItem.proposedChanges=true;
+							db.itemdb.update({uid: newItem.uid}, {$set:{proposedChanges:true}}, function (err, doc2) {
+								if(err){ 
+									console.log('(error setting staged changes flag on item) '+err); 
+								} else {
+									//success
+									res.send(200);
+									io.emit('proposedChange',newItem.uid);
+								}
+							});
+						}
+					});
+				} else {
+					//no mods
+				}
+
+			} else {
+				//fail - no proposedBy
+			}
+		});
+	} else { 
+		//no item found matching that uid
+	}
+});//end 'STAGE' changes
+
+app.post('/api/decision', express.json(), function (req, res){
+	var syncItemPromise;
+	db.itemdb.find({key:req.body.key}, function (err, check) {
+		if (!check.length||check[0].key!==req.body.key) {
+			return res.send(500);
+		}
+		//it is there
+		syncItemPromise=changeDecision(check[0], req.body.email, req.body.field, req.body.decision);
+		q.when(syncItemPromise).then(function(){
+			//check if all decisions are made
+			db.itemdb.find({key:req.body.key}, function (err, check2) {
+				var done = true;
+				var allDec = check2[0].modifiedItem[req.body.field].decisions;
+				for (k in allDec) {
+					if (allDec[k]==='') { done=false; }
+				}
+
+				if (done) {
+					db.itemdb.update({uid:check2[0].forUID}, {$set:{}} )
+				}
+			}); 	
+
+			
+		}); 
+	});
+
+});
+
+
 app.post('/api/deleteItem', express.json(), function (req, res){
+	var syncItemPromise;
 	req.body.oldType = req.body.type;
 	req.body.type = 'deleted';
-	delete req.body._id;
-	db.itemdb.update({uid:req.body.uid}, req.body, function (err, doc){
-		if(err){ consold.log('(error deleting item) '+err); }else { res.send(doc); }
+	db.itemdb.find({uid:req.body.uid}, function (err, check) {
+		if (!check.length||check[0].uid!==req.body.uid) {
+			return res.send(500);
+		}
+		//it is there
+		syncItemPromise=updateItem(req.body, check[0]);
+		q.when(syncItemPromise).then(function(){
+			res.send(200);
+		}); 
 	});
+
 });//end DELETE item
 
 app.post('/api/requestLock', express.json(), function (req, res){
@@ -336,7 +387,7 @@ app.post('/api/setPriority', express.json(), function (req, res){
 		 		doc.priority=newPriority;
 			 	db.itemdb.update({uid:req.body.uid}, {$set:{priority:newPriority, totalPriority:totalPriority}}, function (err,doc2){
 			 		if(err){ console.log('(error updating priority) '+err); }else{ 
-			 			io.emit('update', doc);
+			 			io.emit('priorityChange', doc);
 			 			res.send(doc); 
 			 		}
 			 	});
@@ -359,7 +410,7 @@ app.post('/api/addComment', express.json(), function (req, res) {
 			pushValue.$set['comments'] = item.comments; 
 			db.itemdb.update({uid: req.body.uid}, pushValue, function (err, doc) {
 				if(err){ console.log('(error updating comments) '+err); }else{ 
-					io.emit('update', item);
+					io.emit('comment', item);
 					res.send(doc); 
 				}
 			});
@@ -368,54 +419,144 @@ app.post('/api/addComment', express.json(), function (req, res) {
 
 });//end add comment
 
-/*
-//of the form {pushToUID: something, push: thekey, value: thevalue}
-app.post('/api/pushToItem', express.json(), function (req, res) {
-	var pushValue = {};
-	pushValue.$set = {};
-	pushValue.$set[req.body.push] = req.body.value; 
-	db.itemdb.update({uid: req.body.pushToUID}, pushValue, function (err, doc) {
-		if(err){ console.log('(error updating item) '+err); }else{ res.send(doc); }
-	});
 
-});//end PUSH to single item
-*/
 
-app.post('/api/stageItem', express.json(), function (req, res) {
-	db.itemdb.insert({type:'staged', key:req.body.actionKey, modifiedItem:req.body.data}, function (err, doc) {
-		if(err){ console.log('(error staging item) '+err); }else{ res.send(doc); }
-	});
-});//end 'STAGE' single item
+//ITEMS --------------------------------
+function updateItem(newItem, oldItem, stage){
+	//returns a promise
+	var saveItemPromise = q.defer();
+	var syncImagePromise;
 
-app.get('/api/unStage/:key/:decision', function (req, res) {
-	if (req.params.decision) { //true!
-		//find the staged item based on key
-		db.itemdb.find({type:'staged', key:req.params.key}, function (err, doc) {
-			//for some reason - it is returning an array......
-			modifiedItem = doc[0].modifiedItem;
-			//slap in the historical item
-			db.itemdb.find({uid:modifiedItem.uid}, function (err, old) {
-				db.itemdb.insert({type:'history', forUID:old[0].uid, data:old[0] }, function (err, doc) {});
-			});
-			//remove stageLock
-			modifiedItem.stageLock = false;
-			modifiedItem.lock = false;
-			//update with new item data
-			db.itemdb.update({uid:modifiedItem.uid}, modifiedItem);
-		});
-		//remove the staged item
-		db.itemdb.remove({type:'staged', key:req.params.key}, function (err, doc) {});
-	} else { //false
-		console.log('decided against it...');
+	if (oldItem.imageURL!==newItem.imageURL){
+		console.log('saving new item image')
+		var mediaUID = generateUID();
+		syncImagePromise = saveImage(newItem.imageURL,mediaUID);
+		newItem.image = 'media/images/'+mediaUID+'/image.jpg';
+		newItem.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
 	}
-});//end 'UNSTAGE' single item
 
+	if (stage){
+		var proposer = newItem.proposedBy;
+		if(proposer){
+
+			newKey=generateKey();
+			delete newItem.proposedBy;
+
+			var itemModifications={};
+
+			for (key in newItem){
+				if (JSON.stringify(newItem[key])!==JSON.stringify(oldItem[key])){
+					//console.log('difference in '+key+' is '+JSON.stringify(scope.changed[key])+' -- original:'+JSON.stringify(scope.original[key]));
+					var ownerDecisions = {};
+					_.map(oldItem.owners, function(owner) { ownerDecisions[owner]=''; });
+					if((key!=='lockChangedBy')&&(key!=='lockChangedAt')&&(key!=='edited')&&(key!=='editedBy')&&(key!=='image')&&(key!=='lock')&&(key!=='imageURL')&&(key!=='owners')) {
+						itemModifications[key]={value:newItem[key],decisions:ownerDecisions};
+					}
+				}
+			}
+
+
+			if (!isEmpty(itemModifications)){
+				db.itemdb.insert({type:'staged', forUID:newItem.uid, key:newKey, proposed:moment().format(), proposedBy:proposer, modifiedItem:itemModifications}, function (err, doc) {
+					if(err){ 
+						saveItemPromise.reject();
+						console.log('(error staging item) '+err); 
+					}else{ 
+						newItem.proposedChanges=true;
+						db.itemdb.update({uid: newItem.uid}, {$set:{proposedChanges:true}}, function (err, doc2) {
+							if(err){ 
+								console.log('(error setting staged changes flag on item) '+err); 
+								saveItemPromise.resolve();
+							} else {
+								//success
+								saveItemPromise.resolve();
+								io.emit('proposedChange',newItem.uid);
+							}
+						});
+					}
+				});
+			} else {
+				//no mods
+				saveItemPromise.reject();
+			}
+
+		} else {
+			//fail - no proposedBy
+			saveItemPromise.reject();
+		}
+	} else {//owner updating
+		//add new uid to the history object
+		var historyItem;
+		historyItem=oldItem;
+		historyItem.uid=generateUID();
+		historyItem.historical=true;
+		//update and store history
+		db.itemdb.insert({type:'history', forUID:newItem.uid, historyItem:historyItem }, function (err, doc) {});
+
+		newItem.edited=moment().format();
+		newItem.lock=false;
+		delete newItem._id;
+		//check to see if new image was sent
+		
+		db.itemdb.update({uid: newItem.uid}, newItem, function (err, doc) {
+			if(err){ 
+				console.log('(error updating item) '+err); 
+				saveItemPromise.reject(); 
+			}else{ 
+				q.when(syncImagePromise).then(function(){
+					saveItemPromise.resolve();
+					console.log('sending new update io.emit');
+					io.emit('update', newItem);
+				}); 
+			}
+		});
+	}
+
+	return saveItemPromise.promise;
+}
+
+function newItem(newItem){
+	//returns a promise
+	var saveItemPromise = q.defer();
+	var syncImagePromise;
+	newItem.uid=generateUID();
+	newItem.totalPriority=0;
+	newItem.created=moment().format();
+	newItem.edited='never';
+	//set owner as creator if not specified
+	if (!newItem.owners) { newItem.owners =[]; newItem.owners.push(newItem.createdBy); }
+
+	if (newItem.imageURL) {
+		//image url provided
+		var mediaUID = generateUID();
+		syncImagePromise = saveImage(newItem.imageURL,mediaUID);
+		newItem.image = 'media/images/'+mediaUID+'/image.jpg';
+		newItem.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
+	}else{
+		//no image, use default
+		newItem.image = defaultImage;
+		newItem.thumb = defaultImage;
+	}
+	db.itemdb.insert(newItem, function (err, doc) { 
+		if(err){ 
+			console.log('(error saving item) '+err);
+			saveItemPromise.reject(); 
+		}else{ 
+			q.when(syncImagePromise).then(function(){
+				saveItemPromise.resolve();
+				console.log('item: ' + doc.uid);
+			    io.emit('new', doc);
+			}); 
+		} 
+	});
+
+	return saveItemPromise.promise;
+}
 
 //IMAGES --------------------------------
 //takes a where (url), a uid to use, and who (opt - used for user added)
-//returns an object with promise and uid
 function saveImage(where,theUID,who) {
-	//images
+	//returns a promise
 	var saveImagePromise = q.defer();
 	request.get({url: url.parse(where), encoding: 'binary'}, function (err, response, body) {
 		console.log('trying to save image uid: '+theUID);
@@ -451,26 +592,6 @@ function saveImage(where,theUID,who) {
 	return saveImagePromise.promise;
 }//end SAVE image
 
-
-//EMAILS --------------------------------
-app.post('/api/sendEmail', express.json(), function (req, res){
-
-	console.log('trying to send email to ' + req.body.to);
-	smtpTrans.sendMail({
-	    from: 'Robot <colabrobot@gmail.com>',
-	    to: req.body.to,
-	    subject: req.body.subject,
-	    text: 'text body',
-	    html: req.body.HTMLbody
-	}, function (err, doc){
-	    if(err){ console.log(err); }else{ 
-	    	//email was sent!
-	    	res.send(250);
-	    	console.log('Message sent: ' + doc.response); }
-	});
-    
-});
-
 //LOCKS --------------------------------
 function changeLock(item,who,value){
 	var changeLockPromise = q.defer();
@@ -493,6 +614,26 @@ function changeLock(item,who,value){
 	return changeLockPromise.promise;
 }
 
+function changeDecision(staged, who, what, value){
+	var changeDecisionPromise = q.defer();
+	var time = moment().format();
+
+	staged.modifiedItem[what].decisions[who]=value;
+
+	db.itemdb.update({key: staged.key}, {$set:{modifiedItem:staged.modifiedItem}}, function (err, doc) {
+		if(err){ 
+			console.log('(error changing decisions on item) '+err); 
+			changeDecisionPromise.reject();
+		} else {
+			//success
+			io.emit('decisionChange',staged);
+			changeDecisionPromise.resolve();
+		}
+	});
+
+	return changeDecisionPromise.promise;
+} 
+
 	
 
 //DICTIONARIES --------------------------------
@@ -509,9 +650,19 @@ io.on('connection', function(socket){
 });
 
 
+function isEmpty(obj) {
+  return Object.keys(obj).length === 0;
+}
 
 function generateUID() {
   return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+      return v.toString(16);
+  });
+}
+
+function generateKey() {
+  return 'xxxxxxxxxxxx-4xxxyxxxxxx99xx-xxxxx00xxxx'.replace(/[xy]/g, function(c) {
       var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
       return v.toString(16);
   });

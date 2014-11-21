@@ -1,4 +1,4 @@
-<div class="row" id="{{item.uid}}" style="background:rgba({{colors.r}},{{colors.g}},{{colors.b}},.05);">
+<div class="row" id="{{item.uid}}">
 	<div class="container list-item-wrapper" style="border-left:3px solid rgb({{colors.r}},{{colors.g}},{{colors.b}});">
 		<div id="push-wrapper-{{item.uid}}" class="push-wrapper">
 			<div class="push-canvas">
@@ -35,6 +35,9 @@
 								<div class="row">
 									{{item.description}}
 								</div>
+								<div class="row" ng-if="item.proposedChanges">
+									<h4 class="staged-changes"><span class="glyphicon glyphicon-warning-sign"></span> there are pending changes on this item...</h4>
+								</div>
 							</div>
 							<div class="row">
 								<p class="show-more-detail" ng-click="showOptions(item.uid)">options</p>
@@ -45,12 +48,13 @@
 			</div><!-- push canvas div -->
 		
 		</div><!-- push wrapper div -->
+		<div ng-if="sharedData.showMoreDetail[item.uid]" id="detail-{{item.uid}}" class="row more-detail" style="background:rgba({{colors.r}},{{colors.g}},{{colors.b}},.08);">
+
+			<item-detail item="item"></item-detail>
+
+		</div>
 
 	</div>
 </div>
-<div ng-if="sharedData.showMoreDetail[item.uid]" id="detail-{{item.uid}}" class="row more-detail" style="background:rgba({{colors.r}},{{colors.g}},{{colors.b}},.08);">
-	<div class="container">
-		<item-detail item="item"></item-detail>
-	</div>
-</div>
+
 

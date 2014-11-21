@@ -1,0 +1,14 @@
+<div ng-repeat="change in changedFields" style="padding:0; margin:0;">
+	<div ng-repeat="(key,what) in change">
+		<div class="row">
+			<div class="col-xs-12 col-sm-9">
+				<div ng-if="key==='thumb'"><span style="padding-right:10px; font-style:italic;">new image:</span><img ng-src="{{what.value}}"></div>
+				<div ng-if="key!=='thumb'"><span style="font-style:italic;">new {{key}}:</span><p style="margin:0;">{{what.value}}</p></div>
+			</div>
+			<div class="col-xs-12 col-sm-3" ng-if="isOwner">
+				<button style="float:right; margin-top:10px; margin-left:7px;" class="btn btn-primary" ng-click="mergeChange(key,what.value,'yes')">&#10003;</button>
+				<button style="float:right; margin-top:10px;" class="btn btn-default">&#x2717;</button>
+			</div>
+		</div>
+	</div>
+</div>

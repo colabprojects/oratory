@@ -1,6 +1,9 @@
-<div style="background:#DDD;">
-	<p ng-if="isOwner">you are an owner of this item</p>
-	<button class="btn btn-default" ng-click="deleteItem(item)">delete</button>
+<div class="container pad-top">
+	<div id="owner-stuff" ng-if="isOwner">
+		<p>you are an owner of this item</p>
+		<button class="btn btn-default" ng-click="deleteItem(item)">delete</button>
+	</div>
+	<button class="btn btn-default" ng-click="goBack()">go back</button>
 	<div ng-if="item.lock">
 		<p>item is locked by {{item.lockChangedBy}}</p>
 	</div>

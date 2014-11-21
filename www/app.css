@@ -2,11 +2,8 @@ html, body { height: 100%; }
 .row { margin:0; }
 .thumbnail { margin:5px 0; }
 #site-wrapper { padding-bottom:75px; }
-#sidebar-wrapper { background-color:#373737; box-shadow: inset -10px 0px 20px #222; }
 .map { height:100%; width:100%; position:absolute; }
-#trees {
-	height:65px;
-}
+.first-item { margin-top:65px; }
 
 #add-form { 
 	position:fixed; 
@@ -83,7 +80,6 @@ html, body { height: 100%; }
 .list-lock { width:25px; text-align:center; padding: 15px 0 0 5px; }
 
 .edit-view { width:100%; }
-
 .attachment-label { margin:0 8px; }
 
 .navbar-toggle { float: left; margin-left: 15px; }
@@ -111,14 +107,14 @@ html, body { height: 100%; }
 .head-form { margin:15px; max-width:500px; box-shadow: 2px 4px 10px rgba(0,0,0,.4); border-radius: 4px; }
 
 #sidebar-button { 
-	padding:20px 3px; 
-	border-top-left-radius:0; 
-	border-bottom-left-radius:0; 
-	border-color:#AAA; 
-	border-left:0; 
-	background-color:#f8f8f8;
-	left:-1px;
+	padding: 3px 20px;
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+	border-color: #AAA;
+	background-color: #f8f8f8;
 	box-shadow: 2px 1px 5px #bbb;
+	right: 50%;
+	border-top: 0;
 }
 
 #drawer {

@@ -1,24 +1,5 @@
-<div id="sidebar-wrapper" class="navmenu navmenu-default navmenu-fixed-left offcanvas">
-	<a class="navmenu-brand" href="#">THE LAND</a>
-	<div class="container" style="width:300px;">
-		<a class="filter-toggle" ng-click="hideFilters=!hideFilters">filters<span class="caret"></span></a>
-		<div id="moreFilters" ng-if="hideFilters">
-			<input type="checkbox" id="showDeletedCheckbox" ng-model="sharedData.showDeleted" ng-change="$emit('showDeleted',showDeleted)" />
-			<span style="color:#777;">show deleted</span>
-		</div>
-		<form name="emailForm">
-			who are you
-			<input id="email-input" ng-model="email" class="form-control" type="email" placeholder="save email to add and edit stuff" ng-class="{'req-alert-on-left':emailForm.$invalid}" required/>
-			<button id="email-button" type="submit" class="btn btn-default" ng-click="setEmailCookie(email)" ng-hide="emailSuccess" ng-disabled="emailForm.$invalid">save cookie</button>
-			<button id="email-button" class="btn btn-default" ng-click="removeEmail()">remove cookie</button>
-		</form>
-		<p style="color:#777; padding-top:10px;">adding shit as: {{sharedData.email}}</p>
-		<div id="socket-messages" style="color:#777;">
-		</div>
-	</div>
-</div>
 
-<div class="navbar navbar-default navbar-fixed-top" ng-if="page!=='view'">
+<div class="navbar navbar-default navbar-fixed-top">
 	<form class="head-form">
 		<div class="input-group" style="margin-right: -1px;">
 			<div class="input-group-btn">
@@ -27,6 +8,8 @@
 				</button>
 				<ul class="dropdown-menu" role="menu">
 					<li ng-repeat="p in sharedData.pages" ng-if="p!==page"><a ng-click="sharedData.changePage(p)">{{p}}</a></li>
+					<li class="divider"></li>
+					<li><a ng-click="showOptions()">options</a></li>
 				</ul>
 			</div>
 			<div class="input-group-btn">
@@ -50,30 +33,25 @@
 </div>
 
 <div class="list-wrapper">
-	<div id="trees" class="row" style="background:rgba({{sharedData.trees.r}},{{sharedData.trees.g}},{{sharedData.trees.b}},.05);">
-		<div style="min-width:1100px;">
-			<!--<img src="images/trees.png" style="width:100%;">-->
+	<div id="hidden-menu" class="container first-item" ng-show="sharedData.options">
+		<a class="filter-toggle" ng-click="hideFilters=!hideFilters">filters<span class="caret"></span></a>
+		<div id="moreFilters" ng-if="hideFilters">
+			<input type="checkbox" id="showDeletedCheckbox" ng-model="sharedData.showDeleted" ng-change="$emit('showDeleted',showDeleted)" />
+			<span style="color:#777;">show deleted</span>
 		</div>
+		<form name="emailForm">
+			who are you
+			<input id="email-input" ng-model="email" class="form-control" type="email" placeholder="save email to add and edit stuff" ng-class="{'req-alert-on-left':emailForm.$invalid}" required/>
+			<button id="email-button" type="submit" class="btn btn-default" ng-click="setEmailCookie(email)" ng-hide="emailSuccess" ng-disabled="emailForm.$invalid">save cookie</button>
+			<button id="email-button" class="btn btn-default" ng-click="removeEmail()">remove cookie</button>
+		</form>
+		<p style="color:#777; padding-top:10px;">adding shit as: {{sharedData.email}}</p>
+		<button class="btn btn-default" ng-click="sharedData.options=false;">hide options</button>
+		<div id="socket-messages" style="color:#777;"></div>
 	</div>
 
-	<list-item ng-repeat="item in items | orderBy:sharedData.orderBy | filter:sharedData.filter | filter:sharedData.pageFilter | filter:sharedData.deletedFilter | filter:sharedData.viewFilter" item="item" page="page" priority="priorityTime" trees="$first"></list-item>
-</div>
-
-<div id="drawer">
-	<button id="sidebar-button" type="button" class="btn btn-default" data-toggle="offcanvas" data-target=".navmenu" data-canvas="body">
-		<span class="glyphicon glyphicon-chevron-right"></span>
-	</button>
-</div>
-
-<div id="history" ng-if="page==='view'">
-	<button class="btn btn-default" ng-click="showHistory=!showHistory; getHistory();">show history</button>
-
-	<div ng-if="showHistory">
-		<div ng-repeat="oldItem in history">
-			<list-item item="oldItem"></list-item>
-		</div>
-	</div>
-
+	<div class="first-item"></div>
+	<list-item ng-repeat="item in items | orderBy:sharedData.orderBy | filter:sharedData.filter | filter:sharedData.pageFilter | filter:sharedData.deletedFilter | filter:sharedData.viewFilter" item="item" page="page" priority="priorityTime" first="$first"></list-item>
 </div>
 
 
