@@ -2,8 +2,26 @@
 	<div id="owner-stuff" ng-if="isOwner">
 		<p>you are an owner of this item</p>
 		<button class="btn btn-default" ng-click="deleteItem(item)">delete</button>
+		<button class="btn btn-default" ng-click="addMediaClick();">add media</button>
 	</div>
 	<button class="btn btn-default" ng-click="goBack()">go back</button>
+
+	<div ng-if="addMedia" id="showAddMedia">
+		<br>
+		<div class="form-group">
+	        <input type="file" id="take-picture" accept="image/*">
+	    </div>
+	    <div>
+	        <img src="about:blank" style="width:100%;" alt="" id="show-picture">
+	    </div>
+	    <p id="error"></p>
+	    <script type="text/javascript" src="assets/js/camera.api.js"></script>
+	    <button class="btn btn-default" ng-click="addMediaClick()">cancel</button>
+	</div>
+
+
+
+
 	<div ng-if="item.lock">
 		<p>item is locked by {{item.lockChangedBy}}</p>
 	</div>

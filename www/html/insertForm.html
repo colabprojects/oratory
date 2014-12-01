@@ -7,19 +7,6 @@
         <label for="form-name">name</label>
 		<input id="form-name" class="form-control" name="formName" ng-change="showImages=true;" type="text" ng-model="formItem.name" ng-class="{'req-alert-on-left':form.formName.$invalid}" required>
     </div>
-    <!--
-    <div class="form-group">
-        <label for="camera-thing">use your camera</label>
-        <input type="file" id="take-picture" accept="image/*">
-    </div>
-
-    <div>
-        <img src="about:blank" style="width:100%;" alt="" id="show-picture">
-    </div>
-
-    <p id="error"></p>
-    <script type="text/javascript" src="assets/js/camera.api.js"></script>
-    -->
 
     <form-element ng-repeat="field in dbInfo.getFields(formItem.type)" field="field" form-item="formItem" form="form"></form-element>
 

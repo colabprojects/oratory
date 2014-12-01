@@ -324,7 +324,7 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
     console.log('lock changed! - '+item.name+' is now '+item.lock);
 
     _(master.items).findWhere({uid:item.uid}).lock = item.lock;
-    //if (item.uid == master.item.uid) { angular.copy(item,master.item); }
+    if (item.uid == master.item.uid) { angular.copy(item,master.item); }
     $scope.$digest();
   });
 
@@ -666,6 +666,10 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
       scope.colors = master.color(scope.item);
       scope.deleteItem=master.deleteItem;
 
+      scope.addMediaClick = function() {
+        scope.addMedia=!scope.addMedia;
+      };
+
       scope.addOwner = function(){
 
       };
@@ -692,7 +696,7 @@ itemApp.directive('itemProposedChanges', function ($state, $http, master) {
   }
 });
 
-itemApp.directive('itemChange', function ($state, $http, master) {
+itemApp.directive('itemChange', function ($state, $http, $filter, master) {
   return {
     restrict: 'E',
     scope: {
@@ -707,20 +711,10 @@ itemApp.directive('itemChange', function ($state, $http, master) {
       scope.item=master.item;
       scope.sharedData=master.sharedData;
 
-      for (key in scope.changed){
-        if (angular.toJson(scope.changed[key])!==angular.toJson(scope.original[key])){
-          //console.log('difference in '+key+' is '+JSON.stringify(scope.changed[key])+' -- original:'+JSON.stringify(scope.original[key]));
-          if((key!=='lockChangedBy')&&(key!=='lockChangedAt')&&(key!=='edited')&&(key!=='editedBy')&&(key!=='image')&&(key!=='lock')&&(key!=='imageURL')&&(key!=='owners')) {
-            
-            var dildo = {};
-            dildo[key]=scope.changed[key];
-            console.log(dildo);
-            scope.changedFields.push(dildo);
-          }
-        }
-      }
-      debug=scope.changedFields;
-      //check to see if dildo is empty
+      socket.on('decisionChange', function(staged){
+        console.log('decision!');
+        angular.copy(staged.changes,scope.changed);
+      });
       
 
       scope.mergeChange = function (field, value, yesno){
@@ -744,9 +738,11 @@ itemApp.directive('itemChange', function ($state, $http, master) {
         decisionObj['email']=scope.sharedData.email;
         decisionObj['field']=field;
         decisionObj['decision']=yesno;
+        decisionObj['item']=scope.item;
 
         $http.post('/api/decision',decisionObj).then(function (response){
-          master.saveItem(scope.item);
+          
+          
         })
 
         /*

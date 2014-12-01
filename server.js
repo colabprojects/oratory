@@ -208,38 +208,47 @@ app.post('/api/stageItemChanges', express.json(), function (req, res) {
 					newItem.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
 				}
 				
-
+				var changeNumber = 0;
 				for (key in newItem){
 					if (JSON.stringify(newItem[key])!==JSON.stringify(originalItem[key])){
 						//console.log('difference in '+key+' is '+JSON.stringify(scope.changed[key])+' -- original:'+JSON.stringify(scope.original[key]));
 						if((key!=='lockChangedBy')&&(key!=='lockChangedAt')&&(key!=='edited')&&(key!=='editedBy')&&(key!=='image')&&(key!=='lock')&&(key!=='imageURL')&&(key!=='owners')) {
 							var aChange = {};
-							_.map(originalItem.owners, function(owner) { aChange[owner]=''; });
 							aChange['what']=key;
 							aChange['value']=newItem[key];
-							stagedChanges.push(aChange);
+							aChange['decision']='';
+							if (key==='thumb'){
+								aChange['image']=newItem['image'];
+								aChange['imageURL']=newItem['imageURL'];
+							}
+							stagedChanges[changeNumber]=aChange;
+							changeNumber++;
 						}
 					}
 				}
 
 
 				if (stagedChanges.length!==0){
-					db.itemdb.insert({type:'staged', forUID:newItem.uid, key:newKey, proposed:moment().format(), proposedBy:proposer, changes:stagedChanges}, function (err, doc) {
-						if(err){ 
-							console.log('(error staging item changes) '+err); 
-						}else{ 
-							originalItem.proposedChanges=true;
-							db.itemdb.update({uid: newItem.uid}, {$set:{proposedChanges:true}}, function (err, doc2) {
-								if(err){ 
-									console.log('(error setting staged changes flag on item) '+err); 
-								} else {
-									//success
-									res.send(200);
-									io.emit('proposedChange',newItem.uid);
-								}
-							});
-						}
-					});
+					//insert change for every owner to approve
+					_.map(originalItem.owners, function(owner) {  
+						db.itemdb.insert({type:'staged', forUID:newItem.uid, key:newKey, proposed:moment().format(), proposedBy:proposer, forOwner:owner, changes:stagedChanges}, function (err, doc) {
+							if(err){ 
+								console.log('(error staging item changes) '+err); 
+							}else{ 
+								originalItem.proposedChanges=true;
+								db.itemdb.update({uid: newItem.uid}, {$set:{proposedChanges:true}}, function (err, doc2) {
+									if(err){ 
+										console.log('(error setting staged changes flag on item) '+err); 
+									} else {
+										//success
+										res.send(200);
+										io.emit('proposedChange',newItem.uid);
+									}
+								});
+							}
+						});
+					});//end map
+					
 				} else {
 					//no mods
 				}
@@ -255,30 +264,42 @@ app.post('/api/stageItemChanges', express.json(), function (req, res) {
 
 app.post('/api/decision', express.json(), function (req, res){
 	var syncItemPromise;
-	db.itemdb.find({key:req.body.key}, function (err, check) {
+	db.itemdb.find({key:req.body.key, forOwner:req.body.email}, function (err, check) {
 		if (!check.length||check[0].key!==req.body.key) {
 			return res.send(500);
 		}
 		//it is there
 		syncItemPromise=changeDecision(check[0], req.body.email, req.body.field, req.body.decision);
 		q.when(syncItemPromise).then(function(){
+
 			//check if all decisions are made
 			db.itemdb.find({key:req.body.key}, function (err, check2) {
 				var done = true;
-				var allDec = check2[0].modifiedItem[req.body.field].decisions;
+				var allDec = check2[0].changes;
 				for (k in allDec) {
-					if (allDec[k]==='') { done=false; }
+					if (allDec[k].decision==='') { done=false; }
 				}
 
 				if (done) {
-					db.itemdb.update({uid:check2[0].forUID}, {$set:{}} )
+					console.log('all changes are complete');
+					req.body.item.proposedChanges=false;
+				} else {
+					console.log('more changes...');
 				}
+				//update item
+				db.itemdb.find({uid:req.body.item.uid}, function (err, check1) {
+					if (!check1.length||check1[0].uid!==req.body.item.uid) {
+						return res.send(500);
+					}
+					//it is there
+					syncItemPromise=updateItem(req.body.item, check1[0], true);
+					q.when(syncItemPromise).then(function(){
+						res.send(200);
+					});
+				});
 			}); 	
-
-			
 		}); 
 	});
-
 });
 
 
@@ -435,82 +456,33 @@ function updateItem(newItem, oldItem, stage){
 		newItem.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
 	}
 
-	if (stage){
-		var proposer = newItem.proposedBy;
-		if(proposer){
 
-			newKey=generateKey();
-			delete newItem.proposedBy;
+	var historyItem;
+	historyItem=oldItem;
+	historyItem.uid=generateUID();
+	historyItem.historical=true;
+	historyItem.proposedChanges=false;
+	//update and store history
+	db.itemdb.insert({type:'history', forUID:newItem.uid, historyItem:historyItem }, function (err, doc) {});
 
-			var itemModifications={};
-
-			for (key in newItem){
-				if (JSON.stringify(newItem[key])!==JSON.stringify(oldItem[key])){
-					//console.log('difference in '+key+' is '+JSON.stringify(scope.changed[key])+' -- original:'+JSON.stringify(scope.original[key]));
-					var ownerDecisions = {};
-					_.map(oldItem.owners, function(owner) { ownerDecisions[owner]=''; });
-					if((key!=='lockChangedBy')&&(key!=='lockChangedAt')&&(key!=='edited')&&(key!=='editedBy')&&(key!=='image')&&(key!=='lock')&&(key!=='imageURL')&&(key!=='owners')) {
-						itemModifications[key]={value:newItem[key],decisions:ownerDecisions};
-					}
-				}
-			}
-
-
-			if (!isEmpty(itemModifications)){
-				db.itemdb.insert({type:'staged', forUID:newItem.uid, key:newKey, proposed:moment().format(), proposedBy:proposer, modifiedItem:itemModifications}, function (err, doc) {
-					if(err){ 
-						saveItemPromise.reject();
-						console.log('(error staging item) '+err); 
-					}else{ 
-						newItem.proposedChanges=true;
-						db.itemdb.update({uid: newItem.uid}, {$set:{proposedChanges:true}}, function (err, doc2) {
-							if(err){ 
-								console.log('(error setting staged changes flag on item) '+err); 
-								saveItemPromise.resolve();
-							} else {
-								//success
-								saveItemPromise.resolve();
-								io.emit('proposedChange',newItem.uid);
-							}
-						});
-					}
-				});
-			} else {
-				//no mods
-				saveItemPromise.reject();
-			}
-
-		} else {
-			//fail - no proposedBy
-			saveItemPromise.reject();
+	newItem.edited=moment().format();
+	if (!stage) { newItem.lock=false; }
+	delete newItem._id;
+	//check to see if new image was sent
+	
+	db.itemdb.update({uid: newItem.uid}, newItem, function (err, doc) {
+		if(err){ 
+			console.log('(error updating item) '+err); 
+			saveItemPromise.reject(); 
+		}else{ 
+			q.when(syncImagePromise).then(function(){
+				saveItemPromise.resolve();
+				console.log('sending new update io.emit');
+				io.emit('update', newItem);
+			}); 
 		}
-	} else {//owner updating
-		//add new uid to the history object
-		var historyItem;
-		historyItem=oldItem;
-		historyItem.uid=generateUID();
-		historyItem.historical=true;
-		//update and store history
-		db.itemdb.insert({type:'history', forUID:newItem.uid, historyItem:historyItem }, function (err, doc) {});
+	});
 
-		newItem.edited=moment().format();
-		newItem.lock=false;
-		delete newItem._id;
-		//check to see if new image was sent
-		
-		db.itemdb.update({uid: newItem.uid}, newItem, function (err, doc) {
-			if(err){ 
-				console.log('(error updating item) '+err); 
-				saveItemPromise.reject(); 
-			}else{ 
-				q.when(syncImagePromise).then(function(){
-					saveItemPromise.resolve();
-					console.log('sending new update io.emit');
-					io.emit('update', newItem);
-				}); 
-			}
-		});
-	}
 
 	return saveItemPromise.promise;
 }
@@ -572,6 +544,7 @@ function saveImage(where,theUID,who) {
 			    		saveImagePromise.reject();
 			    	}else{ 
 			    		//save image thumbnail
+			    		
 			    		console.log("the image was saved!"); 
 			    		gm(path+'image.jpg').resize('60','60').gravity('center').write(path+'thumb.jpg', function(err) {
 			    			if(err) { 
@@ -618,9 +591,11 @@ function changeDecision(staged, who, what, value){
 	var changeDecisionPromise = q.defer();
 	var time = moment().format();
 
-	staged.modifiedItem[what].decisions[who]=value;
+	_.find(staged.changes, function(change, i){
+		if (change['what']===what){ staged.changes[i].decision=value; }
+	});
 
-	db.itemdb.update({key: staged.key}, {$set:{modifiedItem:staged.modifiedItem}}, function (err, doc) {
+	db.itemdb.update({key: staged.key}, {$set:{changes:staged.changes}}, function (err, doc) {
 		if(err){ 
 			console.log('(error changing decisions on item) '+err); 
 			changeDecisionPromise.reject();
