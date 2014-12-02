@@ -666,17 +666,18 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
       scope.colors = master.color(scope.item);
       scope.deleteItem=master.deleteItem;
 
+      scope.goBack = function(){
+        window.history.back();
+      };
+
       scope.addMediaClick = function() {
         scope.addMedia=!scope.addMedia;
       };
 
-      scope.addOwner = function(){
-
+      scope.addOwnerClick = function() {
+        scope.addOwners=!scope.addOwners;
       };
 
-      scope.goBack = function(){
-        window.history.back();
-      }
     }
   }
 });
@@ -691,7 +692,7 @@ itemApp.directive('itemProposedChanges', function ($state, $http, master) {
     },
     templateUrl: 'html/itemProposedChanges.html',
     link: function(scope, element, attrs) {
-      debug=scope.allChanges;
+
     }
   }
 });
@@ -742,20 +743,8 @@ itemApp.directive('itemChange', function ($state, $http, $filter, master) {
 
         $http.post('/api/decision',decisionObj).then(function (response){
           
-          
-        })
-
-        /*
-        var findValue={};
-        findValue[field]=value;
-        console.log('findvalue='+JSON.stringify(findValue))
-        delete _.findWhere(scope.changedFields, findValue);
-        */
+        });
       };
-
-
-
-
     }
   }
 });
@@ -773,8 +762,38 @@ itemApp.directive('showComment', function ($state, $filter, $http, master) {
   }
 });
 
+itemApp.directive('ownerForm', function ($state, $http, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      item:'='
+    },
+    templateUrl: 'html/ownerForm.html',
+    link: function(scope, element, attrs) {
 
+      scope.addOwner = function(newOwner){
+        scope.item.owners.push(newOwner);
+        master.saveItem(scope.item);
+      };
 
+    }
+  }
+});
+
+itemApp.directive('addMediaForm', function ($state, $http, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      item:'='
+    },
+    templateUrl: 'html/addMediaForm.html',
+    link: function(scope, element, attrs) {
+      
+      
+
+    }
+  }
+});
 
 
 itemApp.filter('regex', function() {

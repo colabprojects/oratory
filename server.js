@@ -227,27 +227,34 @@ app.post('/api/stageItemChanges', express.json(), function (req, res) {
 					}
 				}
 
-
+				var promises=[];
 				if (stagedChanges.length!==0){
 					//insert change for every owner to approve
-					_.map(originalItem.owners, function(owner) {  
+					_.each(originalItem.owners, function(owner) { 
+						var insertFinished=q.defer();
+						promises.push(insertFinished.promise);
 						db.itemdb.insert({type:'staged', forUID:newItem.uid, key:newKey, proposed:moment().format(), proposedBy:proposer, forOwner:owner, changes:stagedChanges}, function (err, doc) {
 							if(err){ 
-								console.log('(error staging item changes) '+err); 
+								console.log('(error staging item changes) '+err);
+								insertFinished.reject();
 							}else{ 
 								originalItem.proposedChanges=true;
-								db.itemdb.update({uid: newItem.uid}, {$set:{proposedChanges:true}}, function (err, doc2) {
-									if(err){ 
-										console.log('(error setting staged changes flag on item) '+err); 
-									} else {
-										//success
-										res.send(200);
-										io.emit('proposedChange',newItem.uid);
-									}
-								});
+								insertFinished.resolve();
 							}
 						});
 					});//end map
+
+					q.all(promises).then(function(){
+						db.itemdb.update({uid: newItem.uid}, {$set:{proposedChanges:true}}, function (err, doc2) {
+							if(err){ 
+								console.log('(error setting staged changes flag on item) '+err); 
+							} else {
+								//success
+								res.send(200);
+								io.emit('proposedChange',newItem.uid);
+							}
+						});
+					}, function(error) { res.send('one of the promises fucked up'); });
 					
 				} else {
 					//no mods

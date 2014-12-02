@@ -3,9 +3,10 @@
 	<div class="col-xs-12 col-md-4 detail-container">
 		<div class="detail-card">
 			<p class="half-bottom detail-header">overview</p>
-			<p>
-				item owner(s): <span ng-repeat="o in item.owners">{{o}}</span> 
-			</p>
+			item owner(s): 
+			<ul>
+				<li ng-repeat="o in item.owners">{{o}}</li> 
+			</ul>
 		</div>
 	</div>
 	<div ng-if="item.type==='project'" class="col-xs-12 col-md-4 detail-container">
