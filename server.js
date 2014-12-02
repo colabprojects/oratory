@@ -160,7 +160,7 @@ app.post('/api/getItem', express.json(), function (req, res) {
 	});
 });//end 'GET' (single) item - send the uid and retrieve item (untested - send multiple uid's?)
 
-app.post('/api/saveItem', express.json(), function (req, res) {
+app.post('/api/saveItem', express.json({limit: '50mb'}), function (req, res) {
 	var syncItemPromise;
 	if (req.body.uid) {
 		db.itemdb.find({uid:req.body.uid}, function (err, check) {
@@ -454,7 +454,9 @@ function updateItem(newItem, oldItem, stage){
 	//returns a promise
 	var saveItemPromise = q.defer();
 	var syncImagePromise;
+	var syncMediaImagePromise;
 
+	//the image for the item (not media)
 	if (oldItem.imageURL!==newItem.imageURL){
 		console.log('saving new item image')
 		var mediaUID = generateUID();
@@ -463,6 +465,28 @@ function updateItem(newItem, oldItem, stage){
 		newItem.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
 	}
 
+	//item media
+	if (JSON.stringify(oldItem.media)!==JSON.stringify(newItem.media)){
+		console.log('FUCK FUCK FUCK FUCK');
+		//new media of some kind
+		var newMediaImage = _.find(newItem.media, function(check){ return _.has(check,'rawImage');});
+		if (newMediaImage) {
+			//new image added
+			console.log('saving new media image')
+			var mediaImageUID=generateUID();
+			
+			syncMediaImagePromise = saveMediaImage(newMediaImage.rawImage, mediaImageUID);
+			_.each(newItem.media, function (data,index){
+				//find the index and replace with new data
+				if (_.has(data,'rawImage')) {
+					
+					delete newItem.media[index].rawImage;
+					newItem.media[index].image = 'media/images/'+mediaImageUID+'/image.jpg';
+					newItem.media[index].thumb = 'media/images/'+mediaImageUID+'/thumb.jpg';
+				}
+			});
+		}
+	}
 
 	var historyItem;
 	historyItem=oldItem;
@@ -483,9 +507,11 @@ function updateItem(newItem, oldItem, stage){
 			saveItemPromise.reject(); 
 		}else{ 
 			q.when(syncImagePromise).then(function(){
-				saveItemPromise.resolve();
-				console.log('sending new update io.emit');
-				io.emit('update', newItem);
+				q.when(syncMediaImagePromise).then(function(){
+					saveItemPromise.resolve();
+					console.log('sending new update io.emit');
+					io.emit('update', newItem);
+				});
 			}); 
 		}
 	});
@@ -571,6 +597,50 @@ function saveImage(where,theUID,who) {
 
 	return saveImagePromise.promise;
 }//end SAVE image
+
+function saveMediaImage(rawImage, uid) {
+	var saveMediaImagePromise = q.defer();
+	var matches = rawImage.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    var image = {};
+    var path = '/vagrant/www/media/images/'+uid+'/';
+    fs.mkdir(path, function(err){
+		if (err) {
+			console.log('error saving image: '+err); 
+    		saveMediaImagePromise.reject();
+		} else {
+			//file path successful
+			if (matches.length !== 3) {
+				saveMediaImagePromise.reject();
+			} else {
+				//success - data in buffer
+				image.type = matches[1];
+				image.data = new Buffer(matches[2], 'base64');
+
+				fs.writeFile(path+'image.jpg', image.data, function(err) { 
+					if(err) { 
+			    		console.log('error saving media image: '+err); 
+			    		saveMediaImagePromise.reject();
+			    	}else{ 
+			    		//save media image thumbnail
+			    		console.log("the f'n image was saved!"); 
+			    		gm(path+'image.jpg').resize('300','300').gravity('center').write(path+'thumb.jpg', function(err) {
+			    			if(err) { 
+			    				console.log('error saving media thumb: '+err); 
+			    				saveMediaImagePromise.reject();
+			    			}else{ 
+			    				//successful image save chain:
+			    				saveMediaImagePromise.resolve();
+			    				console.log("the image thumb was saved!"); 
+			    			}
+			    		});//end save image thumb
+			    	}//end save image
+				});
+			}
+		}
+	});
+
+	return saveMediaImagePromise.promise;
+}
 
 //LOCKS --------------------------------
 function changeLock(item,who,value){
