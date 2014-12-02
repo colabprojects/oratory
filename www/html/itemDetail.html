@@ -27,18 +27,20 @@
 		</div>
 
 	</div>
-	<!--
-	<div class="col-xs-12 detail-container">
+
+	<div class="col-xs-12 detail-container" ng-show="item.media">
 		<div class="detail-card">
 			<p class="half-bottom detail-header">media</p>
-			<div class="col-xs-6 col-md-3" ng-repeat="image in item.media ">
-				<div class="thumbnail" id="media-{{$index}}">
-					<a href="{{media.image}}"><img ng-src="{{media.thumb}}"/></a>
+			<div class="row">
+				<div class="col-xs-6 col-md-3" ng-repeat="media in item.media ">
+					<div class="thumbnail" id="media-{{$index}}">
+						<a href="{{media.image}}"><img ng-src="{{media.thumb}}"/></a>
+					</div>
 				</div>
 			</div>
 		</div>
 	</div>
-	-->
+
 	<div class="col-xs-12 detail-container">
 		<!-- buttons? -->
 		<button class="btn btn-default" ng-click="showRaw[item.uid]=!showRaw[item.uid]">show raw</button>
