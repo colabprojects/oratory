@@ -1,5 +1,4 @@
 node_modules/
 .vagrant/
-old/
 npm-debug.log
 www/media/images

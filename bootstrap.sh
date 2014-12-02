@@ -36,9 +36,12 @@ sudo apt-get -y install nodejs
 sudo npm install
 sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 465 -j REDIRECT --to-port 55465
 sudo npm update
+sudo npm install -g forever
 
 #need this for the image manipulation (subclass of the npm module, gm)
 sudo apt-get -y install imagemagick
 
-echo DO THIS: cd /vagrant sudo node server.js
-echo app is running on localhost:55656
+#start the forever server
+sudo forever start sever.js
+
+echo app is running on localhost:55657
