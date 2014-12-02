@@ -11,18 +11,6 @@
 
 console.log('server running');
 
-//new media
-/*
-if(req.body.newMedia) {
-	userMediaUID=generateUID();
-	console.log('media url: '+req.body.mediaUrl);
-	delete req.body.newMedia;
-	if(!req.body.media) { req.body.media = []; }
-	req.body.media.push({image:'media/images/'+userMediaUID+'/image.jpg',thumb:'media/images/'+userMediaUID+'/thumb.jpg',});
-}
-*/
-
-
 //CONFIG -------------------------------------------------------------------------------------
 //database
 var mongojs = require('mongojs');
@@ -130,6 +118,9 @@ var dbInfo = {
 
 
 //API ---------------------------------------------------------------------------------------
+//DB CONFIG
+
+
 //ITEMS  --------------------------------
 app.get('/api/getDatabase', function (req, res) {
 	db.itemdb.find(function (err, docs) {

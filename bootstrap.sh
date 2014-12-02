@@ -42,6 +42,6 @@ sudo npm install -g forever
 sudo apt-get -y install imagemagick
 
 #start the forever server
-sudo forever start sever.js
+sudo forever start server.js
 
 echo app is running on localhost:55657
