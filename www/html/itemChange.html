@@ -1,0 +1,13 @@
+<div ng-repeat="change in changed | filter:{decision:'!yes'}" style="padding:0; margin:0;">
+	<div class="row">
+		<div class="col-xs-12 col-sm-9">
+			<div ng-if="change.what==='thumb'"><span style="padding-right:10px; font-style:italic;">new image:</span><img ng-src="{{change.value}}"></div>
+			<div ng-if="change.what!=='thumb'"><span style="font-style:italic;">new {{change.what}}:</span><p style="margin:0;">{{change.value}}</p></div>
+		</div>
+		<div class="col-xs-12 col-sm-3" ng-if="isOwner">
+			<button style="float:right; margin-top:10px; margin-left:7px;" class="btn btn-primary" ng-click="mergeChange(change.what,change.value,'yes')">&#10003;</button>
+			<button style="float:right; margin-top:10px;" class="btn btn-default" ng-click="mergeChange(change.what,change.value,'no')">&#x2717;</button>
+		</div>
+	</div>
+
+</div>

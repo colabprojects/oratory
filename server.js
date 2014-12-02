@@ -1,10 +1,8 @@
 //be careful with plurals - all the singular words are dealing with one object, and the plurals are dealing with multiple
 //database types:
 //	item
-//	location
 //	staged
 //	history
-//  stageLock
 //  settings
 //allowable push changes:
 //	lock
@@ -12,6 +10,18 @@
 //	comment
 
 console.log('server running');
+
+//new media
+/*
+if(req.body.newMedia) {
+	userMediaUID=generateUID();
+	console.log('media url: '+req.body.mediaUrl);
+	delete req.body.newMedia;
+	if(!req.body.media) { req.body.media = []; }
+	req.body.media.push({image:'media/images/'+userMediaUID+'/image.jpg',thumb:'media/images/'+userMediaUID+'/thumb.jpg',});
+}
+*/
+
 
 //CONFIG -------------------------------------------------------------------------------------
 //database
@@ -26,6 +36,10 @@ app.configure(function(){
     app.use(express.static(__dirname + '/www'));
     app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 });
+
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+
 //email auth
 var nodemailer = require('nodemailer');
 var smtpTransport = require('nodemailer-smtp-transport');
@@ -43,11 +57,12 @@ var q = require('q');
 var url = require('url');
 var _ = require('underscore');
 var moment = require('moment');
+var jquery = require('jquery');
 //image manipulation (for thumbnails)
 var gm = require('gm').subClass({ imageMagick: true });
 //make directory for item images:
-if (!fs.existsSync('/vagrant/www/images/items/')) {
-	fs.mkdir('/vagrant/www/images/items/');
+if (!fs.existsSync('/vagrant/www/media/images')) {
+	fs.mkdir('/vagrant/www/media/images/');
 }
 //default item image:
 var defaultImage = 'images/default.jpg';
@@ -57,7 +72,7 @@ var dbInfo = {
     types:[
       {
         name:'tool',
-        color:'#218559',
+        color:{r:'76',g:'164',b:'84'},
         formFields:[
           {name:'need', type:'radio', options:['have','want'], default:'have'},
           {name:'description',type:'textarea'}, 
@@ -68,7 +83,7 @@ var dbInfo = {
       },
       {
         name:'resource',
-        color:'#2CA4F9',
+        color:{r:'68',g:'114',b:'185'},
         formFields:[
           {name:'need', type:'radio', options:['have','want'], default:'have'},
           {name:'description',type:'textarea'}, 
@@ -79,7 +94,7 @@ var dbInfo = {
       },
       {
         name:'project',
-        color:'#EBB035',
+        color:{r:'225',g:'135',b:'40'},
         formFields:[
           {name:'description',type:'textarea'},
 		  {name:'image search', type:'image-search'},
@@ -88,7 +103,7 @@ var dbInfo = {
       }, 
       {
         name:'book',
-        color:'#876f69',
+        color:{r:'190',g:'76',b:'57'},
         formFields:[
           {name:'need', type:'radio', options:['have','want'], default:'have'},
           {name:'description',type:'textarea'},
@@ -98,7 +113,7 @@ var dbInfo = {
       },
       {
         name:'event',
-        color:'#551A8B',
+        color:{r:'147',g:'81',b:'166'},
         formFields:[
           {name:'title', type:'text'},
           {name:'description',type:'textarea'},
@@ -108,7 +123,7 @@ var dbInfo = {
       },
       {
       	name:'deleted',
-      	color:'#FF2222'
+      	color:{r:'225',g:'20',b:'20'}
       }
     ]
 };
@@ -133,7 +148,9 @@ app.post('/api/getItems', express.json(), function (req, res) {
 
 app.post('/api/getItemHistory', express.json(), function (req, res) {
 	db.itemdb.find({type:'history', forUID:req.body.uid},function (err, docs) {
-		if(err){ console.log('(error getting item history) '+err); }else{ res.send(docs); }
+		if(err){ console.log('(error getting item history) '+err); }else{ 
+			res.send(docs); 
+		}
 	});
 });//end GET item history
 
@@ -144,63 +161,170 @@ app.post('/api/getItem', express.json(), function (req, res) {
 });//end 'GET' (single) item - send the uid and retrieve item (untested - send multiple uid's?)
 
 app.post('/api/saveItem', express.json(), function (req, res) {
-	var syncImagePromise;
+	var syncItemPromise;
 	if (req.body.uid) {
 		db.itemdb.find({uid:req.body.uid}, function (err, check) {
 			if (!check.length||check[0].uid!==req.body.uid) {
 				return res.send(500);
 			}
-			//it is there - update and store history
-			delete req.body._id;
-			db.itemdb.insert({type:'history', forUID:req.body.uid, data:req.body }, function (err, doc) {});
-			req.body.edited=moment().format();
-			//check to see if new image was sent
-			if (check.imageURL!==req.body.imageURL){
-				//image is different
-				
-				syncImagePromise = saveImage(req.body);
-				req.body.image = 'images/items/'+req.body.uid+'/itemImage.jpg';
-				req.body.thumb = 'images/items/'+req.body.uid+'/itemThumb.jpg';
-			}
-
-			//remove edit lock
-			delete req.body.lock;
-
-			db.itemdb.update({uid: req.body.uid}, req.body, function (err, doc) {
-				if(err){ console.log('(error updating item) '+err); }else{ q.when(syncImagePromise).then(function(){res.send(doc)}); }
-			});
+			//it is there
+			syncItemPromise=updateItem(req.body, check[0]);
+			q.when(syncItemPromise).then(function(){
+				res.send(200);
+			}); 
 		});
 	} else {
 		//brand new item!!!
-		req.body.uid=generateUID();
-		req.body.totalPriority=0;
-		req.body.created=moment().format();
-		//set owner as creator if not specified
-		if (!req.body.owner) { req.body.owner = req.body.createdBy; }
-
-		if (req.body.imageURL) {
-			//image url provided
-			syncImagePromise = saveImage(req.body);
-			req.body.image = 'images/items/'+req.body.uid+'/itemImage.jpg';
-			req.body.thumb = 'images/items/'+req.body.uid+'/itemThumb.jpg';
-		}else{
-			//no image, use default
-			req.body.image = defaultImage;
-			req.body.thumb = defaultImage;
-		}
-		db.itemdb.insert(req.body, function (err, doc) { 
-			if(err){ console.log('(error saving item) '+err); }else{ q.when(syncImagePromise).then(function(){res.send(doc);}); } 
-		});
+		syncItemPromise=newItem(req.body);
+		q.when(syncItemPromise).then(function(){
+			res.send(200);
+		}); 
+		
 	}
 });//end SAVE single item
 
+app.post('/api/stageItemChanges', express.json(), function (req, res) {
+	var newItem=req.body;
+	if (newItem.uid) {
+		db.itemdb.find({uid:newItem.uid}, function (err, check) {
+			if (!check.length||check[0].uid!==newItem.uid) {
+				return res.send(500);
+			}
+			//it is there
+			var originalItem=check[0];
+			var proposer = newItem.proposedBy;
+			if(proposer){
+				newKey=generateKey();
+				delete newItem.proposedBy;
+
+				var stagedChanges=[];
+
+				//save image if one
+				if (originalItem.imageURL!==newItem.imageURL){
+					console.log('saving new item image')
+					var mediaUID = generateUID();
+					saveImage(newItem.imageURL,mediaUID);
+					newItem.image = 'media/images/'+mediaUID+'/image.jpg';
+					newItem.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
+				}
+				
+				var changeNumber = 0;
+				for (key in newItem){
+					if (JSON.stringify(newItem[key])!==JSON.stringify(originalItem[key])){
+						//console.log('difference in '+key+' is '+JSON.stringify(scope.changed[key])+' -- original:'+JSON.stringify(scope.original[key]));
+						if((key!=='lockChangedBy')&&(key!=='lockChangedAt')&&(key!=='edited')&&(key!=='editedBy')&&(key!=='image')&&(key!=='lock')&&(key!=='imageURL')&&(key!=='owners')) {
+							var aChange = {};
+							aChange['what']=key;
+							aChange['value']=newItem[key];
+							aChange['decision']='';
+							if (key==='thumb'){
+								aChange['image']=newItem['image'];
+								aChange['imageURL']=newItem['imageURL'];
+							}
+							stagedChanges[changeNumber]=aChange;
+							changeNumber++;
+						}
+					}
+				}
+
+				var promises=[];
+				if (stagedChanges.length!==0){
+					//insert change for every owner to approve
+					_.each(originalItem.owners, function(owner) { 
+						var insertFinished=q.defer();
+						promises.push(insertFinished.promise);
+						db.itemdb.insert({type:'staged', forUID:newItem.uid, key:newKey, proposed:moment().format(), proposedBy:proposer, forOwner:owner, changes:stagedChanges}, function (err, doc) {
+							if(err){ 
+								console.log('(error staging item changes) '+err);
+								insertFinished.reject();
+							}else{ 
+								originalItem.proposedChanges=true;
+								insertFinished.resolve();
+							}
+						});
+					});//end map
+
+					q.all(promises).then(function(){
+						db.itemdb.update({uid: newItem.uid}, {$set:{proposedChanges:true}}, function (err, doc2) {
+							if(err){ 
+								console.log('(error setting staged changes flag on item) '+err); 
+							} else {
+								//success
+								res.send(200);
+								io.emit('proposedChange',newItem.uid);
+							}
+						});
+					}, function(error) { res.send('one of the promises fucked up'); });
+					
+				} else {
+					//no mods
+				}
+
+			} else {
+				//fail - no proposedBy
+			}
+		});
+	} else { 
+		//no item found matching that uid
+	}
+});//end 'STAGE' changes
+
+app.post('/api/decision', express.json(), function (req, res){
+	var syncItemPromise;
+	db.itemdb.find({key:req.body.key, forOwner:req.body.email}, function (err, check) {
+		if (!check.length||check[0].key!==req.body.key) {
+			return res.send(500);
+		}
+		//it is there
+		syncItemPromise=changeDecision(check[0], req.body.email, req.body.field, req.body.decision);
+		q.when(syncItemPromise).then(function(){
+
+			//check if all decisions are made
+			db.itemdb.find({key:req.body.key}, function (err, check2) {
+				var done = true;
+				var allDec = check2[0].changes;
+				for (k in allDec) {
+					if (allDec[k].decision==='') { done=false; }
+				}
+
+				if (done) {
+					console.log('all changes are complete');
+					req.body.item.proposedChanges=false;
+				} else {
+					console.log('more changes...');
+				}
+				//update item
+				db.itemdb.find({uid:req.body.item.uid}, function (err, check1) {
+					if (!check1.length||check1[0].uid!==req.body.item.uid) {
+						return res.send(500);
+					}
+					//it is there
+					syncItemPromise=updateItem(req.body.item, check1[0], true);
+					q.when(syncItemPromise).then(function(){
+						res.send(200);
+					});
+				});
+			}); 	
+		}); 
+	});
+});
+
+
 app.post('/api/deleteItem', express.json(), function (req, res){
+	var syncItemPromise;
 	req.body.oldType = req.body.type;
 	req.body.type = 'deleted';
-	delete req.body._id;
-	db.itemdb.update({uid:req.body.uid}, req.body, function (err, doc){
-		if(err){ consold.log('(error deleting item) '+err); }else { res.send(doc); }
+	db.itemdb.find({uid:req.body.uid}, function (err, check) {
+		if (!check.length||check[0].uid!==req.body.uid) {
+			return res.send(500);
+		}
+		//it is there
+		syncItemPromise=updateItem(req.body, check[0]);
+		q.when(syncItemPromise).then(function(){
+			res.send(200);
+		}); 
 	});
+
 });//end DELETE item
 
 app.post('/api/requestLock', express.json(), function (req, res){
@@ -210,6 +334,7 @@ app.post('/api/requestLock', express.json(), function (req, res){
 		else { 
 			if (item.lock){
 				//already has a lock
+				console.log('we are here....')
 				res.send(item);
 			} else {
 				//does not have lock yet
@@ -225,17 +350,37 @@ app.post('/api/requestLock', express.json(), function (req, res){
 
 app.post('/api/removeLock', express.json(), function (req, res){
 	var syncLockPromise;
-	console.log('removing lock for item: '+req.body.uid)
+	if (req.body.uid) {
+		console.log('removing lock for item: '+req.body.uid)
+		db.itemdb.findOne({uid:req.body.uid}, function (err, item){
+			if(err||!item){ console.log('(error removing lock on item) '+err); }
+			else { 
+				syncLockPromise = changeLock(item,req.body.email, false);
+				q.when(syncLockPromise).then(function(){
+					res.send(item);
+				});
+			}
+		});
+	}
+});//end remove lock item
+
+app.post('/api/pickLock', express.json(), function (req, res){
+	var syncLockPromise;
+	console.log('breaking lock for item: '+req.body.uid)
 	db.itemdb.findOne({uid:req.body.uid}, function (err, item){
 		if(err||!item){ console.log('(error removing lock on item) '+err); }
 		else { 
-			syncLockPromise = changeLock(item,req.body.email, false);
-			q.when(syncLockPromise).then(function(){
-				res.send(item);
-			});
+			if((item.owner)||(item.owner===req.body.email)||(item.lockChangedBy===req.body.email)){
+				syncLockPromise = changeLock(item,req.body.email, false);
+				q.when(syncLockPromise).then(function(){
+					res.send(item);
+				});
+			} else { 
+				//send the owner an email 
+			}
 		}
 	});
-});//end remove lock item
+});//end break lock item
 
 //needs in post:  {uid:uidofitem, email:usermakingedit, value:1or-1or0}
 app.post('/api/setPriority', express.json(), function (req, res){
@@ -270,6 +415,7 @@ app.post('/api/setPriority', express.json(), function (req, res){
 		 		doc.priority=newPriority;
 			 	db.itemdb.update({uid:req.body.uid}, {$set:{priority:newPriority, totalPriority:totalPriority}}, function (err,doc2){
 			 		if(err){ console.log('(error updating priority) '+err); }else{ 
+			 			io.emit('priorityChange', doc);
 			 			res.send(doc); 
 			 		}
 			 	});
@@ -278,117 +424,197 @@ app.post('/api/setPriority', express.json(), function (req, res){
 	});
 });
 
-//of the form {pushToUID: something, push: thekey, value: thevalue}
-app.post('/api/pushToItem', express.json(), function (req, res) {
-	var pushValue = {};
-	pushValue.$set = {};
-	pushValue.$set[req.body.push] = req.body.value; 
-	db.itemdb.update({uid: req.body.pushToUID}, pushValue, function (err, doc) {
-		if(err){ console.log('(error updating item) '+err); }else{ res.send(doc); }
-	});
+app.post('/api/addComment', express.json(), function (req, res) {
+	
+	db.itemdb.findOne({uid:req.body.uid}, function (err, item){
+		if(err){ console.log('(error finding item) '+err); }
+		else { 
+			if(!item.comments) { item.comments = []; }
+			var timeTime = moment().format();
+			item.comments.push({words:req.body.comment, by:req.body.email, time:timeTime});
 
-});//end PUSH to single item
-
-app.post('/api/stageItem', express.json(), function (req, res) {
-	db.itemdb.insert({type:'staged', key:req.body.actionKey, modifiedItem:req.body.data}, function (err, doc) {
-		if(err){ console.log('(error staging item) '+err); }else{ res.send(doc); }
-	});
-});//end 'STAGE' single item
-
-app.get('/api/unStage/:key/:decision', function (req, res) {
-	if (req.params.decision) { //true!
-		//find the staged item based on key
-		db.itemdb.find({type:'staged', key:req.params.key}, function (err, doc) {
-			//for some reason - it is returning an array......
-			modifiedItem = doc[0].modifiedItem;
-			//slap in the historical item
-			db.itemdb.find({uid:modifiedItem.uid}, function (err, old) {
-				db.itemdb.insert({type:'history', forUID:old[0].uid, data:old[0] }, function (err, doc) {});
+			var pushValue = {};
+			pushValue.$set = {};
+			pushValue.$set['comments'] = item.comments; 
+			db.itemdb.update({uid: req.body.uid}, pushValue, function (err, doc) {
+				if(err){ console.log('(error updating comments) '+err); }else{ 
+					io.emit('comment', item);
+					res.send(doc); 
+				}
 			});
-			//remove stageLock
-			modifiedItem.stageLock = false;
-			modifiedItem.lock = false;
-			//update with new item data
-			db.itemdb.update({uid:modifiedItem.uid}, modifiedItem);
-		});
-		//remove the staged item
-		db.itemdb.remove({type:'staged', key:req.params.key}, function (err, doc) {});
-	} else { //false
-		console.log('decided against it...');
-	}
-});//end 'UNSTAGE' single item
+		}
+	});
 
+});//end add comment
+
+
+
+//ITEMS --------------------------------
+function updateItem(newItem, oldItem, stage){
+	//returns a promise
+	var saveItemPromise = q.defer();
+	var syncImagePromise;
+
+	if (oldItem.imageURL!==newItem.imageURL){
+		console.log('saving new item image')
+		var mediaUID = generateUID();
+		syncImagePromise = saveImage(newItem.imageURL,mediaUID);
+		newItem.image = 'media/images/'+mediaUID+'/image.jpg';
+		newItem.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
+	}
+
+
+	var historyItem;
+	historyItem=oldItem;
+	historyItem.uid=generateUID();
+	historyItem.historical=true;
+	historyItem.proposedChanges=false;
+	//update and store history
+	db.itemdb.insert({type:'history', forUID:newItem.uid, historyItem:historyItem }, function (err, doc) {});
+
+	newItem.edited=moment().format();
+	if (!stage) { newItem.lock=false; }
+	delete newItem._id;
+	//check to see if new image was sent
+	
+	db.itemdb.update({uid: newItem.uid}, newItem, function (err, doc) {
+		if(err){ 
+			console.log('(error updating item) '+err); 
+			saveItemPromise.reject(); 
+		}else{ 
+			q.when(syncImagePromise).then(function(){
+				saveItemPromise.resolve();
+				console.log('sending new update io.emit');
+				io.emit('update', newItem);
+			}); 
+		}
+	});
+
+
+	return saveItemPromise.promise;
+}
+
+function newItem(newItem){
+	//returns a promise
+	var saveItemPromise = q.defer();
+	var syncImagePromise;
+	newItem.uid=generateUID();
+	newItem.totalPriority=0;
+	newItem.created=moment().format();
+	newItem.edited='never';
+	//set owner as creator if not specified
+	if (!newItem.owners) { newItem.owners =[]; newItem.owners.push(newItem.createdBy); }
+
+	if (newItem.imageURL) {
+		//image url provided
+		var mediaUID = generateUID();
+		syncImagePromise = saveImage(newItem.imageURL,mediaUID);
+		newItem.image = 'media/images/'+mediaUID+'/image.jpg';
+		newItem.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
+	}else{
+		//no image, use default
+		newItem.image = defaultImage;
+		newItem.thumb = defaultImage;
+	}
+	db.itemdb.insert(newItem, function (err, doc) { 
+		if(err){ 
+			console.log('(error saving item) '+err);
+			saveItemPromise.reject(); 
+		}else{ 
+			q.when(syncImagePromise).then(function(){
+				saveItemPromise.resolve();
+				console.log('item: ' + doc.uid);
+			    io.emit('new', doc);
+			}); 
+		} 
+	});
+
+	return saveItemPromise.promise;
+}
 
 //IMAGES --------------------------------
-function saveImage(item) {
+//takes a where (url), a uid to use, and who (opt - used for user added)
+function saveImage(where,theUID,who) {
+	//returns a promise
 	var saveImagePromise = q.defer();
-	request.get({url: url.parse(item.imageURL), encoding: 'binary'}, function (err, response, body) {
-		console.log('trying to save the image for item: '+item.name);
-		var path = '/vagrant/www/images/items/'+item.uid+'/';
-		if (fs.exists(path, function (){ return true; })) {
-			//path exists (remove then make fresh)
-			fs.rmdir(path);
-		}
-		fs.mkdir(path);
-	    fs.writeFile(path+"itemImage.jpg", body, 'binary', function(err) {
-	    	if(err) { 
-	    		console.log(err); 
+	request.get({url: url.parse(where), encoding: 'binary'}, function (err, response, body) {
+		console.log('trying to save image uid: '+theUID);
+		var path = '/vagrant/www/media/images/'+theUID+'/';
+		fs.mkdir(path, function(err){
+			if (err) {
+				console.log('error saving image: '+err); 
 	    		saveImagePromise.reject();
-	    	}else{ 
-	    		//save image thumbnail
-	    		console.log("The file was saved!"); 
-	    		gm(path+'itemImage.jpg').resize('60','60').gravity('center').write(path+'itemThumb.jpg', function(err) {
-	    			if(err) { 
-	    				console.log(err); 
-	    				saveImagePromise.reject();
-	    			}else{ 
-	    				//successful image save chain:
-	    				saveImagePromise.resolve();
-	    				console.log("Image thumbnail saved"); 
-	    			}
-	    		});//end save image thumb
-	    	}//end save image
-	    }); 
+			} else {
+				fs.writeFile(path+"image.jpg", body, 'binary', function(err) {
+			    	if(err) { 
+			    		console.log('error saving image: '+err); 
+			    		saveImagePromise.reject();
+			    	}else{ 
+			    		//save image thumbnail
+			    		
+			    		console.log("the image was saved!"); 
+			    		gm(path+'image.jpg').resize('60','60').gravity('center').write(path+'thumb.jpg', function(err) {
+			    			if(err) { 
+			    				console.log('error saving thumb: '+err); 
+			    				saveImagePromise.reject();
+			    			}else{ 
+			    				//successful image save chain:
+			    				saveImagePromise.resolve();
+			    				console.log("the image thumb was saved!"); 
+			    			}
+			    		});//end save image thumb
+			    	}//end save image
+		    	});
+			}
+		});
 	});
+
 	return saveImagePromise.promise;
 }//end SAVE image
-
-
-//EMAILS --------------------------------
-app.post('/api/sendEmail', express.json(), function (req, res){
-
-	console.log('trying to send email to ' + req.body.to);
-	smtpTrans.sendMail({
-	    from: 'Robot <colabrobot@gmail.com>',
-	    to: req.body.to,
-	    subject: req.body.subject,
-	    text: 'text body',
-	    html: req.body.HTMLbody
-	}, function (err, doc){
-	    if(err){ console.log(err); }else{ 
-	    	//email was sent!
-	    	res.send(250);
-	    	console.log('Message sent: ' + doc.response); }
-	});
-    
-});
 
 //LOCKS --------------------------------
 function changeLock(item,who,value){
 	var changeLockPromise = q.defer();
+	var time = moment().format();
+	item.lock=value;
+	item.lockChangedBy=who;
+	item.lockChangedAt=time;
 
-	db.itemdb.update({uid: item.uid}, {$set:{lock:value, lockChangedBy:who}}, function (err, doc) {
+	db.itemdb.update({uid: item.uid}, {$set:{lock:value, lockChangedBy:who, lockChangedAt:time}}, function (err, doc) {
 		if(err){ 
 			console.log('(error changing lock on item) '+err); 
 			changeLockPromise.reject();
 		} else {
 			//success
+			io.emit('lockChange',item);
 			changeLockPromise.resolve();
 		}
 	});
 
 	return changeLockPromise.promise;
 }
+
+function changeDecision(staged, who, what, value){
+	var changeDecisionPromise = q.defer();
+	var time = moment().format();
+
+	_.find(staged.changes, function(change, i){
+		if (change['what']===what){ staged.changes[i].decision=value; }
+	});
+
+	db.itemdb.update({key: staged.key}, {$set:{changes:staged.changes}}, function (err, doc) {
+		if(err){ 
+			console.log('(error changing decisions on item) '+err); 
+			changeDecisionPromise.reject();
+		} else {
+			//success
+			io.emit('decisionChange',staged);
+			changeDecisionPromise.resolve();
+		}
+	});
+
+	return changeDecisionPromise.promise;
+} 
 
 	
 
@@ -399,9 +625,16 @@ app.get('/api/getDbInfo', function (req,res){
 });
 
 
+//SOCKETS --------------------------------
+
+io.on('connection', function(socket){
+  console.log('a user connected');
+});
 
 
-
+function isEmpty(obj) {
+  return Object.keys(obj).length === 0;
+}
 
 function generateUID() {
   return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -410,4 +643,11 @@ function generateUID() {
   });
 }
 
-app.listen(80);
+function generateKey() {
+  return 'xxxxxxxxxxxx-4xxxyxxxxxx99xx-xxxxx00xxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+      return v.toString(16);
+  });
+}
+
+http.listen(80);

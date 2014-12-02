@@ -1,0 +1,20 @@
+<item-toolbar item="item" is-owner="isOwner"></item-toolbar>
+<div ng-if="!item.lock||item.lockChangedBy===sharedData.email">
+	<list-item item="item" page="page"></list-item>
+	<div class="container">
+		<div class="row">
+			<div class="col-xs-12 col-md-6" ng-if="item.proposedChanges">
+				<p class="detail-header">proposed changes to this item:</p>
+				<item-proposed-changes all-changes="allChanges" item="item" is-owner="isOwner"></item-proposed-changes>
+			</div>
+			<div class="col-xs-12 col-md-6">
+				<p class="detail-header">adding as {{sharedData.email}}</p>
+				<insert-form form-item="item" is-owner="isOwner"></insert-form>
+			</div>
+			
+	</div>
+</div>
+
+
+
+

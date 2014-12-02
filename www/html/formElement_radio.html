@@ -1,0 +1,9 @@
+<!-- radio -->
+<div class="form-group">
+	<fieldset>
+	    <label ng-repeat="option in field.options" for="radio-{{field.name}}-{{option}}">
+	    	<input class="form-control" type="radio" id="radio-{{field.name}}-{{option}}" name="{{field.name}}" value="{{option}}" ng-model="formItem[field.name]" />
+	    	<span>{{option}}</span>
+	    </label>
+	</fieldset>
+</div>

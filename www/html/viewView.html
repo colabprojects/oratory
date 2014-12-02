@@ -1,0 +1,16 @@
+<item-toolbar item="item" is-owner="isOwner"></item-toolbar>
+<list-item item="item" page="page"></list-item>
+<div id="history">
+	<button class="btn btn-default" ng-click="showHistory=!showHistory; getHistory();">show history</button>
+
+	<div ng-if="showHistory">
+		<div ng-repeat="oldItem in history">
+			<list-item item="oldItem"></list-item>
+		</div>
+	</div>
+
+</div>
+
+
+
+

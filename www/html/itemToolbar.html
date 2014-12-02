@@ -1,0 +1,20 @@
+<div class="container pad-top">
+	<button class="btn btn-default" ng-click="goBack()">go back</button>
+	
+	<div id="owner-stuff" ng-if="isOwner">
+		<p>you are an owner of this item</p>
+		<button class="btn btn-default" ng-click="deleteItem(item)">delete</button>
+		<button class="btn btn-default" ng-click="addOwnerClick();">add owner</button>
+		<button class="btn btn-default" ng-click="addMediaClick();">add media</button>
+		
+		<owner-form ng-if="addOwners" item='item'></owner-form>
+		<button ng-if="addOwners" class="btn btn-default" ng-click="addOwnerClick();">cancel</button>
+		<add-media-form ng-if="addMedia" item="item"></add-media-form>
+		<button ng-if="addMedia" class="btn btn-default" ng-click="addMediaClick();">cancel</button>
+	</div>
+	
+
+	<div ng-if="item.lock">
+		<p>item is locked by {{item.lockChangedBy}}</p>
+	</div>
+</div>

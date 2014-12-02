@@ -1,0 +1,21 @@
+<!--add/remove/list attachments -->
+<list-attachment edit-attachment='editAttachment' attachment='attachment' ng-repeat="attachment in items | filter:{wasChecked:true} | filter:attachmentFilter"></list-attachment>
+<div ng-if="editAttachment" class="add-top">
+	<button class="btn btn-default margin-md" ng-click="showAddAttachmentForm=true;" ng-show="!showAddAttachmentForm">attach items</button>
+	<form name="formAttachments" ng-show="showAddAttachmentForm">
+		<!--attachment filter-->
+		<h5>add attachments</h5>
+		<select id="form-attachment-type" class="form-control" ng-model="attachmentType" name="formAttachmentType" ng-options="a for a in attachmentTypes" style="width:60px; display:inline;"></select>
+		<input class="form-control" type="text" style="width:190px; display:inline;" ng-model="textFilter" placeholder="filter by type or search">
+
+		<br>
+
+		<!--list all possible attachments-->
+		<list-attachment edit-attachment='editAttachment' attachment="attachment" ng-repeat="attachment in items | filter:{wasChecked:false} | filter:attachmentType | filter:textFilter"></list-attachment>
+
+
+		<button class="btn btn-default margin-md" ng-click="addAttachments(); showAddAttachmentForm=false;" ng-disabled="formAttachment.$invalid">save attachments</button>
+
+	</form>
+</div>
+

@@ -8,20 +8,22 @@
     "url": ""
   },
   "dependencies": {
-    "express": "3.x",
-    "express-mailer":"*",
-    "nodemailer":"*",
-    "nodemailer-smtp-transport":"*",
+    "binaryjs": "^0.2.1",
     "body-parser": "^1.1.2",
     "errorhandler": "^1.0.1",
+    "express": "3.x",
+    "gm": "*",
+    "http": "*",
+    "jquery": "^2.1.1",
+    "jquery.cookie": "*",
     "method-override": "^1.0.0",
+    "moment": "*",
     "mongojs": "*",
-    "request":"*", 
-    "gm":"*",
-    "moment":"*",
-    "q":"*",
-    "underscore":"*",
-    "jquery.cookie":"*"
+    "q": "*",
+    "request": "*",
+    "save-to": "^1.0.3",
+    "socket.io": "*",
+    "underscore": "*"
   },
   "scripts": {
     "start": ""

@@ -1,0 +1,8 @@
+<!-- URL -->
+<ng-form name='urlForm'>
+	<div class="form-group">
+		<label for="form-{{field.name}}" >{{field.name}}</label>
+		<input type="url" class="form-control" name="formURL" id="form-{{field.name}}" ng-required="formItem[field.name]" ng-model="formItem[field.name]" ng-class="{'req-alert-on-left':urlForm.formURL.$invalid}" ng-pattern='/\.(jp(g|eg)|png)$/' >
+	</div>
+</ng-form>
+

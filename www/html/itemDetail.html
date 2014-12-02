@@ -1,0 +1,56 @@
+<!-- DETAIL -->
+<div class="row">
+	<div class="col-xs-12 col-md-4 detail-container">
+		<div class="detail-card">
+			<p class="half-bottom detail-header">overview</p>
+			item owner(s): 
+			<ul>
+				<li ng-repeat="o in item.owners">{{o}}</li> 
+			</ul>
+		</div>
+	</div>
+	<div ng-if="item.type==='project'" class="col-xs-12 col-md-4 detail-container">
+		<div class="detail-card">
+			<p class="half-bottom detail-header">things we have</p>
+			<list-attachments ng-if="item.type=='project'" form-item="item" attachment-filter="{need:'have'}"></list-attachments>
+			<p class="add-top half-bottom detail-header">things we still need</p>
+			<list-attachments ng-if="item.type=='project'" form-item="item" attachment-filter="{need:'want'}"></list-attachments>
+		</div>
+	</div>
+	<div class="col-xs-12 col-md-4 detail-container">
+		<div class="detail-card">
+			<p class="half-bottom detail-header">conversation</p>
+			<textarea class="form-control" ng-model="comment" placeholder="add something"></textarea>
+			<button ng-if="comment" ng-click="addComment(item)" class="btn btn-default">add comment</button>
+
+			<show-comment ng-repeat="comment in item.comments" comment="comment"></show-comment>
+		</div>
+
+	</div>
+	<!--
+	<div class="col-xs-12 detail-container">
+		<div class="detail-card">
+			<p class="half-bottom detail-header">media</p>
+			<div class="col-xs-6 col-md-3" ng-repeat="image in item.media ">
+				<div class="thumbnail" id="media-{{$index}}">
+					<a href="{{media.image}}"><img ng-src="{{media.thumb}}"/></a>
+				</div>
+			</div>
+		</div>
+	</div>
+	-->
+	<div class="col-xs-12 detail-container">
+		<!-- buttons? -->
+		<button class="btn btn-default" ng-click="showRaw[item.uid]=!showRaw[item.uid]">show raw</button>
+	</div>
+</div>
+<div class='row' ng-if="showRaw[item.uid]">
+	<div class="col-xs-12 detail-container">
+		<div class="detail-card">
+			<p class="half-bottom detail-header">raw data</p>
+			<div ng-repeat='(key,value) in item'>
+				{{key}} = {{value}}
+			</div>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,7 @@
+<!-- URL with image-->
+<div class="form-group">
+	<label for="form-{{field.name}}" >{{field.name}}</label>
+	<input class="form-control" type="text" id="form-{{field.name}}" ng-model="imageSearchTerm">
+</div>
+<image-search ng-if="imageSearchTerm" search-term="imageSearchTerm"></image-search>
+
