@@ -20,6 +20,8 @@
     "moment": "*",
     "mongojs": "*",
     "q": "*",
+    "nodemailer":"*",
+    "nodemailer-smtp-transport":"*",
     "request": "*",
     "save-to": "^1.0.3",
     "socket.io": "*",
