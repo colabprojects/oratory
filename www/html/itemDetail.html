@@ -7,6 +7,10 @@
 			<ul>
 				<li ng-repeat="o in item.owners">{{o}}</li> 
 			</ul>
+			<div ng-if="item.steps">
+				next step:
+				<p>{{item.steps[0].name}}</p>
+			</div>
 		</div>
 	</div>
 	<div ng-if="item.type==='project'" class="col-xs-12 col-md-4 detail-container">

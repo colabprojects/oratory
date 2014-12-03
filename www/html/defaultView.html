@@ -16,7 +16,7 @@
 			    <button type="button" class="btn btn-default dropdown-toggle remove-round" data-toggle="dropdown"><span class="glyphicon glyphicon-plus"></span>
 				</button>
 				<ul class="dropdown-menu" role="menu">
-					<li><a ng-click="showForm()">add new</a></li>
+					<li><a ng-click="addNew()">add new</a></li>
 				</ul>
 			</div>
 			<input type="text" class="form-control translucent" placeholder="search {{page}}" ng-model="sharedData.filter">
@@ -26,10 +26,6 @@
 			</div>
 		</div>
 	</form>
-</div>
-
-<div id="add-form">
-	<insert-form form-item="formItem" is-owner="true"></insert-form>
 </div>
 
 <div class="list-wrapper">

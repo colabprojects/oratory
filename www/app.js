@@ -4,13 +4,21 @@ var itemApp = angular.module('app', ['ui.router']);
 var socket = io();
 //cookies:
 var email = $.cookie('email');
+var token = $.cookie('token');
 //debug:
 var debug = {};
 
+itemApp.factory('user', function($http, $q, $state){
+  var user = {'test':12345};
+
+  return user;
+});
+
 //create the service for database interaction and info
-itemApp.factory('master', function($http, $q, $state){
+itemApp.factory('master', function($http, $q, $state, user){
   var service = {};
 
+  debug=user;
   service.items=[];
   service.item={};
 
@@ -61,7 +69,7 @@ itemApp.factory('master', function($http, $q, $state){
 
   service.sharedData.notIncluded = ['name','type','uid','image','thumb','need'];
 
-  service.sharedData.attachmentTypes = ['resource', 'tool', ''];
+  service.sharedData.attachmentTypes = ['resource', 'tool', 'project', ''];
   service.sharedData.formAttachments = [];
 
   service.sharedData.changePage = function (page) { $state.go(page); };
@@ -90,10 +98,18 @@ itemApp.factory('master', function($http, $q, $state){
 });
 
 itemApp.config(function($stateProvider, $urlRouterProvider){
-  $urlRouterProvider.when('/edit/','/');
-  $urlRouterProvider.when('/edit','/');
+
+  //$urlRouterProvider.when('/edit','/');
 
   $stateProvider
+    .state('user', {
+      url: '/dothisfirst',
+      templateUrl: 'html/user.html',
+      controller: function($scope, $state) {
+        
+      }
+
+    })
     .state('everything', {
       url: '/',
       templateUrl: 'html/defaultView.html',
@@ -212,6 +228,15 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
 
       }
     })
+    .state('new', {
+      url: '/new',
+      templateUrl: 'html/newView.html',
+      controller: function ($scope, $state, $stateParams, master) {
+        $scope.sharedData=master.sharedData;
+        $scope.page=$state.current.name;
+        $scope.item={};
+      }
+    })
     .state('view', {
       url: '/view/:uid',
       resolve:{
@@ -274,8 +299,8 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
     $scope.sharedData.options=!$scope.sharedData.options;
   }
  
-  $scope.showForm = function() {
-    $('#add-form').animate({top:'0px'});
+  $scope.addNew = function() {
+    $state.go('new');
   };
   
   $scope.setEmailCookie = function(email) {
@@ -291,12 +316,7 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
   }
 
   $scope.$on('cancelForm',function(){ 
-    if ($state.current.name==='edit') {
-      //add alert
-      window.history.back();
-    } else {
-      $('#add-form').animate({top:'-1000px'});
-    }
+    window.history.back();
   });
 
   $scope.$watch('sharedData.showDeleted', function(hide) { 
@@ -338,6 +358,7 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
   socket.on('comment', function(item){
     console.log('new comment for '+item.name+'!');
     angular.copy(item,_(master.items).findWhere({uid:item.uid}));
+    if (item.uid == master.item.uid) { angular.copy(item,master.item); }
     master.setItemPriorities(); 
     $scope.$digest();
   });
@@ -599,6 +620,7 @@ itemApp.directive('listItem', function ($state, $http, master) {
       scope.showMoreDetail = {};
       scope.sharedData = master.sharedData;
       scope.colors = master.color(scope.item);
+      
 
       if (scope.page === 'view') { scope.showMoreDetail[scope.item.uid]=true; }
 
@@ -684,6 +706,10 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
 
       scope.addOwnerClick = function() {
         scope.addOwners=!scope.addOwners;
+      };
+
+      scope.addStepClick = function() {
+        scope.addStep=!scope.addStep;
       };
 
     }
@@ -788,6 +814,31 @@ itemApp.directive('ownerForm', function ($state, $http, master) {
   }
 });
 
+itemApp.directive('addStepForm', function ($state, $http, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      item:'='
+    },
+    templateUrl: 'html/addStepForm.html',
+    link: function(scope, element, attrs) {
+      scope.dbInfo=master.getDbInfo;
+      scope.formStep={};
+      scope.formStep.type='step';
+
+      scope.saveStep = function(){
+        if(!scope.item.steps) {scope.item.steps=[];}
+        scope.item.steps.push(scope.formStep);
+        master.saveItem(scope.item);
+
+        scope.formStep={};
+        scope.formStep.type='step';
+      };
+
+    }
+  }
+});
+
 itemApp.directive('addMediaImageForm', function ($state, $http, master) {
   return {
     restrict: 'E',
@@ -844,3 +895,17 @@ itemApp.filter('regex', function() {
     return out;
   };
 });
+
+
+
+
+
+function generateKey() {
+  return 'xxxxxxxxxxxx-4xxxyxxxxxx99xx-xxxxx00xxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+      return v.toString(16);
+  });
+}
+
+
+

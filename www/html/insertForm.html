@@ -1,4 +1,5 @@
 <form name="form">
+    <p class="detail-header">adding as {{sharedData.email}}</p>
     <div class="form-group">
         <label for="form-type">type</label>
         <select id="form-type" class="form-control" name="formType" ng-model="formItem.type" ng-options="t.name as t.name for t in dbInfo.formTypes" ng-class="{'req-alert-on-left':form.formType.$invalid}" required></select>
@@ -19,7 +20,6 @@
 	<button class="btn btn-default" ng-click="showCustom=true;" ng-hide="showCustom" ng-disabled="form.formType.$invalid">customize</button>
 	<button class="btn btn-default" ng-click="cancelCustom()" ng-show="showCustom">cancel custom</button>
 	<button class="btn btn-default" ng-click="cancelForm(formItem)">cancel</button>
-    <p class="remove-all">adding as {{sharedData.email}}</p>
 </form>
 
 
