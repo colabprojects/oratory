@@ -1,0 +1,21 @@
+<ol>
+	<li ng-repeat="step in item.steps">{{step.name}}</li>
+</ol>
+
+<form name="stepForm">
+	<div class="row">
+		<div class="col-sm-4">
+			<div class="form-group">
+		        <label for="step-name">name</label>
+				<input id="step-name" class="form-control" name="stepName" type="text" ng-model="formStep.name" ng-class="{'req-alert-on-left':stepForm.stepName.$invalid}" required>
+		    </div>
+		</div>
+		<div class="col-sm-6">
+			<form-element ng-repeat="field in dbInfo.getFields(formStep.type)" field="field" form-item="formStep" form="form"></form-element>
+		</div>
+		<div class="col-sm-2 margin-top">
+			<button type="submit" ng-click="saveStep();" class="btn btn-default" ng-disabled="stepForm.$invalid">save</button>
+		</div>
+	</div>
+    
+</form>

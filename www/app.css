@@ -86,8 +86,10 @@ html, body { height: 100%; }
 .btn-info { background-color: rgb(255,200,0); border-color:#EDA891; }
 
 .opt-button { margin:7px 10px 0 10px; }
+.margin-top { margin-top:20px; }
 .margin-md { margin-bottom: 15px; margin-top:15px; }
 .pad-top { padding-top:15px; }
+.pad-bottom { padding-bottom:15px; }
 .remove-round { border-radius: 0; border-right:0; }
 .width100 { width:100% !important; }
 

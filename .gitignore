@@ -2,3 +2,4 @@ node_modules/
 .vagrant/
 npm-debug.log
 www/media/images
+users.js
