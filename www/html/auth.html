@@ -1,0 +1,32 @@
+<div class="container">
+	<form name="authForm">
+		<div class="row">
+			<div class="col-sm-4">
+				<div class="form-group">
+			        <label for="auth-email">email</label>
+					<input id="auth-email" class="form-control" name="authEmail" type="email" ng-model="email" ng-class="{'req-alert-on-left':authForm.authEmail.$invalid}" required>
+			    </div>
+			    <div class="form-group" ng-show="key">
+			        <label for="auth-gen">generated token</label>
+					<input id="auth-gen" class="form-control" name="authGen" type="text" ng-model="token">
+			    </div>
+
+
+			    <div class="checkbox" ng-hide="key">
+			        <label>
+			        	<input type="checkbox" ng-model="useSpecial"> use special
+			    	</label>
+			    </div>
+
+			    <div class="form-group" ng-show="useSpecial">
+			        <label for="auth-special">special</label>
+					<input id="auth-special" class="form-control" name="authSpecial" type="text" ng-model="special" ng-class="{'req-alert-on-left':authForm.authSpecial.$invalid}">
+			    </div>
+			    <button type="submit" ng-click="authUser();" class="btn btn-default" ng-disabled="authForm.$invalid">authenticate</button>
+			</div>
+			
+				
+		</div>
+	    
+	</form>
+</div>

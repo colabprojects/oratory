@@ -35,13 +35,8 @@
 			<input type="checkbox" id="showDeletedCheckbox" ng-model="sharedData.showDeleted" ng-change="$emit('showDeleted',showDeleted)" />
 			<span style="color:#777;">show deleted</span>
 		</div>
-		<form name="emailForm">
-			who are you
-			<input id="email-input" ng-model="email" class="form-control" type="email" placeholder="save email to add and edit stuff" ng-class="{'req-alert-on-left':emailForm.$invalid}" required/>
-			<button id="email-button" type="submit" class="btn btn-default" ng-click="setEmailCookie(email)" ng-hide="emailSuccess" ng-disabled="emailForm.$invalid">save cookie</button>
-			<button id="email-button" class="btn btn-default" ng-click="removeEmail()">remove cookie</button>
-		</form>
 		<p style="color:#777; padding-top:10px;">adding shit as: {{sharedData.email}}</p>
+		<button id="email-button" class="btn btn-default" ng-click="removeUser()">get out...</button>
 		<button class="btn btn-default" ng-click="sharedData.options=false;">hide options</button>
 		<div id="socket-messages" style="color:#777;"></div>
 	</div>
