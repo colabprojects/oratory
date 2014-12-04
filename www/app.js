@@ -63,7 +63,7 @@ itemApp.factory('master', function($http, $q, $state){
 
   service.sharedData.notIncluded = ['name','type','uid','image','thumb','need'];
 
-  service.sharedData.attachmentTypes = ['resource', 'tool', 'project', ''];
+  service.sharedData.attachmentTypes = ['resource', 'tool', ''];
   service.sharedData.formAttachments = [];
 
   service.sharedData.changePage = function (page) { $state.go(page); };
@@ -603,8 +603,6 @@ itemApp.directive('listAttachments', function ($filter, master) {
       };
 
       scope.addAttachments();
-
-      //scope.showAddAttachmentForm = !scope.formItem.attachments || (scope.formItem.attachments.length === 0);
     }
   }
 });
@@ -668,13 +666,7 @@ itemApp.directive('itemPriority', function ($state, $http, master) {
           uid:scope.item.uid, 
           email:scope.sharedData.email, 
           value:(userPriority===how)?0:how
-        })
-        /*
-        .then(function(response){
-          angular.copy(response.data, scope.item);
-          master.setItemPriorities(); 
         });
-        */
       };
     }
   }
