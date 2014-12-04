@@ -120,6 +120,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
           }else{
             $http.post('/api/authGen', {email:$scope.email}).then(function (response){
               //window.close();
+              $('#sentanddone').html('<h3>please close this window and check your email</h3>');
             });
           }
         };
