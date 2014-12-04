@@ -139,7 +139,6 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       },
       controller: function($scope, $state, master, auth) {
         if (auth==='false') { $state.go('auth'); }
-        master.refreshItems();
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = '';
         $scope.sharedData.orderBy = '-edited';
@@ -159,7 +158,6 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       },
       controller: function ($scope, $state, auth, master) {
         if (auth==='false') { $state.go('auth'); }
-        master.refreshItems();
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = function(item) {
           return item.type === 'tool' || item.type ==='resource' || item.oldType === 'tool' || item.oldType === 'resource';
@@ -179,7 +177,6 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       },
       controller: function ($scope, $state, auth, master) {
         if (auth==='false') { $state.go('auth'); }
-        master.refreshItems();
         $scope.sharedData=master.sharedData;
         $scope.sharedData.orderBy = '-totalPriority';
         master.setItemPriorities($scope.sharedData.email, 'project');
@@ -201,7 +198,6 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       },
       controller: function ($scope, $state, auth, master) {
         if (auth==='false') { $state.go('auth'); }
-        master.refreshItems();
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = function(item) {
           return item.type==='book' || item.oldType === 'book';
