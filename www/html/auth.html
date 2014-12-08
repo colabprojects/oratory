@@ -20,7 +20,7 @@
 
 			    <div class="form-group" ng-show="useSpecial">
 			        <label for="auth-special">special</label>
-					<input id="auth-special" class="form-control" name="authSpecial" type="text" ng-model="special" ng-class="{'req-alert-on-left':authForm.authSpecial.$invalid}">
+					<input id="auth-special" class="form-control" name="authSpecial" type="text" ng-model="token" ng-class="{'req-alert-on-left':authForm.authSpecial.$invalid}">
 			    </div>
 			    <button type="submit" ng-click="authUser();" class="btn btn-default" ng-disabled="authForm.$invalid">authenticate</button>
 			</div>

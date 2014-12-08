@@ -114,15 +114,22 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
           $.cookie('email', $scope.email);
           master.sharedData.token=$scope.token;
           $.cookie('token', $scope.token);
+          debug=$scope.useSpecial;
 
+          $state.go('everything');
+
+          /*
+          //PRODUCTION
           if ($scope.key) {
             $state.go('everything');
-          }else{
+          }
+          else{
             $http.post('/api/authGen', {email:$scope.email}).then(function (response){
               //window.close();
               $('#sentanddone').html('<h3>please close this window and check your email</h3>');
             });
           }
+          */
         };
 
       }
@@ -268,7 +275,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
           });
         },
         allChanges: function ($http, $stateParams, master) {
-          return $http.post('/api/getItems', {type:'staged',forUID:$stateParams.uid}).then(function (response){
+          return $http.post('/api/getItems', {type:'staged',forUID:$stateParams.uid,forOwner:master.sharedData.email}).then(function (response){
             return response.data;
           });
         },
@@ -286,6 +293,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         $scope.page=$state.current.name;
         $scope.sharedData.showMoreDetail[$stateParams.uid]=true;
         $scope.allChanges=_(allChanges).where({forUID:$stateParams.uid});
+        debug=allChanges;
 
         //check if owner if not - propose changes only
         $scope.isOwner=false;

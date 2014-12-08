@@ -181,6 +181,8 @@ app.post('/api/getItems', express.json(), function (req, res) {
 	} else {
 		var query = {};
 		if (req.body.type) { query['type'] = req.body.type; }
+		if (req.body.forUID) { query['forUID'] = req.body.forUID; }
+		if (req.body.forOwner) { query['forOwner'] = req.body.forOwner; }
 		else { query = { $or:_(dbInfo.types).map(function(item){ return {'type':item.name}; }) }; }
 		db.itemdb.find(query,function (err, docs) {
 			if(err){ console.log('(error getting items) '+err); }else{ res.send(docs); }

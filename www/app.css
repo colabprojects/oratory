@@ -97,7 +97,7 @@ html, body { height: 100%; }
 
 .pointer { cursor:pointer; }
 
-.show-more-detail { color:#AAA; font-size:9px; }
+.show-more-detail { color:#AAA; font-size:10px; }
 .more-detail { box-shadow: inset 0px 4px 10px #AAA; padding:15px 10px; }
 .detail-container { padding-left:5px; padding-right:5px; }
 .detail-card { background:#fff; border-radius:6px; box-shadow:1px 1px 10px rgba(0,0,0,.3); padding:0 5px 10px 5px; margin-bottom:10px; }
