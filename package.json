@@ -17,6 +17,7 @@
     "http": "*",
     "jquery": "^2.1.1",
     "jquery.cookie": "*",
+    "lodash": "^2.4.1",
     "method-override": "^1.0.0",
     "moment": "*",
     "mongojs": "*",

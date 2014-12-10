@@ -15,6 +15,17 @@ itemApp.factory('master', function($http, $q, $state){
   service.items=[];
   service.item={};
 
+  service.getDbInfo = {};
+  $http.get('/api/getDbInfo').then(function (response){
+    angular.copy(response.data, service.getDbInfo);
+
+    service.getDbInfo.getFields = function(type) { 
+      var type = _(service.getDbInfo.types).findWhere({name:type}); 
+      return type && type.formFields;
+    };
+
+  });
+
   service.refreshItems=function(){
     return $http.post('/api/getItems').then(function (response) {
       return angular.copy(response.data, service.items);
@@ -28,8 +39,12 @@ itemApp.factory('master', function($http, $q, $state){
     return type && type.color;
   };
 
-  service.saveItem = function(itemToBeSaved){
-    return $http.post('/api/saveItem', itemToBeSaved);
+  service.saveItem = function(itemToBeSaved,value){
+    return $http.post('/api/saveItem', {item:itemToBeSaved,unlock:value});
+  };
+
+  service.pushToItem = function(pushComponents){
+    return $http.post('/api/pushToItem', pushComponents);
   };
 
   service.deleteItem = function(itemToBeDeleted){
@@ -39,17 +54,6 @@ itemApp.factory('master', function($http, $q, $state){
       }); 
     });
   };
-
-  service.getDbInfo = {};
-  $http.get('/api/getDbInfo').then(function (response){
-    angular.copy(response.data, service.getDbInfo);
-
-    service.getDbInfo.getFields = function(type) { 
-      var type = _(service.getDbInfo.types).findWhere({name:type}); 
-      return type && type.formFields;
-    };
-
-  });
   
   //SHARED DATA
   service.sharedData = {};
@@ -67,6 +71,7 @@ itemApp.factory('master', function($http, $q, $state){
   service.sharedData.formAttachments = [];
 
   service.sharedData.changePage = function (page) { $state.go(page); };
+
   service.sharedData.scrollTop = function () {
     $('html, body').animate({
         scrollTop: $("#site-wrapper").offset().top
@@ -110,16 +115,21 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         }
 
         $scope.authUser = function(){
+          //DEV
+          master.sharedData.email=$scope.email;
+          $.cookie('email', $scope.email);
+          master.sharedData.token='123';
+          $.cookie('token', '123');
+          $state.go('everything');
+
+          /*
+          //PRODUCTION
           master.sharedData.email=$scope.email;
           $.cookie('email', $scope.email);
           master.sharedData.token=$scope.token;
           $.cookie('token', $scope.token);
           debug=$scope.useSpecial;
 
-          $state.go('everything');
-
-          /*
-          //PRODUCTION
           if ($scope.key) {
             $state.go('everything');
           }
@@ -523,7 +533,7 @@ itemApp.directive('insertForm', function (master, $state, $http) {
             itemToBeAdded.editedBy = scope.sharedData.email;
           }
 
-          master.saveItem(itemToBeAdded); 
+          master.saveItem(itemToBeAdded,true); 
           master.sharedData.filter=''; 
           scope.cancelForm(); 
         }
@@ -588,29 +598,37 @@ itemApp.directive('listAttachments', function ($filter, master) {
     link: function(scope, element, attrs) {
       //db defaults for form
       scope.dbInfo=master.getDbInfo;
-      //this copies a reference WRONG
-      //scope.items=master.items;
+
       scope.items = _.chain(master.items)
         .filter(function(item){ return item.type==='tool' || item.type ==='resource'; })
         .map(function(item){ return angular.copy(item); }).value();
 
-      scope.$watch('items', function(){
-        scope.formItem.attachments=_.chain(scope.items)
-          .filter(function(item){ return item.checked; })
-          .map(function(item){ return item.uid; }).value();
-      },true);
 
       scope.attachmentTypes=master.sharedData.attachmentTypes;
 
-      scope.addAttachments = function() {
+      var initAttachments = function() {
         _(scope.items).each(function(item){ 
           item.checked = item.wasChecked = _(scope.formItem.attachments).find(function(attachment){
             return attachment === item.uid;
           })?true:false;
+         
         });
       };
 
-      scope.addAttachments();
+      initAttachments();
+
+      scope.addAttachments = function(){
+        //update the scoped item
+        scope.formItem.attachments=_.chain(scope.items)
+          .filter(function(item){ return item.checked; })
+          .map(function(item){ 
+
+            return item.uid; 
+
+        }).value();
+        initAttachments();
+        master.pushToItem(_(scope.formItem).pick(['uid','attachments']));
+      }
     }
   }
 });
@@ -742,8 +760,11 @@ itemApp.directive('itemDetail', function ($state, $filter, $http, master) {
           $http.post('/api/addComment', {uid:item.uid,email:master.sharedData.email,comment:scope.comment}).then(function(res){
             scope.comment='';
           });
+      };
 
-      }
+      scope.findAttachment = function(theUID){
+        return _(master.items).findWhere({uid:theUID});
+      };
     }
   }
 });
@@ -760,6 +781,8 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
       scope.sharedData = master.sharedData;
       scope.colors = master.color(scope.item);
       scope.deleteItem=master.deleteItem;
+
+      scope.listProjects=_(master.items).filter({type:'project'});
 
       scope.goBack = function(){
         window.history.back();
@@ -784,6 +807,17 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
       scope.addStepClick = function() {
         scope.addStep=!scope.addStep;
       };
+
+      scope.addToProject = function(theUID) {
+        if (!scope.item.parents) { scope.item.parents = []; }
+        scope.item.parents.push(theUID);
+        var parent = _(master.items).findWhere({uid:theUID});
+        if(!parent.attachments) { parent.attachments = []; }
+        parent.attachments.push(scope.item.uid)
+
+        master.saveItem(scope.item);
+        master.saveItem(parent);
+      }
 
     }
   }

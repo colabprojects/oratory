@@ -6,7 +6,7 @@
 		<button class="btn btn-default" ng-click="deleteItem(item)">delete</button>
 		<button class="btn btn-default" ng-click="addOwnerClick();">add owner</button>
 		<button class="btn btn-default" ng-click="addMediaImageClick();">add media</button>
-		<button class="btn btn-default" ng-click="addStepClick();">add steps</button>
+		<button class="btn btn-default" ng-click="addStepClick();">add plan</button>
 
 		
 		<owner-form ng-if="addOwners" item='item'></owner-form>
@@ -19,7 +19,12 @@
 		<div ng-if="addStep">
 			<add-step-form item="item"></add-step-form>
 		</div>
-	</div>
+		<div>
+			add to project:
+			<select id="addToProjectSelect" class="form-control" ng-model="selectedProject" ng-options="a.name for a in listProjects"></select>
+			<button class="btn btn-default" ng-click="addToProject(selectedProject.uid)">add to project</button>
+		</div>
+	</div>	
 
 	<div ng-if="item.lock">
 		<p>item is locked by {{item.lockChangedBy}}</p>
