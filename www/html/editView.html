@@ -8,8 +8,11 @@
 				<item-proposed-changes all-changes="allChanges" item="item" is-owner="isOwner"></item-proposed-changes>
 			</div>
 			<div class="col-xs-12 col-md-6">
-				<h4>item data</h4>
+				<h4>{{item.type}} data</h4>
 				<insert-form form-item="item" is-owner="isOwner"></insert-form>
+			</div>
+			<div ng-if="item.plans" class="col-xs-12 col-md-6">
+				<h4>plan</h4>
 			</div>
 			<div class="col-xs-12 col-md-6" ng-if="item.type=='project'">
 				<h4>attachments</h4>

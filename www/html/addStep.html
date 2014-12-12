@@ -1,0 +1,15 @@
+
+<p>test the plan name: {{plan.name}}</p>
+<div class="input-group">
+	<input type="text" class="form-control" placeholder="search for a project (or add new step as text)" ng-model="stepSearch">
+	<div class="input-group-btn">
+		<button class="btn btn-default" ng-click="addTextAsStep()">add step as text</button>
+	</div>
+</div>
+
+<h6 class="pointer" ng-repeat="sItem in items | filter:stepSearch | filter:{uid:'!'+item.uid} | filter:{type:'project'}">
+
+	<span class="label attachment-label" style="background-color:rgb({{color(sItem).r}},{{color(sItem).g}},{{color(sItem).b}});">{{sItem.type}}</span>{{sItem.name}}
+
+	<button class="btn btn-xs btn-default" ng-click="addItemAsStep(sItem.uid)">add</button>
+</h6>

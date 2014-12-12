@@ -1,0 +1,33 @@
+<ol>
+	<li ng-repeat="plan in item.plans">{{plan.name}}</li>
+</ol>
+
+<form name="planForm">
+	<div class="row">
+		<p class="detail-header">adding as {{sharedData.email}}</p>
+		<div class="col-sm-4">
+			<div class="form-group">
+		        <label for="plan-name">name</label>
+				<input id="plan-name" class="form-control" name="planName" type="text" ng-model="formPlan.name" ng-class="{'req-alert-on-left':planForm.planName.$invalid}" required>
+		    </div>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-xs-12">
+			<p>steps</p>
+			<list-steps plan="formPlan" edit-steps="true"></list-steps>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-xs-12">
+			<add-step item="item" plan="formPlan"></add-step>
+		</div>
+	</div>
+		
+	<div class="row">
+		<div class="margin-top">
+			<button type="submit" ng-click="savePlan();" class="btn btn-default" ng-disabled="planForm.$invalid">save</button>
+		</div>
+	</div>
+    
+</form>

@@ -303,7 +303,6 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         $scope.page=$state.current.name;
         $scope.sharedData.showMoreDetail[$stateParams.uid]=true;
         $scope.allChanges=_(allChanges).where({forUID:$stateParams.uid});
-        debug=allChanges;
 
         //check if owner if not - propose changes only
         $scope.isOwner=false;
@@ -498,7 +497,8 @@ itemApp.directive('insertForm', function (master, $state, $http) {
     restrict: 'E',
     scope: {
       formItem:'=',
-      isOwner:'='
+      isOwner:'=',
+      typeLock:'='
     },
     templateUrl: 'html/insertForm.html',
     link: function(scope, element, attrs) {
@@ -512,7 +512,7 @@ itemApp.directive('insertForm', function (master, $state, $http) {
         scope.formItem.name=scope.filter; 
       }
 
-      if (scope.formItem.type != 'deleted') {
+      if (scope.formItem.type !== 'deleted') {
         scope.dbInfo.formTypes = _.without(scope.dbInfo.types,_.findWhere(scope.dbInfo.types,{name:'deleted'}));
       } else {
         scope.dbInfo.formTypes = scope.dbInfo.types;
@@ -598,6 +598,7 @@ itemApp.directive('listAttachments', function ($filter, master) {
     link: function(scope, element, attrs) {
       //db defaults for form
       scope.dbInfo=master.getDbInfo;
+      if (!scope.formItem.attachments) { scope.formItem.attachments=[]; }
 
       scope.items = _.chain(master.items)
         .filter(function(item){ return item.type==='tool' || item.type ==='resource'; })
@@ -756,15 +757,35 @@ itemApp.directive('itemDetail', function ($state, $filter, $http, master) {
       scope.showRaw = {};
       scope.colors = master.color(scope.item);
 
+      scope.findAttachment = function(theUID){
+        return _(master.items).findWhere({uid:theUID});
+      };
+
+      scope.$watch('item.attachments', function(newValue) {
+        gatherAttachments(newValue);
+      });
+
+      var gatherAttachments = function(attachments){
+        scope.haves = [];
+        scope.wants = [];
+        scope.others = [];
+        _(attachments).each(function(uid){
+          var item = scope.findAttachment(uid); 
+          if (item.need==='have') { scope.haves.push(item); }
+          else if (item.need==='want') { scope.wants.push(item); }
+          else { if (item.type!=='project') { scope.others.push(item);} }
+        });
+      };
+      
+
+
       scope.addComment = function(item){
           $http.post('/api/addComment', {uid:item.uid,email:master.sharedData.email,comment:scope.comment}).then(function(res){
             scope.comment='';
           });
       };
 
-      scope.findAttachment = function(theUID){
-        return _(master.items).findWhere({uid:theUID});
-      };
+
     }
   }
 });
@@ -782,7 +803,8 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
       scope.colors = master.color(scope.item);
       scope.deleteItem=master.deleteItem;
 
-      scope.listProjects=_(master.items).filter({type:'project'});
+      scope.listProjectsAll=_(master.items).filter({type:'project'});
+      scope.listProjects=_(scope.listProjectsAll).map(function(project){ if(project.uid!==scope.item.uid){ return project; }});
 
       scope.goBack = function(){
         window.history.back();
@@ -804,19 +826,16 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
         scope.addOwners=!scope.addOwners;
       };
 
-      scope.addStepClick = function() {
-        scope.addStep=!scope.addStep;
+      scope.addPlanClick = function() {
+        scope.addPlan=!scope.addPlan;
       };
 
       scope.addToProject = function(theUID) {
-        if (!scope.item.parents) { scope.item.parents = []; }
-        scope.item.parents.push(theUID);
         var parent = _(master.items).findWhere({uid:theUID});
         if(!parent.attachments) { parent.attachments = []; }
         parent.attachments.push(scope.item.uid)
 
-        master.saveItem(scope.item);
-        master.saveItem(parent);
+        master.pushToItem(_(parent).pick(['uid','attachments']));
       }
 
     }
@@ -921,26 +940,109 @@ itemApp.directive('ownerForm', function ($state, $http, master) {
   }
 });
 
-itemApp.directive('addStepForm', function ($state, $http, master) {
+itemApp.directive('addPlanForm', function ($state, $http, master) {
   return {
     restrict: 'E',
     scope: {
-      item:'='
+      item:'=',
+      plan:'='
     },
-    templateUrl: 'html/addStepForm.html',
+    templateUrl: 'html/addPlanForm.html',
     link: function(scope, element, attrs) {
       scope.dbInfo=master.getDbInfo;
-      scope.formStep={};
-      scope.formStep.type='step';
-
-      scope.saveStep = function(){
-        if(!scope.item.steps) {scope.item.steps=[];}
-        scope.item.steps.push(scope.formStep);
-        master.saveItem(scope.item);
-
-        scope.formStep={};
-        scope.formStep.type='step';
+      scope.sharedData=master.sharedData;
+      if (scope.plan) { 
+        scope.formPlan=scope.plan;
+      } else {
+        scope.formPlan={};
+        scope.formPlan['type']='plan';
+        scope.formPlan.name='joe';
+      }
+      
+      scope.savePlan = function(){
+        if(!scope.item.plans) {scope.item.plans=[];}
+        debug='the form plan: '+JSON.stringify(scope.formPlan)+'     the item is: '+JSON.stringify(scope.item);
+        scope.item.plans.push(scope.formPlan);
+        master.pushToItem(_(scope.item).pick(['uid','plans']));
       };
+
+    }
+  }
+});
+
+itemApp.directive('addStep', function ($state, $http, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      item:'=',
+      plan:'='
+    },
+    templateUrl: 'html/addStep.html',
+    link: function(scope, element, attrs) {
+      scope.dbInfo=master.getDbInfo;
+      scope.sharedData=master.sharedData;
+      scope.color = master.color;
+      scope.items = master.items;
+      
+
+      scope.addTextAsStep = function(){
+        if (!scope.plan.steps) { scope.plan.steps = []; }
+        scope.plan.steps.push({text:scope.stepSearch});
+        scope.stepSearch='';
+      };
+
+      scope.addItemAsStep = function(uid){
+        if (!scope.plan.steps) { scope.plan.steps = []; }
+        scope.plan.steps.push({uid:uid});
+      };
+
+    }
+  }
+});
+
+itemApp.directive('listSteps', function ($state, $http, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      plan:'=',
+      editSteps:'='
+    },
+    templateUrl: 'html/listSteps.html',
+    link: function(scope, element, attrs) {
+      scope.dbInfo=master.getDbInfo;
+      scope.sharedData=master.sharedData;
+      
+      scope.removeStep = function (index) {
+        scope.plan.steps.splice(index, 1);
+      };
+
+      scope.moveStep = function(from,to) {
+        var step = scope.plan.steps[from];
+        scope.plan.steps.splice(from, 1);
+        scope.plan.steps.splice(to, 0, step);
+      };
+      
+
+    }
+  }
+});
+
+itemApp.directive('listStep', function ($state, $http, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      step:'='
+    },
+    templateUrl: 'html/listStep.html',
+    link: function(scope, element, attrs) {
+      scope.dbInfo=master.getDbInfo;
+      scope.sharedData=master.sharedData;
+
+      if (scope.step.uid) {
+        scope.getItem = _(master.items).findWhere({uid:scope.step.uid});
+        scope.color = master.color(scope.getItem);
+      }
+      
 
     }
   }

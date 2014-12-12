@@ -1,5 +1,20 @@
 <!-- DETAIL -->
 <div class="row">
+	<div class="col-xs-12 detail-container" ng-if="item.type==='project'">
+		<div class="detail-card">
+			<p class="half-bottom detail-header">plan</p>
+			<div ng-if="!item.plan">
+				<p>no plan has been decided for this {{item.type}}</p>
+			</div>
+			<div ng-if="item.plans.length">
+				<h5>options:</h5>
+				<ol>
+					<li ng-repeat="plan in item.plans">{{plan.name}}</li>
+				</ol>
+			</div>
+			
+		</div>
+	</div>
 	<div class="col-xs-12 col-md-4 detail-container">
 		<div class="detail-card">
 			<p class="half-bottom detail-header">overview</p>
@@ -7,9 +22,9 @@
 			<ul>
 				<li ng-repeat="o in item.owners">{{o}}</li> 
 			</ul>
-			<div ng-if="item.steps">
+			<div ng-if="item.plans">
 				next step:
-				<p>{{item.steps[0].name}}</p>
+				<p>{{item.plans[0].name}}</p>
 			</div>
 			<div ng-if="item.parents.length">
 				part of:
@@ -19,10 +34,21 @@
 	</div>
 	<div ng-if="item.type==='project'" class="col-xs-12 col-md-4 detail-container">
 		<div class="detail-card">
-			<p class="half-bottom detail-header">things we have</p>
-			<list-attachments ng-if="item.type=='project'" form-item="item" attachment-filter="{need:'have'}"></list-attachments>
-			<p class="add-top half-bottom detail-header">things we still need</p>
-			<list-attachments ng-if="item.type=='project'" form-item="item" attachment-filter="{need:'want'}"></list-attachments>
+			<div ng-if="haves">
+				<p class="half-bottom detail-header">things we have</p>
+				<list-attachment attachment='attachment' ng-repeat="attachment in haves"></list-attachment>
+			</div>
+			<div ng-if="wants">
+				<p class="half-bottom detail-header">things we want</p>
+				<list-attachment attachment='attachment' ng-repeat="attachment in wants"></list-attachment>
+			</div>
+			<div ng-if="others">
+				<p class="half-bottom detail-header">other things</p>
+				<list-attachment attachment='attachment' ng-repeat="attachment in others"></list-attachment>
+			</div>
+			<div ng-if="!(others.length+wants.length+haves.length)">
+				<p class="half-bottom detail-header">nothing is attached to this project</p>
+			</div>
 		</div>
 	</div>
 	<div class="col-xs-12 col-md-4 detail-container">
