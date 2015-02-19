@@ -4,13 +4,19 @@
 	<div class="container">
 		<div class="row">
 			<div class="col-xs-12 col-md-6" ng-if="item.proposedChanges">
-				<p class="detail-header">proposed changes to this item:</p>
+				<h4>proposed changes</h4>
 				<item-proposed-changes all-changes="allChanges" item="item" is-owner="isOwner"></item-proposed-changes>
 			</div>
 			<div class="col-xs-12 col-md-6">
+				<h4>item data</h4>
 				<insert-form form-item="item" is-owner="isOwner"></insert-form>
 			</div>
-			
+			<div class="col-xs-12 col-md-6" ng-if="item.type=='project'">
+				<h4>attachments</h4>
+				<list-attachments form-item="item" edit-attachment="true"></list-attachments>
+			</div>
+		</div>
+
 	</div>
 </div>
 

@@ -11,6 +11,9 @@
 
 console.log('server running');
 
+//USERS and hidden things....
+var users = require('./users');
+
 //CONFIG -------------------------------------------------------------------------------------
 //database
 var mongojs = require('mongojs');
@@ -18,12 +21,15 @@ var db = mongojs('mongodb://localhost:27017/itemdb', ['itemdb']);
 //app engine
 var express = require('express'),
     app = express();
+
 //app configuration
-app.configure(function(){
-    app.use(app.router);
-    app.use(express.static(__dirname + '/www'));
-    app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
-});
+
+app.use(express.cookieParser());
+app.use(express.session({secret: "This is a secret"}));
+app.use(app.router);
+app.use(express.static(__dirname + '/www'));
+app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
+
 
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
@@ -35,7 +41,7 @@ smtpTrans = nodemailer.createTransport(smtpTransport({
 	service:'gmail',
  	auth: {
       	user: "colabrobot@gmail.com",
-      	pass: "r0b0tp4r4d3" 
+      	pass: users["colabrobot@gmail.com"]
   	}
 }));
 //the following are used for images (but can also be used for a shit-ton of other things)
@@ -118,6 +124,47 @@ var dbInfo = {
 
 
 //API ---------------------------------------------------------------------------------------
+//AUTH
+app.post('/api/auth', express.json(), function (req, res) {
+	if ((req.body.email !== '')&&(typeof req.body.email !== 'undefined')){ 
+		if (req.body.useSpecial === true) {
+			//assign a special token
+		}
+		
+		if (users[req.body.email]===req.body.token) {
+		
+			req.session.user=req.body.email;
+			res.send(true);
+
+		} else { req.session.user=false; res.send(false); }
+
+	} else { req.session.user=false; res.send(false); }
+});//end auth
+
+app.post('/api/authGen', express.json(), function (req, res) {
+	if ((req.body.email !== '')&&(typeof req.body.email !== 'undefined')){ 
+		var key = generateKey();
+
+		console.log('trying to send email to ' + req.body.email);
+		smtpTrans.sendMail({
+		    from: 'Robot <colabrobot@gmail.com>',
+		    to: req.body.email,
+		    subject: 'is it really you?',
+		    text: 'text body',
+		    html: "<a href='http://127.0.0.1:55657/#/auth/"+key+"'>YES!</a>"
+		}, function (err, doc){
+		    if(err){ console.log(err); }else{ 
+		    	//email was sent!
+		    	users[req.body.email]=key;
+		    	res.send(200);
+		    	console.log('Message sent: ' + doc.response); 
+		    }
+		});
+
+	} else { res.send(500); }
+});//end auth
+
+
 //DB CONFIG
 
 
@@ -129,12 +176,18 @@ app.get('/api/getDatabase', function (req, res) {
 });//end GET database
 
 app.post('/api/getItems', express.json(), function (req, res) {
-	var query = {};
-	if (req.body.type) { query['type'] = req.body.type; }
-	else { query = { $or:_(dbInfo.types).map(function(item){ return {'type':item.name}; }) }; }
-	db.itemdb.find(query,function (err, docs) {
-		if(err){ console.log('(error getting items) '+err); }else{ res.send(docs); }
-	});
+	if(!req.session.user){
+		res.send({});
+	} else {
+		var query = {};
+		if (req.body.type) { query['type'] = req.body.type; }
+		if (req.body.forUID) { query['forUID'] = req.body.forUID; }
+		if (req.body.forOwner) { query['forOwner'] = req.body.forOwner; }
+		else { query = { $or:_(dbInfo.types).map(function(item){ return {'type':item.name}; }) }; }
+		db.itemdb.find(query,function (err, docs) {
+			if(err){ console.log('(error getting items) '+err); }else{ res.send(docs); }
+		});
+	}
 });//end GET items
 
 app.post('/api/getItemHistory', express.json(), function (req, res) {
@@ -143,6 +196,7 @@ app.post('/api/getItemHistory', express.json(), function (req, res) {
 			res.send(docs); 
 		}
 	});
+
 });//end GET item history
 
 app.post('/api/getItem', express.json(), function (req, res) {
@@ -152,25 +206,29 @@ app.post('/api/getItem', express.json(), function (req, res) {
 });//end 'GET' (single) item - send the uid and retrieve item (untested - send multiple uid's?)
 
 app.post('/api/saveItem', express.json({limit: '50mb'}), function (req, res) {
-	var syncItemPromise;
-	if (req.body.uid) {
-		db.itemdb.find({uid:req.body.uid}, function (err, check) {
-			if (!check.length||check[0].uid!==req.body.uid) {
-				return res.send(500);
-			}
-			//it is there
-			syncItemPromise=updateItem(req.body, check[0]);
+	if(!req.session.user){
+		res.send({});
+	} else {
+		var syncItemPromise;
+		if (req.body.uid) {
+			db.itemdb.find({uid:req.body.uid}, function (err, check) {
+				if (!check.length||check[0].uid!==req.body.uid) {
+					return res.send(500);
+				}
+				//it is there
+				syncItemPromise=updateItem(req.body, check[0]);
+				q.when(syncItemPromise).then(function(){
+					res.send(200);
+				}); 
+			});
+		} else {
+			//brand new item!!!
+			syncItemPromise=newItem(req.body);
 			q.when(syncItemPromise).then(function(){
 				res.send(200);
 			}); 
-		});
-	} else {
-		//brand new item!!!
-		syncItemPromise=newItem(req.body);
-		q.when(syncItemPromise).then(function(){
-			res.send(200);
-		}); 
-		
+			
+		}
 	}
 });//end SAVE single item
 
@@ -261,158 +319,182 @@ app.post('/api/stageItemChanges', express.json(), function (req, res) {
 });//end 'STAGE' changes
 
 app.post('/api/decision', express.json(), function (req, res){
-	var syncItemPromise;
-	db.itemdb.find({key:req.body.key, forOwner:req.body.email}, function (err, check) {
-		if (!check.length||check[0].key!==req.body.key) {
-			return res.send(500);
-		}
-		//it is there
-		syncItemPromise=changeDecision(check[0], req.body.email, req.body.field, req.body.decision);
-		q.when(syncItemPromise).then(function(){
+	if(!req.session.user){
+		res.send({});
+	} else {
+		var syncItemPromise;
+		db.itemdb.find({key:req.body.key, forOwner:req.body.email}, function (err, check) {
+			if (!check.length||check[0].key!==req.body.key) {
+				return res.send(500);
+			}
+			//it is there
+			syncItemPromise=changeDecision(check[0], req.body.email, req.body.field, req.body.decision);
+			q.when(syncItemPromise).then(function(){
 
-			//check if all decisions are made
-			db.itemdb.find({key:req.body.key}, function (err, check2) {
-				var done = true;
-				var allDec = check2[0].changes;
-				for (k in allDec) {
-					if (allDec[k].decision==='') { done=false; }
-				}
-
-				if (done) {
-					console.log('all changes are complete');
-					req.body.item.proposedChanges=false;
-				} else {
-					console.log('more changes...');
-				}
-				//update item
-				db.itemdb.find({uid:req.body.item.uid}, function (err, check1) {
-					if (!check1.length||check1[0].uid!==req.body.item.uid) {
-						return res.send(500);
+				//check if all decisions are made
+				db.itemdb.find({key:req.body.key}, function (err, check2) {
+					var done = true;
+					var allDec = check2[0].changes;
+					for (k in allDec) {
+						if (allDec[k].decision==='') { done=false; }
 					}
-					//it is there
-					syncItemPromise=updateItem(req.body.item, check1[0], true);
-					q.when(syncItemPromise).then(function(){
-						res.send(200);
+
+					if (done) {
+						console.log('all changes are complete');
+						req.body.item.proposedChanges=false;
+					} else {
+						console.log('more changes...');
+					}
+					//update item
+					db.itemdb.find({uid:req.body.item.uid}, function (err, check1) {
+						if (!check1.length||check1[0].uid!==req.body.item.uid) {
+							return res.send(500);
+						}
+						//it is there
+						syncItemPromise=updateItem(req.body.item, check1[0], true);
+						q.when(syncItemPromise).then(function(){
+							res.send(200);
+						});
 					});
-				});
-			}); 	
-		}); 
-	});
+				}); 	
+			}); 
+		});
+	}
 });
 
 
 app.post('/api/deleteItem', express.json(), function (req, res){
-	var syncItemPromise;
-	req.body.oldType = req.body.type;
-	req.body.type = 'deleted';
-	db.itemdb.find({uid:req.body.uid}, function (err, check) {
-		if (!check.length||check[0].uid!==req.body.uid) {
-			return res.send(500);
-		}
-		//it is there
-		syncItemPromise=updateItem(req.body, check[0]);
-		q.when(syncItemPromise).then(function(){
-			res.send(200);
-		}); 
-	});
+	if(!req.session.user){
+		res.send({});
+	} else {
+		var syncItemPromise;
+		req.body.oldType = req.body.type;
+		req.body.type = 'deleted';
+		db.itemdb.find({uid:req.body.uid}, function (err, check) {
+			if (!check.length||check[0].uid!==req.body.uid) {
+				return res.send(500);
+			}
+			//it is there
+			syncItemPromise=updateItem(req.body, check[0]);
+			q.when(syncItemPromise).then(function(){
+				res.send(200);
+			}); 
+		});
+	}
 
 });//end DELETE item
 
 app.post('/api/requestLock', express.json(), function (req, res){
-	var syncLockPromise;
-	db.itemdb.findOne({uid:req.body.uid}, function (err, item){
-		if(err||!item){ console.log('(error requesting lock on item) '+err); }
-		else { 
-			if (item.lock){
-				//already has a lock
-				console.log('we are here....')
-				res.send(item);
-			} else {
-				//does not have lock yet
-				syncLockPromise = changeLock(item,req.body.email, true);
-				q.when(syncLockPromise).then(function(){
+	if(!req.session.user){
+		res.send({});
+	} else {
+		var syncLockPromise;
+		db.itemdb.findOne({uid:req.body.uid}, function (err, item){
+			if(err||!item){ console.log('(error requesting lock on item) '+err); }
+			else { 
+				if (item.lock){
+					//already has a lock
+					console.log('we are here....')
 					res.send(item);
-				});
-				
+				} else {
+					//does not have lock yet
+					syncLockPromise = changeLock(item,req.body.email, true);
+					q.when(syncLockPromise).then(function(){
+						res.send(item);
+					});
+					
+				}
 			}
-		}
-	});
+		});
+	}
 });//end request lock item
 
 app.post('/api/removeLock', express.json(), function (req, res){
-	var syncLockPromise;
-	if (req.body.uid) {
-		console.log('removing lock for item: '+req.body.uid)
-		db.itemdb.findOne({uid:req.body.uid}, function (err, item){
-			if(err||!item){ console.log('(error removing lock on item) '+err); }
-			else { 
-				syncLockPromise = changeLock(item,req.body.email, false);
-				q.when(syncLockPromise).then(function(){
-					res.send(item);
-				});
-			}
-		});
+	if(!req.session.user){
+		res.send({});
+	} else {
+		var syncLockPromise;
+		if (req.body.uid) {
+			console.log('removing lock for item: '+req.body.uid)
+			db.itemdb.findOne({uid:req.body.uid}, function (err, item){
+				if(err||!item){ console.log('(error removing lock on item) '+err); }
+				else { 
+					syncLockPromise = changeLock(item,req.body.email, false);
+					q.when(syncLockPromise).then(function(){
+						res.send(item);
+					});
+				}
+			});
+		}
 	}
 });//end remove lock item
 
 app.post('/api/pickLock', express.json(), function (req, res){
-	var syncLockPromise;
-	console.log('breaking lock for item: '+req.body.uid)
-	db.itemdb.findOne({uid:req.body.uid}, function (err, item){
-		if(err||!item){ console.log('(error removing lock on item) '+err); }
-		else { 
-			if((item.owner)||(item.owner===req.body.email)||(item.lockChangedBy===req.body.email)){
-				syncLockPromise = changeLock(item,req.body.email, false);
-				q.when(syncLockPromise).then(function(){
-					res.send(item);
-				});
-			} else { 
-				//send the owner an email 
+	if(!req.session.user){
+		res.send({});
+	} else {
+		var syncLockPromise;
+		console.log('breaking lock for item: '+req.body.uid)
+		db.itemdb.findOne({uid:req.body.uid}, function (err, item){
+			if(err||!item){ console.log('(error removing lock on item) '+err); }
+			else { 
+				if((item.owner)||(item.owner===req.body.email)||(item.lockChangedBy===req.body.email)){
+					syncLockPromise = changeLock(item,req.body.email, false);
+					q.when(syncLockPromise).then(function(){
+						res.send(item);
+					});
+				} else { 
+					//send the owner an email 
+				}
 			}
-		}
-	});
+		});
+	}
 });//end break lock item
 
 //needs in post:  {uid:uidofitem, email:usermakingedit, value:1or-1or0}
 app.post('/api/setPriority', express.json(), function (req, res){
-	var currentPriority;
-	db.itemdb.findOne({uid:req.body.uid},function (err, doc) {
-		if(err){ console.log('(error finding item) '+err); }
-		else { 
-			if (doc.priority){
-				//exists
-				currentPriority=doc.priority;
-			} else {
-				currentPriority=[];
+	if(!req.session.user){
+		res.send({});
+	} else {
+		var currentPriority;
+		db.itemdb.findOne({uid:req.body.uid},function (err, doc) {
+			if(err){ console.log('(error finding item) '+err); }
+			else { 
+				if (doc.priority){
+					//exists
+					currentPriority=doc.priority;
+				} else {
+					currentPriority=[];
+				}
+				//find if user already added
+				var userPriority = _.findWhere(currentPriority,{email:req.body.email});
+				if (userPriority) {
+			 		var index = currentPriority.indexOf(userPriority);
+			 		var newPriority = currentPriority;
+			 		newPriority[index] = {email:req.body.email, value:req.body.value};
+			 	} else {
+			 		//not added yet
+			 		var newPriority=currentPriority;
+			 		newPriority.push({email:req.body.email, value:req.body.value});
+			 	}
+
+			 	//add up all priorities:
+			 	var totalPriority = _.reduce(newPriority, function(memo,element){ return memo + element.value; },0);
+
+			 	doc.totalPriority = totalPriority;
+
+			 	if (newPriority){
+			 		doc.priority=newPriority;
+				 	db.itemdb.update({uid:req.body.uid}, {$set:{priority:newPriority, totalPriority:totalPriority}}, function (err,doc2){
+				 		if(err){ console.log('(error updating priority) '+err); }else{ 
+				 			io.emit('priorityChange', doc);
+				 			res.send(doc); 
+				 		}
+				 	});
+				}
 			}
-			//find if user already added
-			var userPriority = _.findWhere(currentPriority,{email:req.body.email});
-			if (userPriority) {
-		 		var index = currentPriority.indexOf(userPriority);
-		 		var newPriority = currentPriority;
-		 		newPriority[index] = {email:req.body.email, value:req.body.value};
-		 	} else {
-		 		//not added yet
-		 		var newPriority=currentPriority;
-		 		newPriority.push({email:req.body.email, value:req.body.value});
-		 	}
-
-		 	//add up all priorities:
-		 	var totalPriority = _.reduce(newPriority, function(memo,element){ return memo + element.value; },0);
-
-		 	doc.totalPriority = totalPriority;
-
-		 	if (newPriority){
-		 		doc.priority=newPriority;
-			 	db.itemdb.update({uid:req.body.uid}, {$set:{priority:newPriority, totalPriority:totalPriority}}, function (err,doc2){
-			 		if(err){ console.log('(error updating priority) '+err); }else{ 
-			 			io.emit('priorityChange', doc);
-			 			res.send(doc); 
-			 		}
-			 	});
-			}
-		}
-	});
+		});
+	}
 });
 
 app.post('/api/addComment', express.json(), function (req, res) {

@@ -8,17 +8,10 @@ var token = $.cookie('token');
 //debug:
 var debug = {};
 
-itemApp.factory('user', function($http, $q, $state){
-  var user = {'test':12345};
-
-  return user;
-});
-
 //create the service for database interaction and info
-itemApp.factory('master', function($http, $q, $state, user){
+itemApp.factory('master', function($http, $q, $state){
   var service = {};
 
-  debug=user;
   service.items=[];
   service.item={};
 
@@ -64,12 +57,13 @@ itemApp.factory('master', function($http, $q, $state, user){
   service.sharedData.deletedFilter = {};
   service.sharedData.showMoreDetail={};
   if (email) { service.sharedData.email = email; }
+  if (token) { service.sharedData.token = token; }
   service.sharedData.showDeleted = false;
   service.sharedData.pages = ['everything', 'inventory', 'projects','books','map','calendar'];
 
   service.sharedData.notIncluded = ['name','type','uid','image','thumb','need'];
 
-  service.sharedData.attachmentTypes = ['resource', 'tool', 'project', ''];
+  service.sharedData.attachmentTypes = ['resource', 'tool', ''];
   service.sharedData.formAttachments = [];
 
   service.sharedData.changePage = function (page) { $state.go(page); };
@@ -102,18 +96,56 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
   //$urlRouterProvider.when('/edit','/');
 
   $stateProvider
-    .state('user', {
-      url: '/dothisfirst',
-      templateUrl: 'html/user.html',
-      controller: function($scope, $state) {
+    .state('auth', {
+      url: '/auth/:key',
+      templateUrl: 'html/auth.html',
+      controller: function($scope, $state, $http, $stateParams, master) {
+        $scope.email=master.sharedData.email;
         
-      }
+        if($stateParams.key) { 
+          $scope.token=$stateParams.key;
+          $scope.key=$stateParams.key;
+        }else {
+          $scope.token=master.sharedData.token;
+        }
 
+        $scope.authUser = function(){
+          master.sharedData.email=$scope.email;
+          $.cookie('email', $scope.email);
+          master.sharedData.token=$scope.token;
+          $.cookie('token', $scope.token);
+          debug=$scope.useSpecial;
+
+          $state.go('everything');
+
+          /*
+          //PRODUCTION
+          if ($scope.key) {
+            $state.go('everything');
+          }
+          else{
+            $http.post('/api/authGen', {email:$scope.email}).then(function (response){
+              //window.close();
+              $('#sentanddone').html('<h3>please close this window and check your email</h3>');
+            });
+          }
+          */
+        };
+
+      }
     })
     .state('everything', {
       url: '/',
       templateUrl: 'html/defaultView.html',
-      controller: function($scope, $state, master) {
+      resolve:{
+        auth: function ($http, master) {
+          return $http.post('/api/auth', {email:master.sharedData.email,token:master.sharedData.token}).then(function (response){
+            return response.data;
+          });
+        }
+      },
+      controller: function($scope, $state, master, auth) {
+        if (auth==='false') { $state.go('auth'); }
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = '';
         $scope.sharedData.orderBy = '-edited';
@@ -124,7 +156,15 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     .state('inventory', {
       url: '/inventory',
       templateUrl:'html/defaultView.html',
-      controller: function ($scope, master) {
+      resolve:{
+        auth: function ($http, master) {
+          return $http.post('/api/auth', {email:master.sharedData.email,token:master.sharedData.token}).then(function (response){
+            return response.data;
+          });
+        }
+      },
+      controller: function ($scope, $state, auth, master) {
+        if (auth==='false') { $state.go('auth'); }
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = function(item) {
           return item.type === 'tool' || item.type ==='resource' || item.oldType === 'tool' || item.oldType === 'resource';
@@ -135,7 +175,15 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     .state('projects', {
       url: '/projects',
       templateUrl:'html/defaultView.html',
-      controller: function ($scope, master) {
+      resolve:{
+        auth: function ($http, master) {
+          return $http.post('/api/auth', {email:master.sharedData.email,token:master.sharedData.token}).then(function (response){
+            return response.data;
+          });
+        }
+      },
+      controller: function ($scope, $state, auth, master) {
+        if (auth==='false') { $state.go('auth'); }
         $scope.sharedData=master.sharedData;
         $scope.sharedData.orderBy = '-totalPriority';
         master.setItemPriorities($scope.sharedData.email, 'project');
@@ -148,7 +196,15 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     .state('books', {
       url: '/books',
       templateUrl:'html/defaultView.html',
-      controller: function ($scope, master) {
+      resolve:{
+        auth: function ($http, master) {
+          return $http.post('/api/auth', {email:master.sharedData.email,token:master.sharedData.token}).then(function (response){
+            return response.data;
+          });
+        }
+      },
+      controller: function ($scope, $state, auth, master) {
+        if (auth==='false') { $state.go('auth'); }
         $scope.sharedData=master.sharedData;
         $scope.sharedData.pageFilter = function(item) {
           return item.type==='book' || item.oldType === 'book';
@@ -159,7 +215,15 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     .state('map', {
       url: '/map',
       templateUrl:'html/mapView.html',
-      controller: function ($scope, master) {
+      resolve:{
+        auth: function ($http, master) {
+          return $http.post('/api/auth', {email:master.sharedData.email,token:master.sharedData.token}).then(function (response){
+            return response.data;
+          });
+        }
+      },
+      controller: function ($scope, $state, auth, master) {
+        if (auth==='false') { $state.go('auth'); }
         $scope.sharedData=master.sharedData;
         $scope.insertMap = function() {
           new GMaps({
@@ -175,6 +239,11 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     .state('calendar', {
       url: '/calendar',
       resolve:{
+        auth: function ($http, master) {
+          return $http.post('/api/auth', {email:master.sharedData.email,token:master.sharedData.token}).then(function (response){
+            return response.data;
+          });
+        },
         allEvents: function ($http, $stateParams) {
           return $http.post('/api/getItems', {type:'event'}).then(function (response){
             return response.data;
@@ -182,7 +251,8 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         }
       },
       templateUrl:'html/calendarView.html',
-      controller: function ($scope, allEvents, master) {
+      controller: function ($scope, $state, allEvents, auth, master) {
+        if (auth==='false') { $state.go('auth'); }
         $scope.insertCalendar= function() {
           $scope.sharedData=master.sharedData;
           allEvents;
@@ -205,18 +275,25 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
           });
         },
         allChanges: function ($http, $stateParams, master) {
-          return $http.post('/api/getItems', {type:'staged',forUID:$stateParams.uid}).then(function (response){
+          return $http.post('/api/getItems', {type:'staged',forUID:$stateParams.uid,forOwner:master.sharedData.email}).then(function (response){
+            return response.data;
+          });
+        },
+        auth: function ($http, master) {
+          return $http.post('/api/auth', {email:master.sharedData.email,token:master.sharedData.token}).then(function (response){
             return response.data;
           });
         }
       },
       templateUrl: 'html/editView.html',
-      controller: function ($scope, $state, $stateParams, itemToBeEdit, allChanges, master) {
+      controller: function ($scope, $state, $stateParams, itemToBeEdit, allChanges, auth, master) {
+        if (auth==='false') { $state.go('auth'); }
         $scope.sharedData=master.sharedData;
         master.item=$scope.item=itemToBeEdit;
         $scope.page=$state.current.name;
         $scope.sharedData.showMoreDetail[$stateParams.uid]=true;
         $scope.allChanges=_(allChanges).where({forUID:$stateParams.uid});
+        debug=allChanges;
 
         //check if owner if not - propose changes only
         $scope.isOwner=false;
@@ -231,7 +308,15 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     .state('new', {
       url: '/new',
       templateUrl: 'html/newView.html',
-      controller: function ($scope, $state, $stateParams, master) {
+      resolve:{
+        auth: function ($http, master) {
+          return $http.post('/api/auth', {email:master.sharedData.email,token:master.sharedData.token}).then(function (response){
+            return response.data;
+          });
+        }
+      },
+      controller: function ($scope, $state, $stateParams, master, auth) {
+        if (auth==='false') { $state.go('auth'); }
         $scope.sharedData=master.sharedData;
         $scope.page=$state.current.name;
         $scope.item={};
@@ -303,17 +388,13 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
     $state.go('new');
   };
   
-  $scope.setEmailCookie = function(email) {
-    if ($.cookie('email', email)) {
-      $scope.emailSuccess=true;
-      $scope.sharedData.email = email;
-    };
+  $scope.removeUser = function() {
+    $.cookie('email', '');
+    $.cookie('token', '');
+    master.sharedData.email='';
+    master.sharedData.token='';
+    $state.go('auth');
   };
-
-  $scope.removeEmail = function() {
-    $.removeCookie('email');
-    $scope.sharedData.email = '';
-  }
 
   $scope.$on('cancelForm',function(){ 
     window.history.back();
@@ -530,8 +611,6 @@ itemApp.directive('listAttachments', function ($filter, master) {
       };
 
       scope.addAttachments();
-
-      //scope.showAddAttachmentForm = !scope.formItem.attachments || (scope.formItem.attachments.length === 0);
     }
   }
 });
@@ -595,13 +674,7 @@ itemApp.directive('itemPriority', function ($state, $http, master) {
           uid:scope.item.uid, 
           email:scope.sharedData.email, 
           value:(userPriority===how)?0:how
-        })
-        /*
-        .then(function(response){
-          angular.copy(response.data, scope.item);
-          master.setItemPriorities(); 
         });
-        */
       };
     }
   }
@@ -882,7 +955,6 @@ itemApp.directive('addMediaImageForm', function ($state, $http, master) {
   }
 });
 
-
 itemApp.filter('regex', function() {
   return function(input, field, regex) {
     var patt = new RegExp(regex);      
@@ -895,10 +967,6 @@ itemApp.filter('regex', function() {
     return out;
   };
 });
-
-
-
-
 
 function generateKey() {
   return 'xxxxxxxxxxxx-4xxxyxxxxxx99xx-xxxxx00xxxx'.replace(/[xy]/g, function(c) {
