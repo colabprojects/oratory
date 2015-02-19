@@ -50,6 +50,7 @@ var request = require('request');
 var q = require('q');
 var url = require('url');
 var _ = require('underscore');
+var __ = require('lodash');
 var moment = require('moment');
 var jquery = require('jquery');
 //image manipulation (for thumbnails)
@@ -210,20 +211,21 @@ app.post('/api/saveItem', express.json({limit: '50mb'}), function (req, res) {
 		res.send({});
 	} else {
 		var syncItemPromise;
-		if (req.body.uid) {
-			db.itemdb.find({uid:req.body.uid}, function (err, check) {
-				if (!check.length||check[0].uid!==req.body.uid) {
+		if (req.body.item.uid) {
+			db.itemdb.find({uid:req.body.item.uid}, function (err, check) {
+				if (!check.length||check[0].uid!==req.body.item.uid) {
 					return res.send(500);
 				}
 				//it is there
-				syncItemPromise=updateItem(req.body, check[0]);
+
+				syncItemPromise=updateItem(req.body.item, check[0], req.body.unlock);
 				q.when(syncItemPromise).then(function(){
 					res.send(200);
 				}); 
 			});
 		} else {
 			//brand new item!!!
-			syncItemPromise=newItem(req.body);
+			syncItemPromise=newItem(req.body.item);
 			q.when(syncItemPromise).then(function(){
 				res.send(200);
 			}); 
@@ -231,6 +233,30 @@ app.post('/api/saveItem', express.json({limit: '50mb'}), function (req, res) {
 		}
 	}
 });//end SAVE single item
+
+app.post('/api/pushToItem', express.json({limit: '50mb'}), function (req, res) {
+	if(!req.session.user){
+		res.send({});
+	} else {
+		var syncItemPromise;
+		if (req.body.uid) {
+			db.itemdb.find({uid:req.body.uid}, function (err, check) {
+				if (!check.length||check[0].uid!==req.body.uid) {
+					return res.send(500);
+				}
+				//it is there
+				var extendedItem = __.cloneDeep(check[0]);
+				_.extend(extendedItem,req.body);
+
+				syncItemPromise=updateItem(extendedItem, check[0]);
+				q.when(syncItemPromise).then(function(){
+					res.send(200);
+				}); 
+			});
+		} else { res.send(500); }
+	}
+});//end PUSH single item
+
 
 app.post('/api/stageItemChanges', express.json(), function (req, res) {
 	var newItem=req.body;
@@ -523,7 +549,7 @@ app.post('/api/addComment', express.json(), function (req, res) {
 
 
 //ITEMS --------------------------------
-function updateItem(newItem, oldItem, stage){
+function updateItem(newItem, oldItem, unlock){
 	//returns a promise
 	var saveItemPromise = q.defer();
 	var syncImagePromise;
@@ -539,8 +565,7 @@ function updateItem(newItem, oldItem, stage){
 	}
 
 	//item media
-	if (JSON.stringify(oldItem.media)!==JSON.stringify(newItem.media)){
-		console.log('FUCK FUCK FUCK FUCK');
+	if (!_.isEqual(oldItem.media,newItem.media)){
 		//new media of some kind
 		var newMediaImage = _.find(newItem.media, function(check){ return _.has(check,'rawImage');});
 		if (newMediaImage) {
@@ -561,6 +586,31 @@ function updateItem(newItem, oldItem, stage){
 		}
 	}
 
+	//attachment comparasion
+	if (!_.isEqual(oldItem.attachments,newItem.attachments)){
+		var removeLoopUids = _.difference(oldItem.attachments, newItem.attachments);
+		var addLoopUids = _.difference(newItem.attachments, oldItem.attachments);
+
+		console.log('remove: '+JSON.stringify(removeLoopUids)+'   add:       '+JSON.stringify(addLoopUids));
+
+		_.each(removeLoopUids, function(uid){
+			findItem(uid).then(function(item){
+				var itemCopy = __.cloneDeep(item);
+				itemCopy.parents = _(itemCopy.parents).without(newItem.uid);
+				updateItem(itemCopy,item);
+			});
+		});
+
+		_.each(addLoopUids, function(uid){
+			findItem(uid).then(function(item){
+				var itemCopy = __.cloneDeep(item);
+				itemCopy.parents = itemCopy.parents || [];
+				itemCopy.parents.push(newItem.uid);
+				updateItem(itemCopy,item);
+			});
+		});
+	}
+
 	var historyItem;
 	historyItem=oldItem;
 	historyItem.uid=generateUID();
@@ -570,7 +620,7 @@ function updateItem(newItem, oldItem, stage){
 	db.itemdb.insert({type:'history', forUID:newItem.uid, historyItem:historyItem }, function (err, doc) {});
 
 	newItem.edited=moment().format();
-	if (!stage) { newItem.lock=false; }
+	if (unlock) { newItem.lock=false; }
 	delete newItem._id;
 	//check to see if new image was sent
 	
@@ -758,6 +808,14 @@ function changeDecision(staged, who, what, value){
 
 	return changeDecisionPromise.promise;
 } 
+
+function findItem(uid){
+	var p=q.defer();
+	db.itemdb.findOne({uid:uid}, function (err, doc) {
+		if(err){ console.log('(error getting item) '+err); p.reject(err); }else{ p.resolve(doc); }
+	});
+	return p.promise;
+}
 
 	
 

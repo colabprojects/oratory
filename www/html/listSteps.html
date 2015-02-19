@@ -1,0 +1,16 @@
+<table class="table">
+	<tr ng-repeat="step in plan.steps" class="row">
+		<td style="width:100px;">
+			<button ng-if="editSteps" class="btn btn-xs btn-default" ng-click="moveStep($index,$index+1)" ng-disabled="$index===(plan.steps.length-1)"><span class="glyphicon glyphicon-arrow-down"></span></button>
+			<button ng-if="editSteps" class="btn btn-xs btn-default" ng-click="moveStep($index,$index-1)" ng-disabled="$index===0"><span class="glyphicon glyphicon-arrow-up"></span></button>
+			<span class="pad-left">{{$index+1}}.</span>
+		</td>
+		<td>
+			<span><list-step step="step"></list-step></span>
+		</td>
+		<td>
+			<button ng-if="editSteps" class="btn btn-xs btn-default" ng-click="removeStep($index, real)">remove</button>
+		</td>
+
+	</tr>
+</table>

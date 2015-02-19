@@ -81,6 +81,7 @@ html, body { height: 100%; }
 
 .edit-view { width:100%; }
 .attachment-label { margin:0 8px; }
+.step-label { margin:0 8px 0 0; }
 
 .navbar-toggle { float: left; margin-left: 15px; }
 .btn-info { background-color: rgb(255,200,0); border-color:#EDA891; }
@@ -89,9 +90,11 @@ html, body { height: 100%; }
 .margin-top { margin-top:20px; }
 .margin-md { margin-bottom: 15px; margin-top:15px; }
 .pad-top { padding-top:15px; }
+.pad-left { padding-left:10px; }
 .pad-bottom { padding-bottom:15px; }
 .remove-round { border-radius: 0; border-right:0; }
 .width100 { width:100% !important; }
+.float-left { float:left; }
 
 .navbar-default { background:transparent; border:none;}
 
