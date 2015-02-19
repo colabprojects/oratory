@@ -1,5 +1,5 @@
-<button type="submit" class="btn-sm btn-default updown" ng-class="{'active-priority':item.priorityByEmail[type]===1}" ng-click="changePriority(1)">^</button>
-<button type="submit" class="btn-sm btn-default updown" ng-class="{'active-priority':item.priorityByEmail[type]===-1}" ng-click="changePriority(-1)">v</button>
+<button class="btn-sm btn-default updown" onclick="this.blur();" ng-class="{'active-priority':item.priorityByEmail[type]===1}" ng-click="changePriority(1)">^</button>
+<button class="btn-sm btn-default updown" onclick="this.blur();" ng-class="{'active-priority':item.priorityByEmail[type]===-1}" ng-click="changePriority(-1)">v</button>
 
 
 	
