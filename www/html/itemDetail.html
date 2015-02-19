@@ -6,6 +6,9 @@
 			<div ng-if="!item.plan">
 				<p>no plan has been decided for this {{item.type}}</p>
 			</div>
+			<div ng-if="item.plan">
+				<list-steps plan="item.plan" edit-steps="false"></list-steps>
+			</div>
 			<div ng-if="item.plans.length">
 				<h5>options:</h5>
 				<ol>
@@ -22,10 +25,7 @@
 			<ul>
 				<li ng-repeat="o in item.owners">{{o}}</li> 
 			</ul>
-			<div ng-if="item.plans">
-				next step:
-				<p>{{item.plans[0].name}}</p>
-			</div>
+			
 			<div ng-if="item.parents.length">
 				part of:
 				<list-attachment ng-repeat="p in item.parents" attachment="findAttachment(p)"></list-attachment>

@@ -956,14 +956,26 @@ itemApp.directive('addPlanForm', function ($state, $http, master) {
       } else {
         scope.formPlan={};
         scope.formPlan['type']='plan';
-        scope.formPlan.name='joe';
       }
       
-      scope.savePlan = function(){
+      scope.savePlan = function(assign){
         if(!scope.item.plans) {scope.item.plans=[];}
+        if(!scope.item.plan) {scope.item.plan=[];}
         debug='the form plan: '+JSON.stringify(scope.formPlan)+'     the item is: '+JSON.stringify(scope.item);
         scope.item.plans.push(scope.formPlan);
-        master.pushToItem(_(scope.item).pick(['uid','plans']));
+        
+        if (assign){
+          //add step to item attachments
+          if (!scope.item.attachments) { scope.item.attachments = []; }
+          _(scope.formPlan.steps).each(function(step){
+            if (step.uid){ scope.item.attachments.push(step.uid); }
+          });
+            
+          scope.item.plan = scope.formPlan;
+
+        }
+
+        master.pushToItem(_(scope.item).pick(['uid','plans','plan','attachments']));
       };
 
     }
@@ -1000,11 +1012,16 @@ itemApp.directive('addStep', function ($state, $http, master) {
   }
 });
 
+
+
+
+
 itemApp.directive('listSteps', function ($state, $http, master) {
   return {
     restrict: 'E',
     scope: {
       plan:'=',
+      item:'=',
       editSteps:'='
     },
     templateUrl: 'html/listSteps.html',
@@ -1013,6 +1030,10 @@ itemApp.directive('listSteps', function ($state, $http, master) {
       scope.sharedData=master.sharedData;
       
       scope.removeStep = function (index) {
+        var step = scope.plan.steps[index];
+        if (step.uid) {
+          scope.item.attachments = _.without(scope.item.attachments, step.uid);
+        }
         scope.plan.steps.splice(index, 1);
       };
 

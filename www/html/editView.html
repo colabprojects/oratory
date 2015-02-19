@@ -13,6 +13,7 @@
 			</div>
 			<div ng-if="item.plans" class="col-xs-12 col-md-6">
 				<h4>plan</h4>
+				<list-steps plan="item.plan" edit-steps="true" item="item"></list-steps>
 			</div>
 			<div class="col-xs-12 col-md-6" ng-if="item.type=='project'">
 				<h4>attachments</h4>
