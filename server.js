@@ -152,7 +152,7 @@ app.post('/api/authGen', express.json(), function (req, res) {
 		    to: req.body.email,
 		    subject: 'is it really you?',
 		    text: 'text body',
-		    html: "<a href='http://127.0.0.1:55657/#/auth/"+key+"'>YES!</a>"
+		    html: "<a href='http://colablife.info/#/auth/"+key+"'>YES!</a>"
 		}, function (err, doc){
 		    if(err){ console.log(err); }else{ 
 		    	//email was sent!
