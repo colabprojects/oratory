@@ -24,7 +24,7 @@
 		<div ng-if="addEvent">
 			add event:
 			<select id="addEventSelect" class="form-control" ng-model="selectedEvent" ng-options="a.name for a in listEvents"></select>
-			<button class="btn btn-default" ng-click="addEventClick(); addEvent(selectedEvent.uid);">add</button>
+			<button class="btn btn-default" ng-click="addEvent(selectedEvent.uid);">add</button>
 			<button class="btn btn-default" ng-click="addEventClick();">cancel</button>
 		</div>
 		<!--
