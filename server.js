@@ -177,9 +177,9 @@ app.get('/api/getDatabase', function (req, res) {
 });//end GET database
 
 app.post('/api/getItems', express.json(), function (req, res) {
-	if(!req.session.user){
-		res.send({});
-	} else {
+	//if(!req.session.user){
+	//	res.send({});
+	//} else {
 		var query = {};
 		if (req.body.type) { query['type'] = req.body.type; }
 		if (req.body.forUID) { query['forUID'] = req.body.forUID; }
@@ -188,7 +188,7 @@ app.post('/api/getItems', express.json(), function (req, res) {
 		db.itemdb.find(query,function (err, docs) {
 			if(err){ console.log('(error getting items) '+err); }else{ res.send(docs); }
 		});
-	}
+	//} //end auth check
 });//end GET items
 
 app.post('/api/getItemHistory', express.json(), function (req, res) {
