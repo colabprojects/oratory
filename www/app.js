@@ -1120,7 +1120,9 @@ itemApp.directive('listBudget', function ($state, $http, master) {
         var total = 0;
         for(var i = 0; i < scope.budget.lines.length; i++){
             var line = scope.budget.lines[i];
-            total += (line.price);
+            if ($.isNumeric(line.price)){
+              total += line.price;
+            }
         }
         scope.budget.total = total;
       }
