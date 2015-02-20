@@ -1,7 +1,7 @@
 <table class="table">
 	<tr ng-repeat="line in budget.lines" class="row">
-		<td>
-			<span class="pad-left" style="width:40px;">{{$index+1}}.</span>
+		<td style="width:40px;">
+			<span class="pad-left">{{$index+1}}.</span>
 		</td>
 		<td>
 			<span ng-if="!editBudget">{{line.name}}</span>
@@ -9,7 +9,7 @@
 		</td>
 		<td>
 			<span ng-if="!editBudget">{{line.price}}</span>
-			<input ng-if="editBudget" class="form-control" type="number" ng-model="budget.lines[$index].price" placeholder="price"/>
+			<input ng-if="editBudget" class="form-control" type="number" ng-change="getTotal()" ng-model="budget.lines[$index].price" placeholder="price"/>
 		</td>
 		<td>
 			<span ng-if="!editBudget">{{line.comment}}</span>
@@ -20,7 +20,7 @@
 		</td>
 
 	</tr>
-	<tr ng-if="editBudget">
+	<tr ng-if="editBudget" class="row">
 		<td>
 			<span>add:</span>
 		</td>
@@ -40,13 +40,13 @@
 	<tr>
 		<td></td>
 		<td></td>
-		<td></td>
 		<td>
 			<span style="font-weight:bold;">total:</span>
 		</td>
 		<td>
-			<span style="font-weight:bold;">{{budget.lines.$sum('price')}}</span>
+			<span style="font-weight:bold;">{{budget.total}}</span>
 		</td>
+		<td></td>
 	</tr>
 </table>
 <button ng-if="editBudget" class="btn btn-xs btn-default" ng-click="saveBudget()">save budget</button>

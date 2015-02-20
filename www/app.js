@@ -1115,22 +1115,31 @@ itemApp.directive('listBudget', function ($state, $http, master) {
         }
       }
 
+      scope.getTotal = function(){
+        var total = 0;
+        for(var i = 0; i < scope.budget.lines.length; i++){
+            var line = scope.budget.lines[i];
+            total += (line.price);
+        }
+        scope.budget.total = total;
+      }
+      scope.getTotal();
 
       
       scope.saveBudget = function() {
-        scope.budget.total = scope.budget.lines.$sum('price');
         scope.item.budget = scope.budget;
-
         master.saveItem(scope.item);
       };
 
       scope.addLine = function() {
         scope.budget.lines.push(scope.newLine);
+        scope.getTotal();
         scope.newLine = {};
       };
 
       scope.removeLine = function(index) {
         scope.budget.lines.splice(index, 1);
+        scope.getTotal();
       };
 
       // scope.removeStep = function (index) {
