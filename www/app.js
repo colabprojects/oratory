@@ -834,6 +834,10 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
         scope.addPlan=!scope.addPlan;
       };
 
+      scope.addBudgetClick = function() {
+        scope.addBudget=!scope.addBudget;
+      };
+
       scope.addEventClick = function() {
         scope.addEvent=!scope.addEvent;
       };
@@ -1027,10 +1031,6 @@ itemApp.directive('addStep', function ($state, $http, master) {
   }
 });
 
-
-
-
-
 itemApp.directive('listSteps', function ($state, $http, master) {
   return {
     restrict: 'E',
@@ -1083,6 +1083,74 @@ itemApp.directive('listStep', function ($state, $http, master) {
     }
   }
 });
+
+itemApp.directive('listBudget', function ($state, $http, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      budget:'=',
+      item:'=',
+      editBudget:'='
+    },
+    templateUrl: 'html/listBudget.html',
+    link: function(scope, element, attrs) {
+      scope.dbInfo=master.getDbInfo;
+      scope.sharedData=master.sharedData;
+
+      if (editBudget) {
+        if (!scope.budget) { 
+          scope.budget = {}; 
+          scope.budget.lines = [];
+          if (scope.item.attachments) {
+            //loop throught and add
+            _(scope.item.attachments).each(function(attachment){
+              if (attachment.need === 'want') {
+                scope.budget.lines.push({name:attachment.name, price:attachment.price});
+              }
+            });
+          }
+        }
+      }
+
+      scope.$watch('budget', function(newValue, oldValue) {
+        scope.budget.total = 0;
+        scope.budget.total = _(scope.budget.lines).each(function(line){ scope.budget.total = scope.budget.total + line.price })
+      });
+      
+      scope.saveBudget = function() {
+        scope.item.budget = scope.budget;
+        master.saveItem(scope.item);
+      };
+
+      scope.addLine = function() {
+        scope.budget.lines.push({name:scope.newName, price:scope.newPrice, comment:scope.newComment});
+      };
+
+      scope.removeLine = function(index) {
+        scope.budget.lines.splice(index, 1);
+      };
+
+      // scope.removeStep = function (index) {
+      //   var step = scope.plan.steps[index];
+      //   if (step.uid) {
+      //     scope.item.attachments = _.without(scope.item.attachments, step.uid);
+      //   }
+      //   scope.plan.steps.splice(index, 1);
+      // };
+
+      // scope.moveStep = function(from,to) {
+      //   var step = scope.plan.steps[from];
+      //   scope.plan.steps.splice(from, 1);
+      //   scope.plan.steps.splice(to, 0, step);
+      // };
+      
+
+    }
+  }
+});
+
+
+
 
 itemApp.directive('addMediaImageForm', function ($state, $http, master) {
   return {

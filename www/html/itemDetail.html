@@ -1,23 +1,5 @@
 <!-- DETAIL -->
 <div class="row">
-	<div class="col-xs-12 detail-container" ng-if="item.type==='project'">
-		<div class="detail-card">
-			<p class="half-bottom detail-header">plan</p>
-			<div ng-if="!item.plan">
-				<p>no plan has been decided for this {{item.type}}</p>
-			</div>
-			<div ng-if="item.plan">
-				<list-steps plan="item.plan" edit-steps="false"></list-steps>
-			</div>
-			<div ng-if="item.plans.length">
-				<h5>options:</h5>
-				<ol>
-					<li ng-repeat="plan in item.plans">{{plan.name}}</li>
-				</ol>
-			</div>
-			
-		</div>
-	</div>
 	<div class="col-xs-12 col-md-4 detail-container">
 		<div class="detail-card">
 			<p class="half-bottom detail-header">overview</p>
@@ -66,6 +48,38 @@
 			<show-comment ng-repeat="comment in item.comments" comment="comment"></show-comment>
 		</div>
 
+	</div>
+
+	<div class="col-xs-12 detail-container" ng-if="item.type==='project'">
+		<div class="detail-card">
+			<p class="half-bottom detail-header">plan</p>
+			<div ng-if="!item.plan">
+				<p>no plan has been decided for this {{item.type}}</p>
+			</div>
+			<div ng-if="item.plan">
+				<list-steps plan="item.plan" edit-steps="false"></list-steps>
+			</div>
+			<div ng-if="item.plans.length">
+				<h5>options:</h5>
+				<ol>
+					<li ng-repeat="plan in item.plans">{{plan.name}}</li>
+				</ol>
+			</div>
+			
+		</div>
+	</div>
+
+	<div class="col-xs-12 detail-container" ng-if="item.type==='project'">
+		<div class="detail-card">
+			<p class="half-bottom detail-header">budget</p>
+			<div ng-if="!item.budget">
+				<p>no budget for this {{item.type}}</p>
+			</div>
+			<div ng-if="item.budget">
+				<list-budget budget="item.budget" edit-budget="false"></list-budget>
+			</div>
+			
+		</div>
 	</div>
 
 	<div class="col-xs-12 detail-container" ng-show="item.media">

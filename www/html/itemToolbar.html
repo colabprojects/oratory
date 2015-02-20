@@ -7,6 +7,7 @@
 		<button class="btn btn-default" ng-click="addOwnerClick();">add owner</button>
 		<button class="btn btn-default" ng-click="addMediaImageClick();">add media</button>
 		<button class="btn btn-default" ng-click="addPlanClick();">add new plan</button>
+		<button class="btn btn-default" ng-click="addBudgetClick();">add budget</button>
 		<button class="btn btn-default" ng-click="addEventClick();">add event</button>
 
 		<owner-form ng-if="addOwners" item='item'></owner-form>
@@ -26,6 +27,11 @@
 			<select id="addEventSelect" class="form-control" ng-model="selectedEvent" ng-options="a.name for a in listEvents"></select>
 			<button class="btn btn-default" ng-click="addEvent(selectedEvent.uid);">add</button>
 			<button class="btn btn-default" ng-click="addEventClick();">cancel</button>
+		</div>
+		<div ng-if="addBudget">
+			add budget:
+			<list-budget budget="item.budget" item="item" edit-budget="true"></list-budget>
+			<button class="btn btn-default" ng-click="addBudgetClick();">cancel</button>
 		</div>
 		<!--
 		<div>

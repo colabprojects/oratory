@@ -1,0 +1,46 @@
+<table class="table">
+	<tr ng-repeat="line in budget.lines" class="row">
+		<td>
+			<span class="pad-left">{{$index+1}}.</span>
+		</td>
+		<td>
+			<span>{{line.name}}</span>
+		</td>
+		<td>
+			<span>{{line.price}}</span>
+		</td>
+		<td>
+			<span>{{line.comment}}</span>
+		</td>
+		<td>
+			<button ng-if="editBudget" class="btn btn-xs btn-default" ng-click="removeLine($index)">remove</button>
+		</td>
+
+	</tr>
+	<tr ng-if="editBudget">
+		<td>
+			<span class="pad-left">add:</span>
+		</td>
+		<td>
+			<input class="form-control" type="text" ng-model="newName" placeholder="name"/>
+		</td>
+		<td>
+			<input class="form-control" type="text" ng-model="newPrice" placeholder="price"/>
+		</td>
+		<td>
+			<input class="form-control" type="text" ng-model="newComment" placeholder="comment"/>
+		</td>
+		<td>
+			<button class="btn btn-xs btn-default" ng-click="addLine()">add</button>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<span class="pad-left bold">total:</span>
+		</td>
+		<td>
+			<span>{{budget.total}}</span>
+		</td>
+	</tr>
+</table>
+<button ng-if="editBudget" class="btn btn-xs btn-default" ng-click="saveBudget()">save budget</button>
