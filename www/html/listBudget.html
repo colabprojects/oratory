@@ -4,13 +4,16 @@
 			<span class="pad-left">{{$index+1}}.</span>
 		</td>
 		<td>
-			<span>{{line.name}}</span>
+			<span ng-if="!editBudget">{{line.name}}</span>
+			<input ng-if="editBudget" class="form-control" type="text" ng-model="budget.lines[$index].name" placeholder="name"/>
 		</td>
 		<td>
-			<span>{{line.price}}</span>
+			<span ng-if="!editBudget">{{line.price}}</span>
+			<input ng-if="editBudget" class="form-control" type="number" ng-model="budget.lines[$index].price" placeholder="price"/>
 		</td>
 		<td>
-			<span>{{line.comment}}</span>
+			<span ng-if="!editBudget">{{line.comment}}</span>
+			<input ng-if="editBudget" class="form-control" type="text" ng-model="budget.lines[$index].comment" placeholder="comment"/>
 		</td>
 		<td>
 			<button ng-if="editBudget" class="btn btn-xs btn-default" ng-click="removeLine($index)">remove</button>

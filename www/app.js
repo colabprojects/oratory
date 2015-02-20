@@ -1117,7 +1117,7 @@ itemApp.directive('listBudget', function ($state, $http, master) {
 
       scope.$watch('budget', function(newValue, oldValue) {
         scope.budget.total = 0;
-        scope.budget.total = _(scope.budget.lines).each(function(line){ scope.budget.total = scope.budget.total + line.price })
+        _(scope.budget.lines).each(function(line){ scope.budget.total = scope.budget.total + line.price });
       });
       
       scope.saveBudget = function() {
