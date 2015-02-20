@@ -602,7 +602,7 @@ itemApp.directive('listAttachments', function ($filter, master) {
       if (!scope.formItem.attachments) { scope.formItem.attachments=[]; }
 
       scope.items = _.chain(master.items)
-        .filter(function(item){ return item.type==='tool' || item.type ==='resource'; })
+        .filter(function(item){ return item.type==='tool' || item.type ==='resource' || item.type==='event'; })
         .map(function(item){ return angular.copy(item); }).value();
 
 
