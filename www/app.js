@@ -1129,7 +1129,7 @@ itemApp.directive('listBudget', function ($state, $http, master) {
       scope.getTotal();
 
       scope.isNumber = function() {
-        if(!$.isNumberic(scope.newLine.price){ scope.newLine.price = 0 }
+        if(!$.isNumberic(scope.newLine.price)){ scope.newLine.price = 0 }
       };
       
       scope.saveBudget = function() {
