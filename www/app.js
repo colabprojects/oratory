@@ -1097,7 +1097,7 @@ itemApp.directive('listBudget', function ($state, $http, master) {
       scope.dbInfo=master.getDbInfo;
       scope.sharedData=master.sharedData;
 
-      scope.new = {};
+      scope.newLine = {};
 
       if (scope.editBudget) {
         if (!scope.budget) { 
@@ -1125,8 +1125,8 @@ itemApp.directive('listBudget', function ($state, $http, master) {
       };
 
       scope.addLine = function() {
-        scope.budget.lines.push(new);
-        scope.new = {};
+        scope.budget.lines.push(newLine);
+        scope.newLine = {};
       };
 
       scope.removeLine = function(index) {
