@@ -1096,6 +1096,7 @@ itemApp.directive('listBudget', function ($state, $http, master) {
     link: function(scope, element, attrs) {
       scope.dbInfo=master.getDbInfo;
       scope.sharedData=master.sharedData;
+      scope.budget.total=0;
 
       scope.newLine = {};
 
