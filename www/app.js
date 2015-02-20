@@ -67,7 +67,7 @@ itemApp.factory('master', function($http, $q, $state){
 
   service.sharedData.notIncluded = ['name','type','uid','image','thumb','need'];
 
-  service.sharedData.attachmentTypes = ['resource', 'tool', ''];
+  service.sharedData.attachmentTypes = ['resource', 'tool', 'event'];
   service.sharedData.formAttachments = [];
 
   service.sharedData.changePage = function (page) { $state.go(page); };
