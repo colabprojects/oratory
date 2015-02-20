@@ -840,7 +840,7 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
       scope.addEvent = function(uid){
         if(!scope.item.events) { scope.item.events=[]; }
         scope.item.events.push(uid);
-        master.pushToItem(_(scope.item).pick(['uid','attachments']));
+        master.pushToItem(_(scope.item).pick(['uid','events']));
       }
 
       scope.addToProject = function(theUID) {
