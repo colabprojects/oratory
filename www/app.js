@@ -474,6 +474,7 @@ itemApp.directive('formElement', function ($http) {
     link: function(scope, element, attrs) {
       if (scope.field.type=='text') {
         scope.templateUrl = 'html/formElement_text.html';
+        if((scope.field.default)&&(scope.formItem[!scope.field.name])) { scope.formItem[scope.field.name]=scope.field.default; }
       }
       if (scope.field.type=='textarea') {
         scope.templateUrl = 'html/formElement_textarea.html';
