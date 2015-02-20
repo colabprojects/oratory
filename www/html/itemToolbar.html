@@ -22,7 +22,7 @@
 			<add-plan-form item="item"></add-plan-form>
 			<button class="btn btn-default" ng-click="addPlanClick();">cancel</button>
 		</div>
-		<div ng-if="addEvent">
+		<div ng-if="!addEvent">
 			add event:
 			<select id="addEventSelect" class="form-control" ng-model="selectedEvent" ng-options="a.name for a in listEvents"></select>
 			<button class="btn btn-default" ng-click="addEvent(selectedEvent.uid);">add</button>
