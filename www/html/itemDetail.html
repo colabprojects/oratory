@@ -18,6 +18,10 @@
 				part of:
 				<list-attachment ng-repeat="p in item.parents" attachment="findAttachment(p)"></list-attachment>
 			</div>
+
+			<div ng-if="item.budget.total">
+				total cost: ${{item.budget.total}}
+			</div>
 		</div>
 	</div>
 	<div ng-if="item.type==='project'" class="col-xs-12 col-md-4 detail-container">
