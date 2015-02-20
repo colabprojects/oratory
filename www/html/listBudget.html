@@ -1,7 +1,7 @@
 <table class="table">
 	<tr ng-repeat="line in budget.lines" class="row">
 		<td>
-			<span class="pad-left">{{$index+1}}.</span>
+			<span class="pad-left" style="width:40px;">{{$index+1}}.</span>
 		</td>
 		<td>
 			<span ng-if="!editBudget">{{line.name}}</span>
@@ -22,7 +22,7 @@
 	</tr>
 	<tr ng-if="editBudget">
 		<td>
-			<span class="pad-left">add:</span>
+			<span>add:</span>
 		</td>
 		<td>
 			<input class="form-control" type="text" ng-model="newLine.name" placeholder="name"/>
@@ -45,7 +45,7 @@
 			<span style="font-weight:bold;">total:</span>
 		</td>
 		<td>
-			<span style="font-weight:bold;">{{budget.total}}</span>
+			<span style="font-weight:bold;">{{budget.lines.$sum('price')}}</span>
 		</td>
 	</tr>
 </table>

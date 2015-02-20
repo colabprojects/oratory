@@ -1115,13 +1115,12 @@ itemApp.directive('listBudget', function ($state, $http, master) {
         }
       }
 
-      scope.$watch('budget', function(newValue, oldValue) {
-        scope.budget.total = 0;
-        _(scope.budget.lines).each(function(line){ scope.budget.total = scope.budget.total + line.price });
-      });
+
       
       scope.saveBudget = function() {
+        scope.budget.total = scope.budget.lines.$sum('price');
         scope.item.budget = scope.budget;
+
         master.saveItem(scope.item);
       };
 
