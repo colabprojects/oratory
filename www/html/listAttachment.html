@@ -5,3 +5,4 @@
 	</a>
 	<button ng-if="editAttachment" class="btn btn-xs btn-default" ui-sref="edit({uid:attachment.uid,chain:true})">edit</button>
 </h6>
+<p ng-if="attachment.type==='event'">{{attachment.start}} through {{attachment.end}}</p>

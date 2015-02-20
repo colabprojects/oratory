@@ -112,8 +112,8 @@ var dbInfo = {
         formFields:[
           {name:'title', type:'text'},
           {name:'description',type:'textarea'},
-          {name:'start', type:'text'},
-          {name:'end', type:'text'}
+          {name:'start', type:'text', default:'TBD'},
+          {name:'end', type:'text', default:'TBD'}
         ]
       },
       {
@@ -590,6 +590,31 @@ function updateItem(newItem, oldItem, unlock){
 	if (!_.isEqual(oldItem.attachments,newItem.attachments)){
 		var removeLoopUids = _.difference(oldItem.attachments, newItem.attachments);
 		var addLoopUids = _.difference(newItem.attachments, oldItem.attachments);
+
+		console.log('remove: '+JSON.stringify(removeLoopUids)+'   add:       '+JSON.stringify(addLoopUids));
+
+		_.each(removeLoopUids, function(uid){
+			findItem(uid).then(function(item){
+				var itemCopy = __.cloneDeep(item);
+				itemCopy.parents = _(itemCopy.parents).without(newItem.uid);
+				updateItem(itemCopy,item);
+			});
+		});
+
+		_.each(addLoopUids, function(uid){
+			findItem(uid).then(function(item){
+				var itemCopy = __.cloneDeep(item);
+				itemCopy.parents = itemCopy.parents || [];
+				itemCopy.parents.push(newItem.uid);
+				updateItem(itemCopy,item);
+			});
+		});
+	}
+
+	//event comparasion
+	if (!_.isEqual(oldItem.events,newItem.events)){
+		var removeLoopUids = _.difference(oldItem.events, newItem.events);
+		var addLoopUids = _.difference(newItem.events, oldItem.events);
 
 		console.log('remove: '+JSON.stringify(removeLoopUids)+'   add:       '+JSON.stringify(addLoopUids));
 

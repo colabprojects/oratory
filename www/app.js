@@ -67,7 +67,7 @@ itemApp.factory('master', function($http, $q, $state){
 
   service.sharedData.notIncluded = ['name','type','uid','image','thumb','need'];
 
-  service.sharedData.attachmentTypes = ['resource', 'tool', 'event'];
+  service.sharedData.attachmentTypes = ['resource', 'tool', ''];
   service.sharedData.formAttachments = [];
 
   service.sharedData.changePage = function (page) { $state.go(page); };
@@ -602,7 +602,7 @@ itemApp.directive('listAttachments', function ($filter, master) {
       if (!scope.formItem.attachments) { scope.formItem.attachments=[]; }
 
       scope.items = _.chain(master.items)
-        .filter(function(item){ return item.type==='tool' || item.type ==='resource' || item.type==='event'; })
+        .filter(function(item){ return item.type==='tool' || item.type ==='resource'; })
         .map(function(item){ return angular.copy(item); }).value();
 
 
@@ -804,6 +804,8 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
       scope.colors = master.color(scope.item);
       scope.deleteItem=master.deleteItem;
 
+      scope.listEvents=_(master.items).filter({type:'event'});
+
       scope.listProjectsAll=_(master.items).filter({type:'project'});
       scope.listProjects=_(scope.listProjectsAll).map(function(project){ if(project.uid!==scope.item.uid){ return project; }});
 
@@ -830,6 +832,16 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
       scope.addPlanClick = function() {
         scope.addPlan=!scope.addPlan;
       };
+
+      scope.addEventClick = function() {
+        scope.addEvent=!scope.addEvent;
+      };
+
+      scope.addEvent = function(uid){
+        if(!scope.item.events) { scope.item.events=[]; }
+        scope.item.events.push(uid);
+        master.pushToItem(_(scope.item).pick(['uid','attachments']));
+      }
 
       scope.addToProject = function(theUID) {
         var parent = _(master.items).findWhere({uid:theUID});

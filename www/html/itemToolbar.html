@@ -7,6 +7,7 @@
 		<button class="btn btn-default" ng-click="addOwnerClick();">add owner</button>
 		<button class="btn btn-default" ng-click="addMediaImageClick();">add media</button>
 		<button class="btn btn-default" ng-click="addPlanClick();">add new plan</button>
+		<button class="btn btn-default" ng-click="addEventClick();">add event</button>
 
 		<owner-form ng-if="addOwners" item='item'></owner-form>
 		<button ng-if="addOwners" class="btn btn-default" ng-click="addOwnerClick();">cancel</button>
@@ -19,6 +20,12 @@
 		<div ng-if="addPlan">
 			<add-plan-form item="item"></add-plan-form>
 			<button class="btn btn-default" ng-click="addPlanClick();">cancel</button>
+		</div>
+		<div ng-if="addEvent">
+			add event:
+			<select id="addEventSelect" class="form-control" ng-model="selectedEvent" ng-options="a.name for a in listEvents"></select>
+			<button class="btn btn-default" ng-click="addEventClick(); addEvent(selectedEvent.uid);">add</button>
+			<button class="btn btn-default" ng-click="addEventClick();">cancel</button>
 		</div>
 		<!--
 		<div>
