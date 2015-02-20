@@ -1105,7 +1105,8 @@ itemApp.directive('listBudget', function ($state, $http, master) {
           scope.budget.lines = [];
           if (scope.item.attachments) {
             //loop throught and add
-            _(scope.item.attachments).each(function(attachment){
+            _(scope.item.attachments).each(function(uid){
+              attachment = _(master.items).findWhere({uid:uid});
               if (attachment.need === 'want') {
                 scope.budget.lines.push({name:attachment.name, price:attachment.price});
               }
@@ -1125,7 +1126,7 @@ itemApp.directive('listBudget', function ($state, $http, master) {
       };
 
       scope.addLine = function() {
-        scope.budget.lines.push(newLine);
+        scope.budget.lines.push(scope.newLine);
         scope.newLine = {};
       };
 
