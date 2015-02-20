@@ -9,7 +9,7 @@
 		</td>
 		<td>
 			<span ng-if="!editBudget">{{line.price}}</span>
-			<input ng-if="editBudget" class="form-control" type="number" ng-change="getTotal()" ng-model="budget.lines[$index].price" placeholder="price"/>
+			<input ng-if="editBudget" class="form-control" type="text" ng-change="getTotal()" ng-model="budget.lines[$index].price" placeholder="price"/>
 		</td>
 		<td>
 			<span ng-if="!editBudget">{{line.comment}}</span>
@@ -28,7 +28,7 @@
 			<input class="form-control" type="text" ng-model="newLine.name" placeholder="name"/>
 		</td>
 		<td>
-			<input class="form-control" type="text" ng-model="newLine.price" placeholder="price"/>
+			<input class="form-control" type="text" ng-model="newLine.price" ng-change="isNumber()" placeholder="price"/>
 		</td>
 		<td>
 			<input class="form-control" type="text" ng-model="newLine.comment" placeholder="comment"/>
