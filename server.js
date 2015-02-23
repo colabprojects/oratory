@@ -464,7 +464,7 @@ app.post('/api/pickLock', express.json(), function (req, res){
 		db.itemdb.findOne({uid:req.body.uid}, function (err, item){
 			if(err||!item){ console.log('(error removing lock on item) '+err); }
 			else { 
-				if((item.owner)||(item.owner===req.body.email)||(item.lockChangedBy===req.body.email)){
+				if(_.contains(item.owners, req.body.email)){
 					syncLockPromise = changeLock(item,req.body.email, false);
 					q.when(syncLockPromise).then(function(){
 						res.send(item);
