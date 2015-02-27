@@ -9,6 +9,7 @@
 		<button class="btn btn-default" ng-click="addPlanClick();">add new plan</button>
 		<button class="btn btn-default" ng-click="addBudgetClick();">add budget</button>
 		<button class="btn btn-default" ng-click="addEventClick();">add event</button>
+		<button class="btn btn-default" ng-click="addProposalClick();">add proposal</button>
 
 		<owner-form ng-if="addOwners" item='item'></owner-form>
 		<button ng-if="addOwners" class="btn btn-default" ng-click="addOwnerClick();">cancel</button>
@@ -40,6 +41,11 @@
 			<button class="btn btn-default" ng-click="addToProject(selectedProject.uid)">add to project</button>
 		</div>
 		-->
+		<div ng-if="addProposal">
+			<p>description</p>
+			<textarea class="form-control" ng-model="proposal.description"></textarea>
+			<button class="btn btn-default" ng-click="createProposal();">create</button>
+			<button class="btn btn-default" ng-click="addProposalClick();">cancel</button>
 	</div>	
 
 	<div ng-if="item.lock">

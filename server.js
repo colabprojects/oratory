@@ -123,7 +123,9 @@ var dbInfo = {
     ]
 };
 
-
+var proposalSecrets = {};
+//var members = [{name:'micha'},{name:'jackie'},{name:'mike'},{name:'coop'},{name:'steve', email:'steven.c.hein@gmail.com'}];
+var members = [{name:'steve', email:'steven.c.hein@gmail.com'}, {name:'steve2',email:'imaspaceranger@gmail.com'}];
 //API ---------------------------------------------------------------------------------------
 //AUTH
 app.post('/api/auth', express.json(), function (req, res) {
@@ -410,6 +412,65 @@ app.post('/api/deleteItem', express.json(), function (req, res){
 
 });//end DELETE item
 
+app.post('/api/saveProposal', express.json(), function (req, res) {
+	if(!req.session.user){
+		res.send({});
+	} else {
+		req.body.uid=generateUID();
+		proposalSecrets[req.body.uid]=[];
+		//put in the members
+		_(members).each(function(member){ 
+			req.body[member.name]={};
+			req.body[member.name].who = member.name;
+			var key = generateUID();
+			if (member.email){
+			
+				console.log('trying to send email to ' + member.email);
+				smtpTrans.sendMail({
+				    from: 'Robot <colabrobot@gmail.com>',
+				    to: member.email,
+				    subject: 'new project proposal for colab',
+				    text: 'text body',
+				    html: "<p>Human,</p><p>A new proposal has been created. Please follow the link below to review everything, and fill in your decision and/or comments. The link was generated specifically for you so don't share. Please reply to me if you have any questions. I am a robot. Thank you.</p><p><a href='http://colablife.info/#/proposal/"+req.body.uid+"/"+key+"'>click here to view proposal</a>"
+				}, function (err, doc){
+				    if(err){ console.log(err); }else{ 
+				    	//email was sent!
+				    	proposalSecrets[req.body.uid].push({name:member.name,key:key});
+				    	console.log('Message sent: ' + doc.response); 
+				    }
+				});
+
+			}
+
+		});
+
+		db.itemdb.insert(req.body, function (err, doc) { 
+		if(err){ 
+			console.log('(error saving proposal) '+err);
+		}else{ 
+			console.log('proposal: ' + doc.uid);
+			io.emit('newProposal', doc.uid); 
+			res.send(doc.uid);
+		} 
+	});
+	}
+});//end SAVE proposal
+
+app.post('/api/checkResultee', express.json(), function (req, res){
+	//req.body.uid
+	//req.body.key
+	var name = '';
+	_(proposalSecrets[req.body.uid]).each(function(match){
+		if (match.key===req.body.key) { name = match.name; }
+	});
+
+	if (name!=='') {
+		res.send(name);
+	} else { 
+		res.send(false); 
+	}
+});
+
 app.post('/api/requestLock', express.json(), function (req, res){
 	if(!req.session.user){
 		res.send({});
@@ -524,26 +585,28 @@ app.post('/api/setPriority', express.json(), function (req, res){
 });
 
 app.post('/api/addComment', express.json(), function (req, res) {
-	
-	db.itemdb.findOne({uid:req.body.uid}, function (err, item){
-		if(err){ console.log('(error finding item) '+err); }
-		else { 
-			if(!item.comments) { item.comments = []; }
-			var timeTime = moment().format();
-			item.comments.push({words:req.body.comment, by:req.body.email, time:timeTime});
+	if(!req.session.user){
+		res.send({});
+	} else {
+		db.itemdb.findOne({uid:req.body.uid}, function (err, item){
+			if(err){ console.log('(error finding item) '+err); }
+			else { 
+				if(!item.comments) { item.comments = []; }
+				var timeTime = moment().format();
+				item.comments.push({words:req.body.comment, by:req.body.email, time:timeTime});
 
-			var pushValue = {};
-			pushValue.$set = {};
-			pushValue.$set['comments'] = item.comments; 
-			db.itemdb.update({uid: req.body.uid}, pushValue, function (err, doc) {
-				if(err){ console.log('(error updating comments) '+err); }else{ 
-					io.emit('comment', item);
-					res.send(doc); 
-				}
-			});
-		}
-	});
-
+				var pushValue = {};
+				pushValue.$set = {};
+				pushValue.$set['comments'] = item.comments; 
+				db.itemdb.update({uid: req.body.uid}, pushValue, function (err, doc) {
+					if(err){ console.log('(error updating comments) '+err); }else{ 
+						io.emit('comment', item);
+						res.send(doc); 
+					}
+				});
+			}
+		});
+	}
 });//end add comment
 
 
@@ -672,8 +735,10 @@ function newItem(newItem){
 	//returns a promise
 	var saveItemPromise = q.defer();
 	var syncImagePromise;
+
 	newItem.uid=generateUID();
 	newItem.totalPriority=0;
+
 	newItem.created=moment().format();
 	newItem.edited='never';
 	//set owner as creator if not specified

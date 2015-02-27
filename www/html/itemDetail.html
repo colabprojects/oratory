@@ -3,12 +3,20 @@
 	<div class="col-xs-12 col-md-4 detail-container">
 		<div class="detail-card">
 			<p class="half-bottom detail-header">overview</p>
+			<div ng-if="item.proposal">
+				<div ng-if="item.approval" class="alert alert-success" role="alert">&#10003;approved! <a ui-sref="proposal({uid:item.proposal})">view proposal</a></div>
+				<div ng-if="!item.approval" class="alert alert-warning" role="alert">pending approval: <a ui-sref="proposal({uid:item.proposal})">view proposal</a></div>
+			</div>
 			<div ng-if="item.events">
 				<div ng-repeat="e in item.events">
 					<list-attachment attachment="findAttachment(e)"></list-attachment>
 				</div>
 			</div>
-			
+			<div ng-if="item.type==='event'">
+				Dates:
+				<span ng-if="item.start">{{item.start}} through {{item.end}}</span>
+				<span ng-if="!item.start">TBD</span>
+			</div>
 			item owner(s): 
 			<ul>
 				<li ng-repeat="o in item.owners">{{o}}</li> 

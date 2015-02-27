@@ -1,0 +1,26 @@
+<div class="container">
+
+	<h2>{{item.type}} proposal</h2>
+	<list-item item="item"></list-item>
+
+	<h4>proposal date</h4> 
+	<p>{{proposal.date}}</p>
+
+	<h4>owner(s)</h4>
+	<ul>
+		<li ng-repeat="name in item.owners">{{name}}</li>
+	</ul>
+
+	<h4>description</h4>
+	<p>{{proposal.description}}</p>
+
+	<h4>budget</h4>
+	<div ng-if="item.budget">
+		<list-budget budget="item.budget"></list-budget>
+	</div>
+	<p ng-if="!item.budget">none</p>
+
+	<h4>results</h4>
+	<list-result ng-repeat="result in results" proposal="proposal" result="result"></list-result>
+
+</div>

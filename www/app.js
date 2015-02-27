@@ -92,6 +92,12 @@ itemApp.factory('master', function($http, $q, $state){
     });
   };
 
+  service.getNextProposalNum = function(){
+    return $http.get('/api/getNextProposalNum').success(function (response){
+      return angular.copy(response.data, service.nextProposalNum);
+    });
+  };
+
 
   return service;
 });
@@ -116,15 +122,16 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
 
         $scope.authUser = function(){
           //DEV
-          /*
+          
           master.sharedData.email=$scope.email;
           $.cookie('email', $scope.email);
           master.sharedData.token='123';
           $.cookie('token', '123');
           $state.go('everything');
-          */
+          
           
           //PRODUCTION
+          /*
           master.sharedData.email=$scope.email;
           $.cookie('email', $scope.email);
           master.sharedData.token=$scope.token;
@@ -140,6 +147,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
               $('#sentanddone').html('<h3>please close this window and check your email</h3>');
             });
           }
+          */
           
         };
 
@@ -223,30 +231,30 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         $scope.sharedData.viewFilter = '';
       }
     })
-    .state('map', {
-      url: '/map',
-      templateUrl:'html/mapView.html',
-      resolve:{
-        auth: function ($http, master) {
-          return $http.post('/api/auth', {email:master.sharedData.email,token:master.sharedData.token}).then(function (response){
-            return response.data;
-          });
-        }
-      },
-      controller: function ($scope, $state, auth, master) {
-        if (auth==='false') { $state.go('auth'); }
-        $scope.sharedData=master.sharedData;
-        $scope.insertMap = function() {
-          new GMaps({
-            div: '#insert-map',
-            lat: 36.375892,
-            lng: -85.586121
-            //mapTypeId: google.maps.MapTypeId.SATELLITE
-          });
-        };
-        $scope.insertMap();
-      }
-    })
+    // .state('map', {
+    //   url: '/map',
+    //   templateUrl:'html/mapView.html',
+    //   resolve:{
+    //     auth: function ($http, master) {
+    //       return $http.post('/api/auth', {email:master.sharedData.email,token:master.sharedData.token}).then(function (response){
+    //         return response.data;
+    //       });
+    //     }
+    //   },
+    //   controller: function ($scope, $state, auth, master) {
+    //     if (auth==='false') { $state.go('auth'); }
+    //     $scope.sharedData=master.sharedData;
+    //     $scope.insertMap = function() {
+    //       new GMaps({
+    //         div: '#insert-map',
+    //         lat: 0,
+    //         lng: -0
+    //         //mapTypeId: google.maps.MapTypeId.SATELLITE
+    //       });
+    //     };
+    //     $scope.insertMap();
+    //   }
+    // })
     .state('calendar', {
       url: '/calendar',
       resolve:{
@@ -354,6 +362,45 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
           });
         }
       }
+    }).
+    state('proposal', {
+      url: '/proposal/:uid/:resultee',
+      resolve:{
+        itemToBeView: function ($http, $stateParams, master) {
+          return $http.post('/api/getItem', {uid:$stateParams.uid}).then(function (response){
+            return response.data;
+          });
+        }
+      },
+      templateUrl: 'html/proposalView.html',
+      controller: function ($scope, $state, $stateParams, $http, itemToBeView, master) {
+        $scope.sharedData=master.sharedData;
+        $scope.proposal=itemToBeView;
+        $scope.sharedData.showMoreDetail[$scope.proposal.forUID]=false;
+
+        //get item
+        $scope.item = _(master.items).findWhere({uid:$scope.proposal.forUID});
+        debug=$scope.item;
+
+        //get results
+        var copy = {};
+        angular.copy($scope.proposal, copy);
+        $scope.results = _.omit(copy, ['_id','uid','forUID','date','type','description']);
+        debug = $scope.results;
+
+        if ($stateParams.resultee){
+          //who
+          $http.post('/api/checkResultee', {key:$stateParams.resultee, uid:$scope.proposal.uid}).then(function (response){
+            //who comes back and set edit to true.
+            if (response.data) {
+              $scope.results[response.data].edit=true;
+            }
+          });
+        }
+
+        //push to item proposal[name] result object
+
+      }
     });
     
     $urlRouterProvider.otherwise('/');
@@ -424,6 +471,10 @@ itemApp.controller('appCtrl', function ($scope, $http, $state, master) {
     $scope.$digest();
   });
   
+  socket.on('newProposal', function(prop){
+    $('#socket-messages').append('<p>new proposal was added...</p>');
+  });
+
   socket.on('update', function(item){
     console.log('UPDATE!');
     angular.copy(item, _(master.items).findWhere({uid:item.uid}));
@@ -805,6 +856,8 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
       scope.colors = master.color(scope.item);
       scope.deleteItem=master.deleteItem;
 
+      scope.proposal={};
+
       scope.listEvents=_(master.items).filter({type:'event'});
 
       scope.listProjectsAll=_(master.items).filter({type:'project'});
@@ -842,11 +895,30 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
         scope.addEvent=!scope.addEvent;
       };
 
+      scope.addProposalClick = function() {
+        scope.addProposal=!scope.addProposal;
+        scope.proposal = {};
+        scope.proposal.forUID = scope.item.uid;
+        scope.proposal.date = moment().format();
+        scope.proposal.type = 'proposal';
+      };
+
       scope.addEvent = function(uid){
         if(!scope.item.events) { scope.item.events=[]; }
         scope.item.events.push(uid);
         master.saveItem(scope.item);
         scope.addEvent=false;
+      }
+
+      scope.createProposal = function(){
+        $http.post('/api/saveProposal', scope.proposal).then(function (response){
+          //set the id in the callback - new api for new proposal
+          debug = response.data;
+          master.pushToItem({uid:scope.item.uid, proposal:response.data});
+
+        });
+        scope.addProposal=false;
+        
       }
 
       scope.addToProject = function(theUID) {
@@ -1167,6 +1239,28 @@ itemApp.directive('listBudget', function ($state, $http, master) {
   }
 });
 
+itemApp.directive('listResult', function ($state, $http, master) {
+  return {
+    restrict: 'E',
+    scope: {
+      proposal:'=',
+      result:'='
+    },
+    templateUrl: 'html/listResult.html',
+    link: function(scope, element, attrs) {
+      
+      scope.saveResult = function (){
+        delete scope.result.edit;
+        scope.proposal[scope.result.who]=scope.result;
+        var pushComponents={};
+        pushComponents['uid']=scope.proposal.uid;
+        pushComponents[scope.result.who]=scope.result;
+        master.pushToItem(pushComponents);
+      }
+
+    }
+  }
+});
 
 
 
