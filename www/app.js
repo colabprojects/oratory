@@ -122,16 +122,16 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
 
         $scope.authUser = function(){
           //DEV
-          
+          /*
           master.sharedData.email=$scope.email;
           $.cookie('email', $scope.email);
           master.sharedData.token='123';
           $.cookie('token', '123');
           $state.go('everything');
           
-          
+          */
           //PRODUCTION
-          /*
+          
           master.sharedData.email=$scope.email;
           $.cookie('email', $scope.email);
           master.sharedData.token=$scope.token;
@@ -147,7 +147,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
               $('#sentanddone').html('<h3>please close this window and check your email</h3>');
             });
           }
-          */
+          
           
         };
 
