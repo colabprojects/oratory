@@ -284,8 +284,34 @@ app.post('/api/proposalResult', express.json(), function (req, res) {
 				var extendedItem = __.cloneDeep(check[0]);
 				_.extend(extendedItem,pushStuff);
 
+
 				syncItemPromise=updateItem(extendedItem, check[0]);
 				q.when(syncItemPromise).then(function(){
+					//check if the project has been approved by everyone
+					var approved = true;
+					_(members).each(function(member){
+						if(extendedItem[member.name].what !== "approve"){ approved = false; }
+					});
+
+					console.log("approval is currently: "+approved);
+
+					if (approved){ 
+						//update the item
+						db.itemdb.find({uid:extendedItem.forUID}, function (err, check2){
+							if(err){ console.log('(error getting item) '+err); }else{ 
+								//clone and add approval
+								var approvalItem = __.cloneDeep(check2[0]);
+								_.extend(approvalItem,{approval:true});
+
+								console.log('approval item: '+approvalItem);
+
+								updateItem(approvalItem, check2[0]);
+							}
+
+						});
+
+					}
+
 					res.send(200);
 				}); 
 			});

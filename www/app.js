@@ -377,6 +377,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         $scope.proposal=itemToBeView;
         $scope.sharedData.showMoreDetail[$scope.proposal.forUID]=false;
         $scope.key=$stateParams.resultee;
+        $scope.sharedData.scrollTop();
 
         //get item
         $scope.item = _(master.items).findWhere({uid:$scope.proposal.forUID});
@@ -911,7 +912,7 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
       scope.createProposal = function(){
         $http.post('/api/saveProposal', scope.proposal).then(function (response){
           //set the id in the callback - new api for new proposal
-          master.pushToItem({uid:scope.item.uid, proposal:response.data});
+          master.pushToItem({uid:scope.item.uid, proposal:response.data, approval:false});
 
         });
         scope.addProposal=false;
