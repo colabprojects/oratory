@@ -259,6 +259,43 @@ app.post('/api/pushToItem', express.json({limit: '50mb'}), function (req, res) {
 	}
 });//end PUSH single item
 
+app.post('/api/proposalResult', express.json(), function (req, res) {
+	console.log('secrets: '+JSON.stringify(proposalSecrets));
+	var syncItemPromise;
+	if (req.body.uid) {
+		var theOne;
+		_(proposalSecrets[req.body.uid]).each(function(member){
+			if (member.name===req.body.who) {
+				theOne = member;
+			}
+		});
+		if(theOne.key===req.body.key) {
+
+			db.itemdb.find({uid:req.body.uid}, function (err, check) {
+				if (!check.length||check[0].uid!==req.body.uid) {
+					return res.send(500);
+				}
+				//it is there
+
+				var pushStuff = {};
+				pushStuff.uid=req.body.uid;
+				pushStuff[req.body.who]=req.body[req.body.who];
+
+				var extendedItem = __.cloneDeep(check[0]);
+				_.extend(extendedItem,pushStuff);
+
+				syncItemPromise=updateItem(extendedItem, check[0]);
+				q.when(syncItemPromise).then(function(){
+					res.send(200);
+				}); 
+			});
+		} else { res.send(500); }
+
+
+	} else { res.send(500); }
+
+});//end PUSH single item
+
 
 app.post('/api/stageItemChanges', express.json(), function (req, res) {
 	var newItem=req.body;
@@ -418,30 +455,13 @@ app.post('/api/saveProposal', express.json(), function (req, res) {
 	} else {
 		req.body.uid=generateUID();
 		proposalSecrets[req.body.uid]=[];
+		var keys={};
+
 		//put in the members
 		_(members).each(function(member){ 
 			req.body[member.name]={};
 			req.body[member.name].who = member.name;
-			var key = generateUID();
-			if (member.email){
-			
-				console.log('trying to send email to ' + member.email);
-				smtpTrans.sendMail({
-				    from: 'Robot <colabrobot@gmail.com>',
-				    to: member.email,
-				    subject: 'new project proposal for colab',
-				    text: 'text body',
-				    html: "<p>Human,</p><p>A new proposal has been created. Please follow the link below to review everything, and fill in your decision and/or comments. The link was generated specifically for you so don't share. Please reply to me if you have any questions. I am a robot. Thank you.</p><p><a href='http://colablife.info/#/proposal/"+req.body.uid+"/"+key+"'>click here to view proposal</a>"
-				}, function (err, doc){
-				    if(err){ console.log(err); }else{ 
-				    	//email was sent!
-				    	proposalSecrets[req.body.uid].push({name:member.name,key:key});
-				    	console.log('Message sent: ' + doc.response); 
-				    }
-				});
-
-			}
-
+			keys[member.name] = generateUID();
 		});
 
 		db.itemdb.insert(req.body, function (err, doc) { 
@@ -450,6 +470,30 @@ app.post('/api/saveProposal', express.json(), function (req, res) {
 		}else{ 
 			console.log('proposal: ' + doc.uid);
 			io.emit('newProposal', doc.uid); 
+
+			//email all members
+			_(members).each(function(member){
+				if (member.email){
+					var key = keys[member.name];
+				
+					console.log('trying to send email to ' + member.email);
+					smtpTrans.sendMail({
+					    from: 'Robot <colabrobot@gmail.com>',
+					    to: member.email,
+					    subject: 'new project proposal for colab',
+					    text: 'text body',
+					    html: "<p>Human,</p><p>A new proposal has been created. Please follow the link below to review everything, and fill in your decision and/or comments. The link was generated specifically for you so don't share. Please reply to me if you have any questions. I am a robot. Thank you.</p><p><a href='http://colablife.info/#/proposal/"+req.body.uid+"/"+key+"'>"+member.name+"'s response</a>"
+					}, function (err, doc){
+					    if(err){ console.log(err); }else{ 
+					    	//email was sent!
+					    	proposalSecrets[req.body.uid].push({name:member.name,key:key});
+					    	console.log('Message sent: ' + doc.response); 
+					    }
+					});
+
+				}
+			});
+
 			res.send(doc.uid);
 		} 
 	});

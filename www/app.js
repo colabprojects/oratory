@@ -136,7 +136,6 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
           $.cookie('email', $scope.email);
           master.sharedData.token=$scope.token;
           $.cookie('token', $scope.token);
-          debug=$scope.useSpecial;
 
           if ($scope.key) {
             $state.go('everything');
@@ -377,16 +376,15 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         $scope.sharedData=master.sharedData;
         $scope.proposal=itemToBeView;
         $scope.sharedData.showMoreDetail[$scope.proposal.forUID]=false;
+        $scope.key=$stateParams.resultee;
 
         //get item
         $scope.item = _(master.items).findWhere({uid:$scope.proposal.forUID});
-        debug=$scope.item;
 
         //get results
         var copy = {};
         angular.copy($scope.proposal, copy);
         $scope.results = _.omit(copy, ['_id','uid','forUID','date','type','description']);
-        debug = $scope.results;
 
         if ($stateParams.resultee){
           //who
@@ -913,7 +911,6 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
       scope.createProposal = function(){
         $http.post('/api/saveProposal', scope.proposal).then(function (response){
           //set the id in the callback - new api for new proposal
-          debug = response.data;
           master.pushToItem({uid:scope.item.uid, proposal:response.data});
 
         });
@@ -1052,7 +1049,6 @@ itemApp.directive('addPlanForm', function ($state, $http, master) {
       scope.savePlan = function(assign){
         if(!scope.item.plans) {scope.item.plans=[];}
         if(!scope.item.plan) {scope.item.plan=[];}
-        debug='the form plan: '+JSON.stringify(scope.formPlan)+'     the item is: '+JSON.stringify(scope.item);
         scope.item.plans.push(scope.formPlan);
         
         if (assign){
@@ -1168,6 +1164,7 @@ itemApp.directive('listBudget', function ($state, $http, master) {
     link: function(scope, element, attrs) {
       scope.dbInfo=master.getDbInfo;
       scope.sharedData=master.sharedData;
+      if (!scope.budget) { scope.budget = {}; }
       scope.budget.total=0;
 
       scope.newLine = {};
@@ -1190,6 +1187,7 @@ itemApp.directive('listBudget', function ($state, $http, master) {
 
       scope.getTotal = function(){
         var total = 0;
+        if (!scope.budget.lines) { scope.budget.lines = []; }
         for(var i = 0; i < scope.budget.lines.length; i++){
             var line = scope.budget.lines[i];
             if ($.isNumeric(line.price)){
@@ -1201,7 +1199,7 @@ itemApp.directive('listBudget', function ($state, $http, master) {
       scope.getTotal();
 
       scope.isNumber = function() {
-        if(!$.isNumberic(scope.newLine.price)){ scope.newLine.price = 0 }
+        if(!$.isNumeric(scope.newLine.price)){ scope.newLine.price = 0 }
       };
       
       scope.saveBudget = function() {
@@ -1244,7 +1242,8 @@ itemApp.directive('listResult', function ($state, $http, master) {
     restrict: 'E',
     scope: {
       proposal:'=',
-      result:'='
+      result:'=',
+      key:'='
     },
     templateUrl: 'html/listResult.html',
     link: function(scope, element, attrs) {
@@ -1254,9 +1253,16 @@ itemApp.directive('listResult', function ($state, $http, master) {
         scope.proposal[scope.result.who]=scope.result;
         var pushComponents={};
         pushComponents['uid']=scope.proposal.uid;
+        pushComponents['who']=scope.result.who;
         pushComponents[scope.result.who]=scope.result;
-        master.pushToItem(pushComponents);
-      }
+        pushComponents.key=scope.key;
+        $http.post('/api/proposalResult', pushComponents).then(function(){
+          $state.go('proposal/:uid/:resultee', {uid:scope.proposal.uid,resultee:''});
+        });
+
+        debug=pushComponents;
+        
+      };
 
     }
   }
