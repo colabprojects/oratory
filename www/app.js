@@ -385,7 +385,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         //get results
         var copy = {};
         angular.copy($scope.proposal, copy);
-        $scope.results = _.omit(copy, ['_id','uid','forUID','date','type','description']);
+        $scope.results = _.omit(copy, ['_id','uid','edited','forUID','date','type','description']);
 
         if ($stateParams.resultee){
           //who
