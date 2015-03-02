@@ -1,17 +1,12 @@
-<ol>
-	<li ng-repeat="plan in item.plans">{{plan.name}}</li>
-</ol>
-
 <form name="planForm">
-	<div class="row">
-		<p class="detail-header">adding as {{sharedData.email}}</p>
+	<!-- <div class="row">
 		<div class="col-sm-4">
 			<div class="form-group">
 		        <label for="plan-name">name</label>
 				<input id="plan-name" class="form-control" name="planName" type="text" ng-model="formPlan.name" ng-class="{'req-alert-on-left':planForm.planName.$invalid}" required>
 		    </div>
 		</div>
-	</div>
+	</div> -->
 	<div class="row">
 		<div class="col-xs-12">
 			<p>steps</p>
@@ -26,8 +21,8 @@
 		
 	<div class="row">
 		<div class="margin-top">
-			<button ng-click="savePlan();" class="btn btn-default" ng-disabled="planForm.$invalid">save</button>
-			<button ng-click="savePlan(1);" class="btn btn-default" ng-disabled="planForm.$invalid">assign as project plan</button>
+			<!-- <button ng-click="savePlan();" class="btn btn-default" ng-disabled="planForm.$invalid">save</button> -->
+			<button ng-click="savePlan(1);" class="btn btn-default">save</button><!-- this used to say save as project plan -->
 		</div>
 	</div>
     

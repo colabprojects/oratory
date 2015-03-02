@@ -92,13 +92,6 @@ itemApp.factory('master', function($http, $q, $state){
     });
   };
 
-  service.getNextProposalNum = function(){
-    return $http.get('/api/getNextProposalNum').success(function (response){
-      return angular.copy(response.data, service.nextProposalNum);
-    });
-  };
-
-
   return service;
 });
 
@@ -122,16 +115,16 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
 
         $scope.authUser = function(){
           //DEV
-          /*
+          
           master.sharedData.email=$scope.email;
           $.cookie('email', $scope.email);
           master.sharedData.token='123';
           $.cookie('token', '123');
           $state.go('everything');
-          */
+          
           
           //PRODUCTION
-          
+          /*
           master.sharedData.email=$scope.email;
           $.cookie('email', $scope.email);
           master.sharedData.token=$scope.token;
@@ -146,7 +139,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
               $('#sentanddone').html('<h3>please close this window and check your email</h3>');
             });
           }
-          
+          */
           
         };
 
@@ -885,10 +878,17 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
       scope.addPlanClick = function() {
         scope.addPlan=!scope.addPlan;
       };
+      scope.$on('closePlan', function() { 
+        scope.addPlan = false;
+      });
 
       scope.addBudgetClick = function() {
         scope.addBudget=!scope.addBudget;
       };
+
+      scope.$on('closeBudget', function() { 
+        scope.addBudget = false;
+      });
 
       scope.addEventClick = function() {
         scope.addEvent=!scope.addEvent;
@@ -1071,10 +1071,9 @@ itemApp.directive('addPlanForm', function ($state, $http, master) {
           });
             
           scope.item.plan = scope.formPlan;
-
         }
-
         master.pushToItem(_(scope.item).pick(['uid','plans','plan','attachments']));
+        scope.$emit('closePlan');
       };
 
     }
@@ -1217,6 +1216,7 @@ itemApp.directive('listBudget', function ($state, $http, master) {
       scope.saveBudget = function() {
         scope.item.budget = scope.budget;
         master.saveItem(scope.item);
+        scope.$emit('closeBudget');
       };
 
       scope.addLine = function() {

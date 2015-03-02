@@ -72,7 +72,7 @@
 			<div ng-if="item.plan">
 				<list-steps plan="item.plan" edit-steps="false"></list-steps>
 			</div>
-			<div ng-if="item.plans.length">
+			<div ng-if="item.plans.length>1">
 				<h5>options:</h5>
 				<ol>
 					<li ng-repeat="plan in item.plans">{{plan.name}}</li>

@@ -2,17 +2,21 @@
 	<button class="btn btn-default" ng-click="goBack()">go back</button>
 	
 	<div id="owner-stuff" ng-show="isOwner">
-		<p>you are an owner of this item</p>
-		<button class="btn btn-default" ng-click="deleteItem(item)">delete</button>
-		<button class="btn btn-default" ng-click="addOwnerClick();">add owner</button>
-		<button class="btn btn-default" ng-click="addMediaImageClick();">add media</button>
-		<button class="btn btn-default" ng-click="addPlanClick();">add new plan</button>
-		<button class="btn btn-default" ng-click="addBudgetClick();">add budget</button>
-		<button class="btn btn-default" ng-click="addEventClick();">add event</button>
-		<button class="btn btn-default" ng-click="addProposalClick();">add proposal</button>
+		<div class="margin-bottom"></div>
+		
+		<button class="btn btn-default" ng-click="addOwnerClick();">owners</button>
+		<button class="btn btn-default" ng-click="addMediaImageClick();">media</button>
+		<button class="btn btn-default" ng-click="addPlanClick();">plan</button>
+		<button class="btn btn-default" ng-click="addBudgetClick();">budget</button>
+		<button class="btn btn-default" ng-click="addEventClick();">events</button>
+		<button class="btn btn-default" ng-click="addProposalClick();">proposal</button>
+		<span class="margin-right"></span>
+		<button class="btn btn-danger" ng-click="deleteItem(item)">delete</button>
 
-		<owner-form ng-if="addOwners" item='item'></owner-form>
-		<button ng-if="addOwners" class="btn btn-default" ng-click="addOwnerClick();">cancel</button>
+		<div ng-if="addOwners">
+			<owner-form item='item'></owner-form>
+			<button class="btn btn-default" ng-click="addOwnerClick();">cancel</button>
+		</div>
 
 		<div ng-if="addMediaImage">
 			<add-media-image-form media-image="mediaImageToAdd"></add-media-image-form>
@@ -20,7 +24,7 @@
 			<button class="btn btn-default" ng-click="addMediaImageSave(mediaImageToAdd);">save</button>
 		</div>
 		<div ng-if="addPlan">
-			<add-plan-form item="item"></add-plan-form>
+			<add-plan-form plan="item.plan" item="item"></add-plan-form>
 			<button class="btn btn-default" ng-click="addPlanClick();">cancel</button>
 		</div>
 		<div ng-if="!addEvent">
@@ -46,9 +50,8 @@
 			<textarea class="form-control" ng-model="proposal.description"></textarea>
 			<button class="btn btn-default" ng-click="createProposal();">create</button>
 			<button class="btn btn-default" ng-click="addProposalClick();">cancel</button>
-	</div>	
+		</div>
 
-	<div ng-if="item.lock">
-		<p>item is locked by {{item.lockChangedBy}}</p>
-	</div>
+
+	</div>	
 </div>
