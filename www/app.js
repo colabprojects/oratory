@@ -358,21 +358,23 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
     state('proposal', {
       url: '/proposal/:uid/:resultee',
       resolve:{
-        itemToBeView: function ($http, $stateParams, master) {
+        proposalToBeView: function ($http, $stateParams, master) {
           return $http.post('/api/getItem', {uid:$stateParams.uid}).then(function (response){
             return response.data;
           });
         }
       },
       templateUrl: 'html/proposalView.html',
-      controller: function ($scope, $state, $stateParams, $http, itemToBeView, master) {
+      controller: function ($scope, $state, $stateParams, $http, proposalToBeView, master) {
         $scope.sharedData=master.sharedData;
-        $scope.proposal=itemToBeView;
+        $scope.proposal=proposalToBeView;
         $scope.sharedData.showMoreDetail[$scope.proposal.forUID]=false;
         $scope.key=$stateParams.resultee;
         $scope.sharedData.scrollTop();
 
         //get item
+        master.refreshItems();
+
         $scope.item = _(master.items).findWhere({uid:$scope.proposal.forUID});
 
         //get results
