@@ -373,6 +373,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
       controller: function ($scope, $state, $stateParams, $http, proposalToBeView, items, master) {
         $scope.sharedData=master.sharedData;
         $scope.proposal=proposalToBeView;
+        $scope.proposal.date = moment($scope.proposal.date).calendar();
         $scope.sharedData.showMoreDetail[$scope.proposal.forUID]=false;
         $scope.key=$stateParams.resultee;
         $scope.sharedData.scrollTop();
@@ -381,6 +382,8 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         master.items = items; 
 
         $scope.item = _(master.items).findWhere({uid:$scope.proposal.forUID});
+
+        $scope.viewCopy = 'http://colablife.info/#/view/'+$scope.item.uid;
 
         //get results
         var copy = {};
