@@ -362,10 +362,15 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
           return $http.post('/api/getItem', {uid:$stateParams.uid}).then(function (response){
             return response.data;
           });
+        },
+        items: function ($http, $stateParams, master) {
+          return $http.post('/api/getItems').then(function (response) {
+            return response.data;
+          });
         }
       },
       templateUrl: 'html/proposalView.html',
-      controller: function ($scope, $state, $stateParams, $http, proposalToBeView, master) {
+      controller: function ($scope, $state, $stateParams, $http, proposalToBeView, items, master) {
         $scope.sharedData=master.sharedData;
         $scope.proposal=proposalToBeView;
         $scope.sharedData.showMoreDetail[$scope.proposal.forUID]=false;
@@ -373,7 +378,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
         $scope.sharedData.scrollTop();
 
         //get item
-        master.refreshItems();
+        master.items = items; 
 
         $scope.item = _(master.items).findWhere({uid:$scope.proposal.forUID});
 
