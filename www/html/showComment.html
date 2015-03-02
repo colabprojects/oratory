@@ -1,6 +1,7 @@
-<div class="row">
+<div class="row comment-by">
 	<div class="col-xs-12">
-		<p>{{comment.words}}</p>
-		<small>by {{comment.by}} @ {{comment.time}}</small>
+		<p class="comment-words">{{comment.words}}</p>
+		<small>{{timeFromNow}} by {{comment.by}}</small>
+		<button class="btn btn-xs btn-default" ng-click="removeComment(comment)" ng-if="sharedData.email===comment.by">remove</button>
 	</div>
 </div>

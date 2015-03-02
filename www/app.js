@@ -128,8 +128,8 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
           master.sharedData.token='123';
           $.cookie('token', '123');
           $state.go('everything');
-          
           */
+          
           //PRODUCTION
           
           master.sharedData.email=$scope.email;
@@ -1003,10 +1003,21 @@ itemApp.directive('showComment', function ($state, $filter, $http, master) {
   return {
     restrict: 'E',
     scope: {
-      comment:'='
+      comment:'=',
+      item:'='
     },
     templateUrl: 'html/showComment.html',
     link: function(scope, element, attrs) {
+      scope.sharedData = master.sharedData;
+
+      scope.timeFromNow = moment(scope.comment.time).fromNow();
+
+      scope.removeComment = function (thisOne) {
+        if (scope.sharedData.email===scope.comment.by) {
+          scope.item.comments.splice(scope.item.comments.indexOf(thisOne), 1);
+          master.pushToItem({uid:scope.item.uid, comments:scope.item.comments});
+        }
+      };
     }
   }
 });

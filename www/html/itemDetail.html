@@ -54,10 +54,10 @@
 	<div class="col-xs-12 col-md-4 detail-container">
 		<div class="detail-card">
 			<p class="half-bottom detail-header">conversation</p>
-			<textarea class="form-control" ng-model="comment" placeholder="add something"></textarea>
+			<textarea class="form-control margin-bottom" ng-model="comment" placeholder="add something"></textarea>
 			<button ng-if="comment" ng-click="addComment(item)" class="btn btn-default">add comment</button>
 
-			<show-comment ng-repeat="comment in item.comments" comment="comment"></show-comment>
+			<show-comment ng-repeat="comment in item.comments | orderBy:'-time'" comment="comment" item="item"></show-comment>
 		</div>
 
 	</div>

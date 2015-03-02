@@ -31,7 +31,11 @@
 <div class="list-wrapper">
 	<div id="hidden-menu" class="container first-item" ng-show="sharedData.options">
 		<a class="filter-toggle" ng-click="hideFilters=!hideFilters">filters<span class="caret"></span></a>
-		<div id="moreFilters" ng-if="hideFilters">
+		<div class="moreFilters" ng-if="hideFilters">
+			<input type="checkbox" id="showDeletedCheckbox" ng-model="sharedData.showDeleted" ng-change="$emit('showDeleted',showDeleted)" />
+			<span style="color:#777;">show deleted</span>
+		</div>
+		<div class="moreFilters" ng-if="hideFilters">
 			<input type="checkbox" id="showDeletedCheckbox" ng-model="sharedData.showDeleted" ng-change="$emit('showDeleted',showDeleted)" />
 			<span style="color:#777;">show deleted</span>
 		</div>
