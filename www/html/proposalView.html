@@ -20,11 +20,11 @@
 	</div>
 	<p ng-if="!item.budget">none</p>
 
-	<h4>interest</h4>
-	<p>If you think anyone would be interested, share this link:</p>
-	<input class="form-control" type="text" ng-model="viewCopy">
-
 	<h4>results</h4>
 	<list-result ng-repeat="result in results" proposal="proposal" result="result" key="key"></list-result>
+
+	<h4 class="margin-top">interest</h4>
+	<p>If you think anyone would be interested, share this link:</p>
+	<input class="form-control" type="text" ng-model="viewCopy">
 
 </div>
