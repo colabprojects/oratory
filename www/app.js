@@ -115,16 +115,16 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
 
         $scope.authUser = function(){
           //DEV
-          /*
+          
           master.sharedData.email=$scope.email;
           $.cookie('email', $scope.email);
           master.sharedData.token='123';
           $.cookie('token', '123');
           $state.go('everything');
-          */
+          
           
           //PRODUCTION
-          
+          /*
           master.sharedData.email=$scope.email;
           $.cookie('email', $scope.email);
           master.sharedData.token=$scope.token;
@@ -139,7 +139,7 @@ itemApp.config(function($stateProvider, $urlRouterProvider){
               $('#sentanddone').html('<h3>please close this window and check your email</h3>');
             });
           }
-          
+          */
           
         };
 
@@ -655,10 +655,13 @@ itemApp.directive('listAttachments', function ($filter, master) {
       scope.dbInfo=master.getDbInfo;
       if (!scope.formItem.attachments) { scope.formItem.attachments=[]; }
 
-      scope.items = _.chain(master.items)
-        .filter(function(item){ return item.type==='tool' || item.type ==='resource'; })
-        .map(function(item){ return angular.copy(item); }).value();
+      scope.getAttachables = function (){
+        return _.chain(master.items)
+          .filter(function(item){ return item.type==='tool' || item.type ==='resource'; })
+          .map(function(item){ return angular.copy(item); }).value();
+      };
 
+      scope.items = scope.getAttachables();
 
       scope.attachmentTypes=master.sharedData.attachmentTypes;
 
@@ -684,7 +687,30 @@ itemApp.directive('listAttachments', function ($filter, master) {
         }).value();
         initAttachments();
         master.pushToItem(_(scope.formItem).pick(['uid','attachments']));
-      }
+      };
+
+
+      //scope.newItemAsAttachment = function(){
+        
+        //master.saveItem({name:scope.textFilter, createdBy:master.sharedData.email, type:scope.attachmentType}).then(function(res){
+          //var all = scope.getAttachables();
+          // var newOnes = [];
+          // var current = _(scope.items).map(function(theOne){ return theOne.uid; });
+          // _.filter(all, function(theOne){ if(itdoesntmatch) { newOnes.push(theOne) });
+          // _.forEach(newOnes, function(newOne){ 
+          //   newOne.newItem = true;
+          //   scope.items.push(newOne);
+          // })
+          // initAttachments();
+
+          //scope.attachmentType = 'choose one';
+          //scope.textFilter = '';
+
+          //scope.$apply();
+
+        //});
+      //};
+
     }
   }
 });
@@ -874,11 +900,13 @@ itemApp.directive('itemToolbar', function ($state, $http, master) {
       };
 
       scope.addMediaImageSave = function(media) {
-        if(!scope.item.media) { scope.item.media=[]; } 
-        scope.item.media.push({'rawImage':media});
-        master.saveItem(scope.item);
-        scope.addMediaImage=false;
-        scope.mediaImageToAdd='';
+        if (media) {
+          if(!scope.item.media) { scope.item.media=[]; } 
+          scope.item.media.push({'rawImage':media});
+          master.saveItem(scope.item);
+          scope.addMediaImage=false;
+          scope.mediaImageToAdd='';
+        }
       };
 
       scope.addOwnerClick = function() {
@@ -1068,22 +1096,23 @@ itemApp.directive('addPlanForm', function ($state, $http, master) {
         scope.formPlan['type']='plan';
       }
       
+      //this should be able to take an argument for whether or not it updates the plan or creates a sibling
       scope.savePlan = function(assign){
-        if(!scope.item.plans) {scope.item.plans=[];}
-        if(!scope.item.plan) {scope.item.plan=[];}
-        scope.item.plans.push(scope.formPlan);
-        
-        if (assign){
-          //add step to item attachments
-          if (!scope.item.attachments) { scope.item.attachments = []; }
-          _(scope.formPlan.steps).each(function(step){
-            if (step.uid){ scope.item.attachments.push(step.uid); }
-          });
-            
-          scope.item.plan = scope.formPlan;
+
+        if(scope.formPlan.steps) {
+          
+          if (assign){
+            //add step to item attachments
+            if (!scope.item.attachments) { scope.item.attachments = []; }
+            _(scope.formPlan.steps).each(function(step){
+              if (step.uid){ scope.item.attachments.push(step.uid); }
+            });
+              
+            scope.item.plan = scope.formPlan;
+          }
+          master.pushToItem(_(scope.item).pick(['uid','plan','attachments']));
+          scope.$emit('closePlan');
         }
-        master.pushToItem(_(scope.item).pick(['uid','plans','plan','attachments']));
-        scope.$emit('closePlan');
       };
 
     }

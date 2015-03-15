@@ -3,6 +3,7 @@
 	<a ui-sref='view({uid: attachment.uid})'>
 		<span class="label attachment-label" style="background-color:rgb({{colors.r}},{{colors.g}},{{colors.b}});">{{attachment.type}}</span>{{attachment.name}}
 	</a>
+	<span style="color:red;" ng-if="attachment.newItem">new</span>
 	<button ng-if="editAttachment" class="btn btn-xs btn-default" ui-sref="edit({uid:attachment.uid,chain:true})">edit</button>
 </h6>
 <p ng-if="attachment.type==='event'">{{attachment.start}} through {{attachment.end}}</p>
