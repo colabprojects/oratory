@@ -1,19 +1,9 @@
 # inventory
 app for inventory - used to explore mongo and angularJS - initial setup for freedom foundation (land projects) database
 
-TO START:
-clone repository
-move to directory with vagrantfile
-
-vagrant up
-wait
-
-vagrant ssh
-
-cd /vagrant
-
-touch users.js         //make an empty users file
-
-sudo node server.js
-
-
+## Quick Start
+1. clone repository
+2. `cd` to repo directory
+3. `vagrant up`
+4. wait...
+5. Go to http://localhost:55657 in your browser
