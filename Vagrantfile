@@ -2,11 +2,7 @@
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
-	config.vm.box = "precise64"
-
-	# The url from where the 'config.vm.box' box will be fetched if it
-	# doesn't already exist on the user's system.
-	config.vm.box_url = "http://files.vagrantup.com/precise64.box"
+	config.vm.box = "ubuntu/trusty64"
 
 	# Create a forwarded port mapping which allows access to a specific port
 	# within the machine from a port on the host machine. In the example below,

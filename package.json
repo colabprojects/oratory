@@ -2,6 +2,7 @@
   "name": "inventory",
   "version": "0.0.1",
   "description": "keeping it simple.........",
+  "license": "MIT",
   "main": "server.js",
   "repository": {
     "type": "git",
