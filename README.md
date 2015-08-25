@@ -12,4 +12,8 @@ vagrant ssh
 
 cd /vagrant
 
-sudo forever start server.js
+touch users.js         //make an empty users file
+
+sudo node server.js
+
+
