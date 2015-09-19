@@ -1,0 +1,20 @@
+{
+  "name": "oratory",
+  "description": "CoLab project management website",
+  "license": "MIT",
+  "devDependencies": {
+    "coffee-script": "1",
+    "requirejs": "2",
+    "require-cs": "0.5",
+    "text": "2",
+    "jquery": "2",
+    "bootstrap": "3",
+    "angular": "1",
+    "angular-strap": "2",
+    "angular-ui-router": "0.2",
+    "moment": "2",
+    "underscore": "1",
+    "jquery-cookie": "1",
+    "fullcalendar": "2"
+  }
+}

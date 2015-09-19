@@ -5,3 +5,4 @@ www/media/images
 users.js
 *.sw*
 .idea/workspace.xml
+www/bower_components/

@@ -3,17 +3,16 @@
 
 requirejs.config({
     paths: {
-        'jquery': '../assets/js/jquery.min',
-        'jquery.bootstrap': "../assets/dist/js/bootstrap.min",
-        'jquery.cookie': "../assets/js/jquery.cookie",
-        'underscore': '../assets/js/underscore.min',
-        'moment': '../assets/js/moment.min',
-        'ie10': "../assets/js/ie10",
-        'fullcalendar': '../assets/fullcalendar/fullcalendar',
-        'angular': "../assets/js/angular.min",
-        'angular-ui-router': "../assets/js/angularuirouter.min",
-        'angular-strap': "../assets/js/angular-strap",
-        'angular-strap-tpl': "../assets/js/angular-strap.tpl",
+        'jquery': '../bower_components/jquery/dist/jquery.min',
+        'jquery.bootstrap': "../bower_components/bootstrap/dist/js/bootstrap.min",
+        'jquery.cookie': "../bower_components/jquery-cookie/jquery.cookie",
+        'underscore': '../bower_components/underscore/underscore-min',
+        'moment': '../bower_components/moment/min/moment.min',
+        'fullcalendar': '../bower_components/fullcalendar/dist/fullcalendar.min',
+        'angular': "../bower_components/angular/angular.min",
+        'angular-ui-router': "../bower_components/angular-ui-router/release/angular-ui-router.min",
+        'angular-strap': "../bower_components/angular-strap/dist/angular-strap.min",
+        'angular-strap-tpl': "../bower_components/angular-strap/dist/angular-strap.tpl.min",
         'socket': "/socket.io/socket.io"
     },
     shim: {
