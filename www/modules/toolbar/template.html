@@ -4,52 +4,41 @@
 	<div id="owner-stuff" ng-show="isOwner">
 		<div class="margin-bottom"></div>
 		
-		<button class="btn btn-default" ng-click="addOwnerClick();">owners</button>
-		<button class="btn btn-default" ng-click="addMediaImageClick();">media</button>
-		<button class="btn btn-default" ng-click="addPlanClick();">plan</button>
-		<button class="btn btn-default" ng-click="addBudgetClick();">budget</button>
-		<button class="btn btn-default" ng-click="addEventClick();">events</button>
-		<button class="btn btn-default" ng-click="addProposalClick();">proposal</button>
+		<span>edit</span><select id="form-editor-type" class="form-control" name="formType" ng-model="editorOption" ng-change="toggle={}; toggle[editorOption]=true;" ng-options="t as t for t in editorTypes"></select>
+
 		<span class="margin-right"></span>
 		<button class="btn btn-danger" ng-click="deleteItem(item)">delete</button>
 
-		<div ng-if="addOwners">
+		<div ng-if="toggle.Owners">
 			<owner-form item='item'></owner-form>
-			<button class="btn btn-default" ng-click="addOwnerClick();">cancel</button>
+			<button class="btn btn-default" ng-click="clearToggle();">cancel</button>
 		</div>
 
-		<div ng-if="addMediaImage">
+		<div ng-if="toggle.Media">
 			<add-media-image-form media-image="mediaImageToAdd"></add-media-image-form>
-			<button class="btn btn-default" ng-click="addMediaImageClick();">cancel</button>
 			<button class="btn btn-default" ng-click="addMediaImageSave(mediaImageToAdd);">save</button>
+			<button class="btn btn-default" ng-click="clearToggle();">cancel</button>
 		</div>
-		<div ng-if="addPlan">
+		<div ng-if="toggle.Plan">
 			<add-plan-form plan="item.plan" item="item"></add-plan-form>
-			<button class="btn btn-default" ng-click="addPlanClick();">cancel</button>
+			<button class="btn btn-default" ng-click="clearToggle();">cancel</button>
 		</div>
-		<div ng-if="!addEvent">
+		<div ng-if="toggle.Events">
 			add event:
 			<select id="addEventSelect" class="form-control" ng-model="selectedEvent" ng-options="a.name for a in listEvents"></select>
 			<button class="btn btn-default" ng-click="addEvent(selectedEvent.uid);">add</button>
-			<button class="btn btn-default" ng-click="addEventClick();">cancel</button>
+			<button class="btn btn-default" ng-click="clearToggle();">cancel</button>
 		</div>
-		<div ng-if="addBudget">
+		<div ng-if="toggle.Budget">
 			add budget:
 			<list-budget budget="item.budget" item="item" edit-budget="true"></list-budget>
-			<button class="btn btn-default" ng-click="addBudgetClick();">cancel</button>
+			<button class="btn btn-default" ng-click="clearToggle();">cancel</button>
 		</div>
-		<!--
-		<div>
-			add to project:
-			<select id="addToProjectSelect" class="form-control" ng-model="selectedProject" ng-options="a.name for a in listProjects"></select>
-			<button class="btn btn-default" ng-click="addToProject(selectedProject.uid)">add to project</button>
-		</div>
-		-->
-		<div ng-if="addProposal">
+		<div ng-if="toggle.Proposals">
 			<p>description</p>
 			<textarea class="form-control" ng-model="proposal.description"></textarea>
 			<button class="btn btn-default" ng-click="createProposal();">create</button>
-			<button class="btn btn-default" ng-click="addProposalClick();">cancel</button>
+			<button class="btn btn-default" ng-click="clearToggle();">cancel</button>
 		</div>
 
 
