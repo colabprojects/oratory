@@ -36,10 +36,11 @@ function isEmpty(obj) {
   * @return object - full database
 */
 app.get('/api/getDatabase', function (req, res) {
-    r.expr({
-        "items" : r.table("items"),
-        "history" : r.table("history"),
-    }).run(req.db, function(err, docs) {
+    r.map(
+        r.table("items"),
+        r.table("history"),
+        function (items, history) { return {items: items, history: history}; }
+    ).run(req.db, function(err, docs) {
         if(err){ console.log('(error getting database) '+err);}else { res.send(docs.toArray()); }
     });
 });
