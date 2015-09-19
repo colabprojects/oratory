@@ -12,11 +12,12 @@ define([
     'mediaImages/edit/dir',
     'budget/list/dir',
     'attachments/edit/dir',
+    'result/list/dir',
     'app.filter',
     'angular-ui-router'
 ], function (angular,
              appSvc, appCtrl, appCfg, appDir, appDirToolbar, appDirEditOwners, appDirEditMediaImages,
-             budgetList, appDirEditAttachments, appFilt) {
+             budgetList, appDirEditAttachments, appDirListResult, appFilt) {
     'use strict';
 
     return angular.module('app', ['ui.router'])
@@ -30,5 +31,6 @@ define([
         .directive(appDirEditMediaImages)
         .directive(budgetList)
         .directive(appDirEditAttachments)
+        .directive(appDirListResult)
         .filter(appFilt);
 });

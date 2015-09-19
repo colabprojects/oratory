@@ -597,32 +597,7 @@ define(['angular', 'moment', 'socket', 'jquery', 'underscore'], function (angula
 
                 }
             };
-        },
-
-        listResult: function ($state, $http) {
-            return {
-                restrict: 'E',
-                scope: {
-                    proposal: '=',
-                    result: '=',
-                    key: '='
-                },
-                templateUrl: 'html/listResult.html',
-                link: function (scope) {
-                    scope.saveResult = function () {
-                        delete scope.result.edit;
-                        scope.proposal[scope.result.who] = scope.result;
-                        var pushComponents = {};
-                        pushComponents.uid = scope.proposal.uid;
-                        pushComponents.who = scope.result.who;
-                        pushComponents[scope.result.who] = scope.result;
-                        pushComponents.key = scope.key;
-                        $http.post('/api/proposalResult', pushComponents).then(function () {
-                            $state.go('proposal/:uid/:resultee', {uid: scope.proposal.uid, resultee: ''});
-                        });
-                    };
-                }
-            };
         }
+
     };
 });

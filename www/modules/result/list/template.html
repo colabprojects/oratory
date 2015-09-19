@@ -1,0 +1,20 @@
+<div class="pad-bottom" ng-if="result.who">
+	<h5>{{result.who}}</h5>
+	<p ng-if="result.what">{{result.what}}</p>
+	<p ng-if="!result.what">no response</p>
+
+	<select ng-if="result.edit" class="form-control" ng-model='result.what'>
+		<option>approve</option>
+		<option>reject</option>
+		<option>other</option>
+	</select>
+
+
+	<h5>comments</h5>
+	<p ng-if="result.comment">{{result.comment}}</p>
+	<p ng-if="!result.comment">no comments</p>
+	<textarea ng-if="result.edit" class="form-control" ng-model="result.comment"></textarea>
+
+	<button ng-if="result.edit" class="btn btn-default" ng-click="saveResult();">save</button>
+
+</div>
