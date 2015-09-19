@@ -3,4 +3,5 @@ node_modules/
 npm-debug.log
 www/media/images
 users.js
+*.sw*
 .idea/workspace.xml
