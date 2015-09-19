@@ -1,0 +1,52 @@
+<table class="table">
+	<tr ng-repeat="line in budget.lines" class="row">
+		<td style="width:40px;">
+			<span class="pad-left">{{$index+1}}.</span>
+		</td>
+		<td>
+			<span ng-if="!editBudget">{{line.name}}</span>
+			<input ng-if="editBudget" class="form-control" type="text" ng-model="budget.lines[$index].name" placeholder="name"/>
+		</td>
+		<td>
+			<span ng-if="!editBudget">{{line.price}}</span>
+			<input ng-if="editBudget" class="form-control" type="text" ng-change="getTotal()" ng-model="budget.lines[$index].price" placeholder="price"/>
+		</td>
+		<td>
+			<span ng-if="!editBudget">{{line.comment}}</span>
+			<input ng-if="editBudget" class="form-control" type="text" ng-model="budget.lines[$index].comment" placeholder="comment"/>
+		</td>
+		<td>
+			<button ng-if="editBudget" class="btn btn-xs btn-default" ng-click="removeLine($index)">remove</button>
+		</td>
+
+	</tr>
+	<tr ng-if="editBudget" class="row">
+		<td>
+			<span>add:</span>
+		</td>
+		<td>
+			<input class="form-control" type="text" ng-model="newLine.name" placeholder="name"/>
+		</td>
+		<td>
+			<input class="form-control" type="text" ng-model="newLine.price" ng-change="isNumber()" placeholder="price"/>
+		</td>
+		<td>
+			<input class="form-control" type="text" ng-model="newLine.comment" placeholder="comment"/>
+		</td>
+		<td>
+			<button class="btn btn-xs btn-default" ng-click="addLine()">add</button>
+		</td>
+	</tr>
+	<tr class="row">
+		<td></td>
+		<td style="text-align:right;">
+			<span style="font-weight:bold;">total:</span>
+		</td>
+		<td>
+			<span style="font-weight:bold;">{{budget.total}}</span>
+		</td>
+		<td></td>
+		<td></td>
+	</tr>
+</table>
+<button ng-if="editBudget" class="btn btn-default" ng-click="saveBudget()">save budget</button>

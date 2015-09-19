@@ -12,7 +12,7 @@ define([], function () {
                     scope: {
                         mediaImage: '='
                     },
-                    templateUrl: 'modules/editMediaImages/template.html',
+                    templateUrl: 'modules/mediaImages/edit/template.html',
                     link: function (scope, element) {
                         var takePicture = element.find(".take-picture");
                         var showPicture = element.find(".show-picture");

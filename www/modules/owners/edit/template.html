@@ -1,0 +1,9 @@
+<div id="showAddOwners">
+	<form name="ownerForm">
+		<div class="form-group">
+	    	<label for="form-owner">new owner</label>
+	        <input type="email" id="form-owner" class="form-control" placeholder="add owner email" name="formOwner" ng-model="newOwner" ng-class="{'req-alert-on-left':ownerForm.formOwner.$invalid}">
+	        <button class="btn btn-default" ng-click="addOwner(newOwner);" ng-disabled="ownerForm.formOwner.$invalid">save</button>
+	    </div>
+	</form>
+</div>
