@@ -1,53 +1,38 @@
 <div class="row" id="{{item.uid}}">
 	<div class="container list-item-wrapper" style="border-left:3px solid rgb({{colors.r}},{{colors.g}},{{colors.b}});">
-		<div id="push-wrapper-{{item.uid}}" class="push-wrapper">
-			<div class="push-canvas">
-				<div class="more-stuff">	
-  					<a ui-sref="edit({uid:item.uid,chain:false})" ng-if="!item.lock&&!item.historical"><button class="btn btn-xs btn-default opt-button">edit</button></a>
-  					<a ui-sref="view({uid:item.uid})" ng-if="!item.historical"><button class="btn btn-xs btn-default opt-button">view</button></a>
-  					<button ng-if="item.lock&&!item.historical" class="btn btn-xs btn-default opt-button" ng-click="pickLock(item)">pick</button>
-  					<button ng-if="item.historical" class="btn btn-sm btn-default opt-button">revert</button>
-				</div>
-				<div class="the-stuff">
-					<div class="row" style="min-height:75px;">
-						<div ng-if="item.lock&&!item.historical" class="col-xs-1 list-lock">
-							<a title="locked by {{item.lockChangedBy}}"><img src="images/lock.png"></a>
-						</div>
-						<div class="col-xs-1 list-priority" ng-if="page == 'projects' && !sharedData.filter && item.type=='project' && sharedData.email && !item.lock">
-							<item-priority item="item" type="'project'"></item-priority>
-						</div>
+		<div class="row" style="min-height:75px;">
+			<div ng-if="item.lock&&!item.historical" class="col-xs-1 list-lock">
+				<a title="locked by {{item.lockChangedBy}}"><img src="images/lock.png"></a>
+			</div>
+			<div class="col-xs-1 list-priority" ng-if="page == 'projects' && !sharedData.filter && item.type=='project' && sharedData.email && !item.lock">
+				<item-priority item="item" type="'project'"></item-priority>
+			</div>
 
-						<div class="col-xs-2 list-img">
-							<a class="thumbnail" href="{{item.image}}">
-								<img id="image-{{item.uid}}" ng-src="{{item.thumb}}">
-							</a>
-						</div>
-						
-						<div class="col-xs-8 pointer">
-							<div style="overflow:hidden;" ng-click="showMoreDetails(item.uid)">
-								<div class="row">
-									<h4 style="margin-bottom:5px;">
-										<span class="label list-label" style="background-color:rgb({{colors.r}},{{colors.g}},{{colors.b}});">{{item.type}}</span>{{item.name}}
-										<small><span class="item-need-{{item.need}}" ng-if="item.need === 'have'"> &#10003;have</span></small>
-										<small><span class="item-need-{{item.need}}" ng-if="item.need === 'want'"> &#x2717;need</span></small>
-									</h4>
-								</div>
-								<div class="row">
-									{{item.description}}
-								</div>
-								<div class="row" ng-if="item.proposedChanges">
-									<div class="alert alert-warning margin-top" role="alert"><span class="glyphicon glyphicon-warning-sign"></span> there are pending changes on this item...</div>
-								</div>
-							</div>
-							<div class="row">
-								<a class="show-more-detail" ng-click="showOptions(item.uid)">options</a>
-							</div>
-						</div>
+			<div class="col-xs-2 list-img">
+				<a class="thumbnail" href="{{item.image}}">
+					<img id="image-{{item.uid}}" ng-src="{{item.thumb}}">
+				</a>
+			</div>
+			
+			<div class="col-xs-8 pointer">
+				<div style="overflow:hidden;" ng-click="showMoreDetails(item.uid)">
+					<div class="row">
+						<h4 style="margin-bottom:5px;">
+							<span class="label list-label" style="background-color:rgb({{colors.r}},{{colors.g}},{{colors.b}});">{{item.type}}</span>{{item.name}}
+							<small><span class="item-need-{{item.need}}" ng-if="item.need === 'have'"> &#10003;have</span></small>
+							<small><span class="item-need-{{item.need}}" ng-if="item.need === 'want'"> &#x2717;need</span></small>
+						</h4>
 					</div>
-				</div><!-- the-stuff -->
-			</div><!-- push canvas div -->
+					<div class="row">
+						{{item.description}}
+					</div>
+					<div class="row" ng-if="item.proposedChanges">
+						<div class="alert alert-warning margin-top" role="alert"><span class="glyphicon glyphicon-warning-sign"></span> there are pending changes on this item...</div>
+					</div>
+				</div>
+			</div>
 		
-		</div><!-- push wrapper div -->
+		</div>
 		<div ng-if="sharedData.showMoreDetail[item.uid]" id="detail-{{item.uid}}" class="row more-detail" style="background:rgba({{colors.r}},{{colors.g}},{{colors.b}},.08);">
 
 			<item-detail item="item"></item-detail>
