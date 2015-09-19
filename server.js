@@ -1,40 +1,32 @@
-//be careful with plurals - all the singular words are dealing with one object, and the plurals are dealing with multiple
-//database types:
-//	item
-//	staged
-//	history
-//  settings
-//allowable push changes:
-//	lock
-//	flag
-//	comment
-
 console.log('server running');
 
-//USERS and hidden things....
+/**
+  * @desc contains user information and should definitely be changed - email will not work without the colabrobot gmail creds
+  * in the users.js file
+*/
 var users = require('./users');
 
-//CONFIG -------------------------------------------------------------------------------------
-//database
+/**
+  * @desc using mongo db and express for all the magic
+*/
 var mongojs = require('mongojs');
 var db = mongojs('mongodb://localhost:27017/itemdb', ['itemdb']);
 //app engine
 var express = require('express'),
     app = express();
-
-//app configuration
-
-app.use(express.cookieParser());
-app.use(express.session({secret: "This is a secret"}));
-app.use(app.router);
-app.use(express.static(__dirname + '/www'));
-app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
+	//app configuration
+	app.use(express.cookieParser());
+	app.use(express.session({secret: "This is a secret"}));
+	app.use(app.router);
+	app.use(express.static(__dirname + '/www'));
+	app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 
 
+/**
+  * @desc various dependencies 
+*/
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-
-//email auth
 var nodemailer = require('nodemailer');
 var smtpTransport = require('nodemailer-smtp-transport');
 smtpTrans = nodemailer.createTransport(smtpTransport({
@@ -44,7 +36,6 @@ smtpTrans = nodemailer.createTransport(smtpTransport({
       	pass: users["colabrobot@gmail.com"]
   	}
 }));
-//the following are used for images (but can also be used for a shit-ton of other things)
 var fs = require('fs');
 var request = require('request');
 var q = require('q');
@@ -53,22 +44,40 @@ var _ = require('underscore');
 var __ = require('lodash');
 var moment = require('moment');
 var jquery = require('jquery');
-//image manipulation (for thumbnails)
 var gm = require('gm').subClass({ imageMagick: true });
-//make directory for item images:
+
+
+/**
+  * @desc creates the images directory if it does not exist
+*/
 if (!fs.existsSync('/vagrant/www/media/images')) {
 	fs.mkdir('/vagrant/www/media/images/');
 }
 //default item image:
 var defaultImage = 'images/default.jpg';
+
+//"schema" for database
 var dbInfo = require("database/dbInfo");
 
-
+/**
+  * @desc used for proposals and generated emails for "members" that cast a vote - this should definitely be changed
+*/
 var proposalSecrets = {};
 //var members = [{name:'micha'},{name:'jackie'},{name:'mike'},{name:'coop'},{name:'steve', email:'steven.c.hein@gmail.com'}];
-var members = [{name:'steve', email:'steven.c.hein@gmail.com'}, {name:'steve2',email:'imaspaceranger@gmail.com'}];
-//API ---------------------------------------------------------------------------------------
-//AUTH
+var memb
+ers = [{name:'steve', email:'steven.c.hein@gmail.com'}, {name:'steve2',email:'imaspaceranger@gmail.com'}];
+
+
+
+
+/**
+  * @api - authentication
+  * @desc creates the "session" that allows users to make edits - should definitely be changed
+  * @param string email
+  		   string token
+  		   string useSpecial 
+  * @return bool - success or failure
+*/
 app.post('/api/auth', express.json(), function (req, res) {
 	if ((req.body.email !== '')&&(typeof req.body.email !== 'undefined')){ 
 		if (req.body.useSpecial === true) {
@@ -83,8 +92,15 @@ app.post('/api/auth', express.json(), function (req, res) {
 		} else { req.session.user=false; res.send(false); }
 
 	} else { req.session.user=false; res.send(false); }
-});//end auth
+});
 
+
+/**
+  * @api - auth gen
+  * @desc generates and emails an authentication key to the email that was provided (returning http status codes - should be changed)
+  * @param string email
+  * @return int - 200 (ok) or 500 (error...)
+*/
 app.post('/api/authGen', express.json(), function (req, res) {
 	if ((req.body.email !== '')&&(typeof req.body.email !== 'undefined')){ 
 		var key = generateKey();
@@ -106,19 +122,33 @@ app.post('/api/authGen', express.json(), function (req, res) {
 		});
 
 	} else { res.send(500); }
-});//end auth
+});
 
 
-//DB CONFIG
 
-
-//ITEMS  --------------------------------
+/**
+  * @api - get database
+  * @desc grabs everything in the database (only used by humans to see the contents of the database)
+  * @param none (GET)
+  * @return object - full database
+*/
 app.get('/api/getDatabase', function (req, res) {
 	db.itemdb.find(function (err, docs) {
 		if(err){ console.log('(error getting database) '+err);}else { res.send(docs); }
 	});
-});//end GET database
+});
 
+
+
+/**
+  * @api - get items (as in more than one)
+  * @desc grabs the "items" in the database based on the criteria defined with the parameters - if nothing is provided, it returns all
+  * items of with the "types" defined in the dbInfo object (authentication commented out) - used to generate lists of "projects" or "books", etc.
+  * @param string type
+  		   string forUID
+  		   string forOwner 
+  * @return object - array of "items"
+*/
 app.post('/api/getItems', express.json(), function (req, res) {
 	//if(!req.session.user){
 	//	res.send({});
@@ -131,9 +161,16 @@ app.post('/api/getItems', express.json(), function (req, res) {
 		db.itemdb.find(query,function (err, docs) {
 			if(err){ console.log('(error getting items) '+err); }else{ res.send(docs); }
 		});
-	//} //end auth check
-});//end GET items
+	//} 
+});
 
+
+/**
+  * @api - get item history
+  * @desc pulls all of the history items for a specific UID
+  * @param string uid
+  * @return object - array of history objects
+*/
 app.post('/api/getItemHistory', express.json(), function (req, res) {
 	db.itemdb.find({type:'history', forUID:req.body.uid},function (err, docs) {
 		if(err){ console.log('(error getting item history) '+err); }else{ 
@@ -141,14 +178,28 @@ app.post('/api/getItemHistory', express.json(), function (req, res) {
 		}
 	});
 
-});//end GET item history
+});
 
+/**
+  * @api - get ONE item
+  * @desc used to get only one item - not sure if this is even needed
+  * @param string uid
+  * @return object - the item that you want
+*/
 app.post('/api/getItem', express.json(), function (req, res) {
 	db.itemdb.findOne(req.body, function (err, doc) {
 		if(err){ console.log('(error getting item) '+err); }else{ res.send(doc); }
 	});
-});//end 'GET' (single) item - send the uid and retrieve item (untested - send multiple uid's?)
+});
 
+
+/**
+  * @api - save item
+  * @desc this is a largly used function that does quite a bit.. this is called anytime there is a new item added or an existing item
+  * is updated. Two functions, updateItem() and newItem(), do most of the work
+  * @param object - item (all item information)
+  * @return int - 200 (ok) or 500 (error...)
+*/
 app.post('/api/saveItem', express.json({limit: '50mb'}), function (req, res) {
 	if(!req.session.user){
 		res.send({});
@@ -175,8 +226,14 @@ app.post('/api/saveItem', express.json({limit: '50mb'}), function (req, res) {
 			
 		}
 	}
-});//end SAVE single item
+});
 
+/**
+  * @api - push to item
+  * @desc provides the ability to make changes to specific pieces of an item
+  * @param object - must contain item uid, everything else is optional and will be "diff"ed to find the changes that should be added
+  * @return int - 200 (ok) or 500 (error...)
+*/
 app.post('/api/pushToItem', express.json({limit: '50mb'}), function (req, res) {
 	if(!req.session.user){
 		res.send({});
@@ -198,8 +255,15 @@ app.post('/api/pushToItem', express.json({limit: '50mb'}), function (req, res) {
 			});
 		} else { res.send(500); }
 	}
-});//end PUSH single item
+});
 
+
+/**
+  * @api - proposal result
+  * @desc updates a "member's" proposal decision and runs a check for total approval for item (depends stuff created by "saveProposal")
+  * @param object - results (proposal uid, who, result, member key)
+  * @return int - 200 (ok) or 500 (error...)
+*/
 app.post('/api/proposalResult', express.json(), function (req, res) {
 	console.log('secrets: '+JSON.stringify(proposalSecrets));
 	var syncItemPromise;
@@ -211,20 +275,17 @@ app.post('/api/proposalResult', express.json(), function (req, res) {
 			}
 		});
 		if(theOne.key===req.body.key) {
-
 			db.itemdb.find({uid:req.body.uid}, function (err, check) {
 				if (!check.length||check[0].uid!==req.body.uid) {
 					return res.send(500);
 				}
 				//it is there
-
 				var pushStuff = {};
 				pushStuff.uid=req.body.uid;
 				pushStuff[req.body.who]=req.body[req.body.who];
 
 				var extendedItem = __.cloneDeep(check[0]);
 				_.extend(extendedItem,pushStuff);
-
 
 				syncItemPromise=updateItem(extendedItem, check[0]);
 				q.when(syncItemPromise).then(function(){
@@ -233,9 +294,7 @@ app.post('/api/proposalResult', express.json(), function (req, res) {
 					_(members).each(function(member){
 						if(extendedItem[member.name].what !== "approve"){ approved = false; }
 					});
-
 					console.log("approval is currently: "+approved);
-
 					if (approved){ 
 						//update the item
 						db.itemdb.find({uid:extendedItem.forUID}, function (err, check2){
@@ -243,27 +302,105 @@ app.post('/api/proposalResult', express.json(), function (req, res) {
 								//clone and add approval
 								var approvalItem = __.cloneDeep(check2[0]);
 								_.extend(approvalItem,{approval:true});
-
 								console.log('approval item: '+approvalItem);
-
 								updateItem(approvalItem, check2[0]);
 							}
-
 						});
-
 					}
-
 					res.send(200);
 				}); 
 			});
 		} else { res.send(500); }
-
-
 	} else { res.send(500); }
+});
 
-});//end PUSH single item
+/**
+  * @api - save proposal
+  * @desc creates a proposal object and stores some unique keys on the server for specific "links" send to each member 
+  * for voting/commenting (requires server variable "members")
+  * @param object - the proposal 
+  * @return string - uid
+*/
+app.post('/api/saveProposal', express.json(), function (req, res) {
+	if(!req.session.user){
+		res.send({});
+	} else {
+		req.body.uid=generateUID();
+		proposalSecrets[req.body.uid]=[];
+		var keys={};
+
+		//put in the members
+		_(members).each(function(member){ 
+			req.body[member.name]={};
+			req.body[member.name].who = member.name;
+			keys[member.name] = generateUID();
+		});
+
+		db.itemdb.insert(req.body, function (err, doc) { 
+		if(err){ 
+			console.log('(error saving proposal) '+err);
+		}else{ 
+			console.log('proposal: ' + doc.uid);
+			io.emit('newProposal', doc.uid); 
+
+			//email all members
+			_(members).each(function(member){
+				if (member.email){
+					var key = keys[member.name];
+				
+					console.log('trying to send email to ' + member.email);
+					smtpTrans.sendMail({
+					    from: 'Robot <colabrobot@gmail.com>',
+					    to: member.email,
+					    subject: 'new project proposal for colab',
+					    text: 'text body',
+					    html: "<p>Human,</p><p>A new proposal has been created. Please follow the link below to review everything, and fill in your decision and/or comments. The link was generated specifically for you so don't share. Please reply to me if you have any questions. I am a robot. Thank you.</p><p><a href='http://colablife.info/#/proposal/"+req.body.uid+"/"+key+"'>"+member.name+"'s response</a>"
+					}, function (err, doc){
+					    if(err){ console.log(err); }else{ 
+					    	//email was sent!
+					    	proposalSecrets[req.body.uid].push({name:member.name,key:key});
+					    	console.log('Message sent: ' + doc.response); 
+					    }
+					});
+
+				}
+			});
+
+			res.send(doc.uid);
+		} 
+	});
+	}
+});
+
+/**
+  * @api - check resultee
+  * @desc used when a "member" follows link send via email for a proposal. Checks to see which "member" should be able to edit
+  * @param object - results (proposal uid, who, result, member key)
+  * @return string (ish) - either someone or false
+*/
+app.post('/api/checkResultee', express.json(), function (req, res){
+	//req.body.uid
+	//req.body.key
+	var name = '';
+	_(proposalSecrets[req.body.uid]).each(function(match){
+		if (match.key===req.body.key) { name = match.name; }
+	});
+
+	if (name!=='') {
+		res.send(name);
+	} else { 
+		res.send(false); 
+	}
+});
 
 
+/**
+  * @api - stage item changes
+  * @desc this is called when a non-owner of an item makes a change. Creates an object of type "staged" and flags the original object
+  * to indicate that a change was suggested by another user. This has a lot of problems with the design.. works, but not cool
+  * @param object - item (all item information (new and old))
+  * @return int - 200 (ok) or 500 (error...)
+*/
 app.post('/api/stageItemChanges', express.json(), function (req, res) {
 	var newItem=req.body;
 	if (newItem.uid) {
@@ -348,8 +485,15 @@ app.post('/api/stageItemChanges', express.json(), function (req, res) {
 	} else { 
 		//no item found matching that uid
 	}
-});//end 'STAGE' changes
+});
 
+
+/**
+  * @api - decision
+  * @desc accepts or rejects staged changes on an item that that users is an item owner
+  * @param object - "decision object" (decision key, user, field, yes or no, the item)
+  * @return int - 200 (ok) or 500 (error...)
+*/
 app.post('/api/decision', express.json(), function (req, res){
 	if(!req.session.user){
 		res.send({});
@@ -394,7 +538,12 @@ app.post('/api/decision', express.json(), function (req, res){
 	}
 });
 
-
+/**
+  * @api - delete item
+  * @desc changes the type of an item to deleted
+  * @param object - the item to be "deleted"
+  * @return int - 200 (ok) or 500 (error...)
+*/
 app.post('/api/deleteItem', express.json(), function (req, res){
 	if(!req.session.user){
 		res.send({});
@@ -414,74 +563,17 @@ app.post('/api/deleteItem', express.json(), function (req, res){
 		});
 	}
 
-});//end DELETE item
-
-app.post('/api/saveProposal', express.json(), function (req, res) {
-	if(!req.session.user){
-		res.send({});
-	} else {
-		req.body.uid=generateUID();
-		proposalSecrets[req.body.uid]=[];
-		var keys={};
-
-		//put in the members
-		_(members).each(function(member){ 
-			req.body[member.name]={};
-			req.body[member.name].who = member.name;
-			keys[member.name] = generateUID();
-		});
-
-		db.itemdb.insert(req.body, function (err, doc) { 
-		if(err){ 
-			console.log('(error saving proposal) '+err);
-		}else{ 
-			console.log('proposal: ' + doc.uid);
-			io.emit('newProposal', doc.uid); 
-
-			//email all members
-			_(members).each(function(member){
-				if (member.email){
-					var key = keys[member.name];
-				
-					console.log('trying to send email to ' + member.email);
-					smtpTrans.sendMail({
-					    from: 'Robot <colabrobot@gmail.com>',
-					    to: member.email,
-					    subject: 'new project proposal for colab',
-					    text: 'text body',
-					    html: "<p>Human,</p><p>A new proposal has been created. Please follow the link below to review everything, and fill in your decision and/or comments. The link was generated specifically for you so don't share. Please reply to me if you have any questions. I am a robot. Thank you.</p><p><a href='http://colablife.info/#/proposal/"+req.body.uid+"/"+key+"'>"+member.name+"'s response</a>"
-					}, function (err, doc){
-					    if(err){ console.log(err); }else{ 
-					    	//email was sent!
-					    	proposalSecrets[req.body.uid].push({name:member.name,key:key});
-					    	console.log('Message sent: ' + doc.response); 
-					    }
-					});
-
-				}
-			});
-
-			res.send(doc.uid);
-		} 
-	});
-	}
-});//end SAVE proposal
-
-app.post('/api/checkResultee', express.json(), function (req, res){
-	//req.body.uid
-	//req.body.key
-	var name = '';
-	_(proposalSecrets[req.body.uid]).each(function(match){
-		if (match.key===req.body.key) { name = match.name; }
-	});
-
-	if (name!=='') {
-		res.send(name);
-	} else { 
-		res.send(false); 
-	}
 });
 
+
+/**
+  * @api - request lock
+  * @desc Items are locked when someone is editing - this function asks if a lock is available or not. if the item is not currently
+  * locked, changeLock() is called. SOmething is broken with this, but it mostly works - I like this method, but a more granular 
+  * approach to locking would be better - like only lock the pieces that are being edited, not the whole thing
+  * @param object - lock object (uid for lock, email of user)
+  * @return object - the locked item
+*/
 app.post('/api/requestLock', express.json(), function (req, res){
 	if(!req.session.user){
 		res.send({});
@@ -505,8 +597,14 @@ app.post('/api/requestLock', express.json(), function (req, res){
 			}
 		});
 	}
-});//end request lock item
+});
 
+/**
+  * @api - remove lock
+  * @desc disables the lock on an item
+  * @param object - lock object (uid, email)
+  * @return object - the item
+*/
 app.post('/api/removeLock', express.json(), function (req, res){
 	if(!req.session.user){
 		res.send({});
@@ -525,8 +623,14 @@ app.post('/api/removeLock', express.json(), function (req, res){
 			});
 		}
 	}
-});//end remove lock item
+});
 
+/**
+  * @api - pick lock
+  * @desc this only exists because something about the lock functionality is broken... :)
+  * @param object - lock object (uid, email)
+  * @return object - the item
+*/
 app.post('/api/pickLock', express.json(), function (req, res){
 	if(!req.session.user){
 		res.send({});
@@ -547,9 +651,15 @@ app.post('/api/pickLock', express.json(), function (req, res){
 			}
 		});
 	}
-});//end break lock item
+});
 
-//needs in post:  {uid:uidofitem, email:usermakingedit, value:1or-1or0}
+/**
+  * @api - set priority
+  * @desc - sets item priority for a given email (reddit style upvoting) - either 1, -1 or 0 gets added to the priority for a
+  * specific user - total priority is updated to reflect sum of each user priority
+  * @param object - priority object ({uid:uidofitem, email:usermakingedit, value:1or-1or0})
+  * @return int - the item
+*/
 app.post('/api/setPriority', express.json(), function (req, res){
 	if(!req.session.user){
 		res.send({});
@@ -595,6 +705,12 @@ app.post('/api/setPriority', express.json(), function (req, res){
 	}
 });
 
+/**
+  * @api - add comment
+  * @desc - pushes a comment to an item
+  * @param object - comment object ({uid:item.uid,email:master.sharedData.email,comment:scope.comment})
+  * @return int - the item
+*/
 app.post('/api/addComment', express.json(), function (req, res) {
 	if(!req.session.user){
 		res.send({});

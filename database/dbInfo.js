@@ -1,3 +1,7 @@
+/**
+  * @desc this is the object used for pulling in form fields and defaults
+  * for all the different object types
+*/
 module.exports = {
     formElements:['text', 'textarea', 'url'],
     types:[
