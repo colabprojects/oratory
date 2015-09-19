@@ -8,7 +8,7 @@ r.connect(
     r.dbCreate("oratory").run(conn, function(err, status) {
         r.tableCreate('items', {primaryKey: 'uid'})
             .run(conn, function(err, stat) {
-                r.table("items").indexCreate("types", {multi: true})
+                r.table("items").indexCreate("type", {multi: true})
                     .run(conn, function(err, stat) {});
             });
         r.tableCreate('history', {primaryKey: 'key'})
@@ -32,7 +32,7 @@ module.exports = {
     createConnection : function(req, res, next) {
         r.connect({ host: 'localhost', port: 28015, db: 'oratory'}).then(function(conn) {
             // Save the connection in `req`
-            root.db = conn;
+            req.db = conn;
             // Pass the current request to the next middleware
             next();
         }).error(handleError(res));

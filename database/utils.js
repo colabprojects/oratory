@@ -9,7 +9,6 @@ var moment = require('moment');
 var gm = require('gm').subClass({ imageMagick: true });
 
 var globalState = require("../server"),
-    db = globalState.db,
     io = globalState.io;
 
 /**
@@ -22,10 +21,28 @@ if (!fs.existsSync('/vagrant/www/media/images')) {
 //default item image:
 var defaultImage = 'images/default.jpg';
 
+function generateUID() {
+    return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+        return v.toString(16);
+    });
+}
+
+function generateKey() {
+    return 'xxxxxxxxxxxx-4xxxyxxxxxx99xx-xxxxx00xxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+        return v.toString(16);
+    });
+}
 
 module.exports = {
+    respondCursor : function(res, cursor) {
+        cursor.toArray(function(err, docs) {
+            res.send(docs);
+        });
+    },
     //ITEMS --------------------------------
-    updateItem : function(newItem, oldItem, unlock){
+    updateItem : function(db, newItem, oldItem, unlock){
         //returns a promise
         var saveItemPromise = q.defer();
         var syncImagePromise;
@@ -35,7 +52,7 @@ module.exports = {
         if (oldItem.imageURL!==newItem.imageURL){
             console.log('saving new item image')
                 var mediaUID = generateUID();
-            syncImagePromise = saveImage(newItem.imageURL,mediaUID);
+            syncImagePromise = saveImage(db, newItem.imageURL,mediaUID);
             newItem.image = 'media/images/'+mediaUID+'/image.jpg';
             newItem.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
         }
@@ -49,7 +66,7 @@ module.exports = {
                 console.log('saving new media image')
                     var mediaImageUID=generateUID();
 
-                syncMediaImagePromise = saveMediaImage(newMediaImage.rawImage, mediaImageUID);
+                syncMediaImagePromise = saveMediaImage(db, newMediaImage.rawImage, mediaImageUID);
                 _.each(newItem.media, function (data,index){
                     //find the index and replace with new data
                     if (_.has(data,'rawImage')) {
@@ -70,19 +87,19 @@ module.exports = {
             console.log('remove: '+JSON.stringify(removeLoopUids)+'   add:       '+JSON.stringify(addLoopUids));
 
             _.each(removeLoopUids, function(uid){
-                findItem(uid).then(function(item){
+                findItem(db, uid).then(function(item){
                     var itemCopy = __.cloneDeep(item);
                     itemCopy.parents = _(itemCopy.parents).without(newItem.uid);
-                    updateItem(itemCopy,item);
+                    updateItem(db, itemCopy,item);
                 });
             });
 
             _.each(addLoopUids, function(uid){
-                findItem(uid).then(function(item){
+                findItem(db, uid).then(function(item){
                     var itemCopy = __.cloneDeep(item);
                     itemCopy.parents = itemCopy.parents || [];
                     itemCopy.parents.push(newItem.uid);
-                    updateItem(itemCopy,item);
+                    updateItem(db, itemCopy,item);
                 });
             });
         }
@@ -95,19 +112,19 @@ module.exports = {
             console.log('remove: '+JSON.stringify(removeLoopUids)+'   add:       '+JSON.stringify(addLoopUids));
 
             _.each(removeLoopUids, function(uid){
-                findItem(uid).then(function(item){
+                findItem(db, uid).then(function(item){
                     var itemCopy = __.cloneDeep(item);
                     itemCopy.parents = _(itemCopy.parents).without(newItem.uid);
-                    updateItem(itemCopy,item);
+                    updateItem(db, itemCopy,item);
                 });
             });
 
             _.each(addLoopUids, function(uid){
-                findItem(uid).then(function(item){
+                findItem(db, uid).then(function(item){
                     var itemCopy = __.cloneDeep(item);
                     itemCopy.parents = itemCopy.parents || [];
                     itemCopy.parents.push(newItem.uid);
-                    updateItem(itemCopy,item);
+                    updateItem(db, itemCopy,item);
                 });
             });
         }
@@ -118,6 +135,7 @@ module.exports = {
         historyItem.historical=true;
         historyItem.proposedChanges=false;
         
+        console.log("updating history");
         //update and store history
         r.table("history").insert({
             type:'history', 
@@ -130,6 +148,7 @@ module.exports = {
         delete newItem._id;
         //check to see if new image was sent
 
+        console.log("updating item");
         r.table("items").get(newItem.uid).update(newItem).run(db, function (err, doc) {
             if(err){ 
                 console.log('(error updating item) '+err); 
@@ -149,7 +168,7 @@ module.exports = {
         return saveItemPromise.promise;
     },
 
-    newItem : function(newItem){
+    newItem : function(db, newItem){
         //returns a promise
         var saveItemPromise = q.defer();
         var syncImagePromise;
@@ -165,7 +184,7 @@ module.exports = {
         if (newItem.imageURL) {
             //image url provided
             var mediaUID = generateUID();
-            syncImagePromise = saveImage(newItem.imageURL,mediaUID);
+            syncImagePromise = saveImage(db, newItem.imageURL,mediaUID);
             newItem.image = 'media/images/'+mediaUID+'/image.jpg';
             newItem.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
         }else{
@@ -173,7 +192,6 @@ module.exports = {
             newItem.image = defaultImage;
             newItem.thumb = defaultImage;
         }
-        console.log(db);
         r.table("items").insert(newItem).run(db, function (err, doc) { 
             if(err){ 
                 console.log('(error saving item) '+err);
@@ -192,7 +210,7 @@ module.exports = {
 
     //IMAGES --------------------------------
     //takes a where (url), a uid to use, and who (opt - used for user added)
-    saveImage : function(where,theUID,who) {
+    saveImage : function(db, where,theUID,who) {
         //returns a promise
         var saveImagePromise = q.defer();
         request.get({url: url.parse(where), encoding: 'binary'}, function (err, response, body) {
@@ -230,7 +248,7 @@ module.exports = {
         return saveImagePromise.promise;
     },
 
-    saveMediaImage : function(rawImage, uid) {
+    saveMediaImage : function(db, rawImage, uid) {
         var saveMediaImagePromise = q.defer();
         var matches = rawImage.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
         var image = {};
@@ -275,7 +293,7 @@ module.exports = {
     },
 
     //LOCKS --------------------------------
-    changeLock : function(item,who,value){
+    changeLock : function(db,item,who,value){
         var changeLockPromise = q.defer();
         var time = moment().format();
         item.lock=value;
@@ -300,7 +318,7 @@ module.exports = {
         return changeLockPromise.promise;
     },
 
-    changeDecision : function(staged, who, what, value){
+    changeDecision : function(db, staged, who, what, value){
         var changeDecisionPromise = q.defer();
         var time = moment().format();
 
@@ -324,7 +342,7 @@ module.exports = {
         return changeDecisionPromise.promise;
     } ,
 
-    findItem : function(uid){
+    findItem : function(db, uid){
         var p=q.defer();
         r.table("items").get(uid).run(db, function (err, doc) {
             if(err){ console.log('(error getting item) '+err); p.reject(err); }else{ p.resolve(doc); }
@@ -332,17 +350,7 @@ module.exports = {
         return p.promise;
     },
 
-    generateUID : function() {
-        return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-            return v.toString(16);
-        });
-    },
+    generateUID : generateUID,
 
-    generateKey : function() {
-        return 'xxxxxxxxxxxx-4xxxyxxxxxx99xx-xxxxx00xxxx'.replace(/[xy]/g, function(c) {
-            var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-            return v.toString(16);
-        });
-    },
+    generateKey : generateKey,
 }

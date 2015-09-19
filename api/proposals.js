@@ -1,7 +1,6 @@
 var globalState = require("../server"),
     app = globalState.app, 
     express = globalState.express,
-    db = globalState.db,
     io = globalState.io;
 
 /**
@@ -12,7 +11,6 @@ var __ = require('lodash');
 
 var dbInfo = require("../database/dbInfo");
 var dbHelper = require("../database/utils");
-__.assign(root, dbHelper);
 
 /**
   * @api - proposal result
@@ -31,8 +29,8 @@ app.post('/api/proposalResult', express.json(), function (req, res) {
 			}
 		});
 		if(theOne.key===req.body.key) {
-            r.table("items").get(req.body.uid).run(db, function (err, check) {
-				if (!check.length||check[0].uid!==req.body.uid) {
+            r.table("items").get(req.body.uid).run(req.db, function (err, check) {
+				if (check.uid!==req.body.uid) {
 					return res.send(500);
 				}
 				//it is there
@@ -40,10 +38,10 @@ app.post('/api/proposalResult', express.json(), function (req, res) {
 				pushStuff.uid=req.body.uid;
 				pushStuff[req.body.who]=req.body[req.body.who];
 
-				var extendedItem = __.cloneDeep(check[0]);
+				var extendedItem = __.cloneDeep(check);
 				_.extend(extendedItem,pushStuff);
 
-				syncItemPromise=updateItem(extendedItem, check[0]);
+				syncItemPromise=dbUtils.updateItem(req.db, extendedItem, check);
 				q.when(syncItemPromise).then(function(){
 					//check if the project has been approved by everyone
 					var approved = true;
@@ -53,13 +51,13 @@ app.post('/api/proposalResult', express.json(), function (req, res) {
 					console.log("approval is currently: "+approved);
 					if (approved){ 
 						//update the item
-                        r.table("items").get(extendedItem.forUID).run(db,function (err, check2){
+                        r.table("items").get(extendedItem.forUID).run(req.db,function (err, check2){
 							if(err){ console.log('(error getting item) '+err); }else{ 
 								//clone and add approval
-								var approvalItem = __.cloneDeep(check2[0]);
+								var approvalItem = __.cloneDeep(check2);
 								_.extend(approvalItem,{approval:true});
 								console.log('approval item: '+approvalItem);
-								updateItem(approvalItem, check2[0]);
+								dbUtils.updateItem(req.db, approvalItem, check2);
 							}
 						});
 					}
@@ -81,7 +79,7 @@ app.post('/api/saveProposal', express.json(), function (req, res) {
 	if(!req.session.user){
 		res.send({});
 	} else {
-		req.body.uid=generateUID();
+		req.body.uid = dbUtils.generateUID();
 		proposalSecrets[req.body.uid]=[];
 		var keys={};
 
@@ -89,11 +87,11 @@ app.post('/api/saveProposal', express.json(), function (req, res) {
 		_(members).each(function(member){ 
 			req.body[member.name]={};
 			req.body[member.name].who = member.name;
-			keys[member.name] = generateUID();
+			keys[member.name] = dbUtils.generateUID();
 		});
 
 		r.table("items").insert(req.body)
-            .run(db, function (err, doc) { 
+            .run(req.db, function (err, doc) { 
 		    if(err){ 
 		    	console.log('(error saving proposal) '+err);
 		    }else{ 

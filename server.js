@@ -26,7 +26,6 @@ module.exports = {
     express: express,
     app: app,
     io: io,
-    db: undefined,
 }
 
 //app configuration

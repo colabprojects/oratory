@@ -1,7 +1,6 @@
 var globalState = require("../server"),
     app = globalState.app, 
-    express = globalState.express,
-    db = globalState.db;
+    express = globalState.express;
 
 /**
   * @desc various dependencies 
@@ -12,8 +11,7 @@ var _ = require('underscore');
 var __ = require('lodash');
 
 var dbInfo = require("../database/dbInfo");
-var dbHelper = require("../database/utils");
-__.assign(root, dbHelper);
+var dbUtils = require("../database/utils");
 
 
 /**
@@ -30,7 +28,7 @@ app.post('/api/requestLock', express.json(), function (req, res){
 	} else {
 		var syncLockPromise;
         r.table("items").get(req.body.uid)
-            .run(db, function (err, item){
+            .run(req.db, function (err, item){
 			    if(err||!item){ console.log('(error requesting lock on item) '+err); }
 			    else { 
 			    	if (item.lock){
@@ -39,7 +37,7 @@ app.post('/api/requestLock', express.json(), function (req, res){
 			    		res.send(item);
 			    	} else {
 			    		//does not have lock yet
-			    		syncLockPromise = changeLock(item,req.body.email, true);
+			    		syncLockPromise = dbUtils.changeLock(req.db, item,req.body.email, true);
 			    		q.when(syncLockPromise).then(function(){
 			    			res.send(item);
 			    		});
@@ -63,11 +61,11 @@ app.post('/api/removeLock', express.json(), function (req, res){
 		var syncLockPromise;
 		if (req.body.uid) {
 			console.log('removing lock for item: '+req.body.uid);
-            r.table("items").find(req.body.uid)
-                .run(db, function (err, item){
+            r.table("items").get(req.body.uid)
+                .run(req.db, function (err, item){
 				    if(err||!item){ console.log('(error removing lock on item) '+err); }
 				    else { 
-				    	syncLockPromise = changeLock(item,req.body.email, false);
+				    	syncLockPromise = dbUtils.changeLock(req.db, item,req.body.email, false);
 				    	q.when(syncLockPromise).then(function(){
 				    		res.send(item);
 				    	});
@@ -90,11 +88,11 @@ app.post('/api/pickLock', express.json(), function (req, res){
 		var syncLockPromise;
 		console.log('breaking lock for item: '+req.body.uid);
         r.table("items").get(req.body.uid)
-            .run(db, function (err, item){
+            .run(req.db, function (err, item){
 			    if(err||!item){ console.log('(error removing lock on item) '+err); }
 			    else { 
 			    	if(_.contains(item.owners, req.body.email)){
-			    		syncLockPromise = changeLock(item,req.body.email, false);
+			    		syncLockPromise = dbUtils.changeLock(req.db, item,req.body.email, false);
 			    		q.when(syncLockPromise).then(function(){
 			    			res.send(item);
 			    		});
