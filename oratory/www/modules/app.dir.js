@@ -712,49 +712,6 @@ define(['angular', 'moment', 'socket', 'jquery', 'underscore'], function (angula
                     };
                 }
             };
-        },
-
-
-        addMediaImageForm: function () {
-            return {
-                restrict: 'E',
-                scope: {
-                    mediaImage: '='
-                },
-                templateUrl: 'html/addMediaImageForm.html',
-                link: function (scope, element) {
-                    var takePicture = element.find(".take-picture");
-                    var showPicture = element.find(".show-picture");
-
-                    if (takePicture && showPicture) {
-                        // Set events
-                        takePicture.on('change', function (event) {
-
-                            // Get a reference to the taken picture or chosen file
-                            var files = event.target.files;
-                            var file;
-                            if (files && files.length > 0) {
-                                file = files[0];
-
-                                try {
-                                    var fileReader = new FileReader();
-                                    fileReader.onload = function (event) {
-                                        scope.mediaImage = event.target.result;
-                                        scope.$digest();
-                                    };
-                                    fileReader.readAsDataURL(file);
-                                } catch (e) {
-                                    // Display error message
-                                    scope.errorMsg = 'nothing is supported';
-                                }
-                            }
-
-                        });//END take picture 'on' event
-                    }
-
-
-                }//link
-            };
         }
     };
 });
