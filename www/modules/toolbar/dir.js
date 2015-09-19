@@ -16,6 +16,10 @@ define(['angular', 'moment', 'socket', 'jquery', 'underscore'], function (angula
                     scope.sharedData = master.sharedData;
                     scope.colors = master.color(scope.item);
                     scope.deleteItem = master.deleteItem;
+                    scope.toggle={};
+                    scope.proposal={};
+                    scope.editorTypes = ["Owners","Media","Plan","Events","Budget","Proposals"];
+
 
                     scope.proposal = {};
 
@@ -28,12 +32,18 @@ define(['angular', 'moment', 'socket', 'jquery', 'underscore'], function (angula
                         }
                     });
 
-                    scope.goBack = function () {
-                        window.history.back();
+                    scope.toggler = function(editor) {
+                        console.log(scope.editorTypes);
+                        console.log(editor);
+                        scope.toggle[editor]=true;
+                    };
+                    scope.clearToggle = function () {
+                        scope.toggle = {};
+                        scope.editorOption="";
                     };
 
-                    scope.addMediaImageClick = function () {
-                        scope.addMediaImage = !scope.addMediaImage;
+                    scope.goBack = function () {
+                        window.history.back();
                     };
 
                     scope.addMediaImageSave = function (media) {
@@ -48,66 +58,19 @@ define(['angular', 'moment', 'socket', 'jquery', 'underscore'], function (angula
                         }
                     };
 
-                    scope.addOwnerClick = function () {
-                        scope.addOwners = !scope.addOwners;
-                    };
-
-                    scope.addPlanClick = function () {
-                        scope.addPlan = !scope.addPlan;
-                    };
-                    scope.$on('closePlan', function () {
-                        scope.addPlan = false;
-                    });
-
-                    scope.addBudgetClick = function () {
-                        scope.addBudget = !scope.addBudget;
-                    };
-
-                    scope.$on('closeBudget', function () {
-                        scope.addBudget = false;
-                    });
-
-                    scope.addEventClick = function () {
-                        scope.addEvent = !scope.addEvent;
-                    };
-
-                    scope.addProposalClick = function () {
-                        scope.addProposal = !scope.addProposal;
-                        scope.proposal = {};
+                    scope.createProposal = function () {
                         scope.proposal.forUID = scope.item.uid;
                         scope.proposal.date = moment().format();
                         scope.proposal.type = 'proposal';
-                    };
-
-                    scope.addEvent = function (uid) {
-                        if (!scope.item.events) {
-                            scope.item.events = [];
-                        }
-                        scope.item.events.push(uid);
-                        master.saveItem(scope.item);
-                        scope.addEvent = false;
-                    };
-
-                    scope.createProposal = function () {
                         $http.post('/api/saveProposal', scope.proposal).then(function (response) {
                             //set the id in the callback - new api for new proposal
                             master.pushToItem({uid: scope.item.uid, proposal: response.data, approval: false});
 
                         });
+
                         scope.addProposal = false;
 
-                    };
-
-                    scope.addToProject = function (theUID) {
-                        var parent = _(master.items).findWhere({uid: theUID});
-                        if (!parent.attachments) {
-                            parent.attachments = [];
-                        }
-                        parent.attachments.push(scope.item.uid);
-
-                        master.pushToItem(_(parent).pick(['uid', 'attachments']));
-                    };
-
+                    }; 
                 }
             };
         },
