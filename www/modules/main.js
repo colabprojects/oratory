@@ -1,7 +1,7 @@
 /*jslint browser:true, nomen:true, vars:true */
 /*global requirejs, FileReader */
 
-requirejs.config({
+requirejs({
     paths: {
         'jquery': '../bower_components/jquery/dist/jquery.min',
         'jquery.bootstrap': "../bower_components/bootstrap/dist/js/bootstrap.min",
@@ -13,7 +13,10 @@ requirejs.config({
         'angular-ui-router': "../bower_components/angular-ui-router/release/angular-ui-router.min",
         'angular-strap': "../bower_components/angular-strap/dist/angular-strap.min",
         'angular-strap-tpl': "../bower_components/angular-strap/dist/angular-strap.tpl.min",
-        'socket': "/socket.io/socket.io"
+        'socket': "/socket.io/socket.io",
+
+        'cs': '../bower_components/require-cs/cs',
+        'coffee-script': '../bower_components/coffee-script/extras/coffee-script'
     },
     shim: {
         angular: {
@@ -26,19 +29,4 @@ requirejs.config({
         'jquery.bootstrap': ['jquery'],
         'jquery.cookie': ['jquery']
     }
-});
-
-// This is the main application entry point, invoked by requirejs
-// bootstraps the angularjs app with the dom
-requirejs([
-    'angular',
-    'app',
-    'angular-strap-tpl'
-],
-    function (angular, app) {
-        'use strict';
-
-        angular.element().ready(function () {
-            angular.bootstrap(document, [app.name]);
-        });
-    });
+}, ['cs!bootstrap']);
