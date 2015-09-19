@@ -7,6 +7,7 @@ var globalState = require("../server"),
 /**
   * @desc various dependencies 
 */
+var r = require('rethinkdb');
 var __ = require('lodash');
 
 var dbInfo = require("../database/dbInfo");
@@ -30,7 +31,7 @@ app.post('/api/proposalResult', express.json(), function (req, res) {
 			}
 		});
 		if(theOne.key===req.body.key) {
-			db.itemdb.find({uid:req.body.uid}, function (err, check) {
+            r.tables("items").get(req.body.uid).run(db, function (err, check) {
 				if (!check.length||check[0].uid!==req.body.uid) {
 					return res.send(500);
 				}
@@ -52,7 +53,7 @@ app.post('/api/proposalResult', express.json(), function (req, res) {
 					console.log("approval is currently: "+approved);
 					if (approved){ 
 						//update the item
-						db.itemdb.find({uid:extendedItem.forUID}, function (err, check2){
+                        r.tables("items").get(extendedItem.forUID).run(db,function (err, check2){
 							if(err){ console.log('(error getting item) '+err); }else{ 
 								//clone and add approval
 								var approvalItem = __.cloneDeep(check2[0]);
@@ -91,39 +92,40 @@ app.post('/api/saveProposal', express.json(), function (req, res) {
 			keys[member.name] = generateUID();
 		});
 
-		db.itemdb.insert(req.body, function (err, doc) { 
-		if(err){ 
-			console.log('(error saving proposal) '+err);
-		}else{ 
-			console.log('proposal: ' + doc.uid);
-			io.emit('newProposal', doc.uid); 
+		r.tables("items").insert(req.body)
+            .run(db, function (err, doc) { 
+		    if(err){ 
+		    	console.log('(error saving proposal) '+err);
+		    }else{ 
+		    	console.log('proposal: ' + doc.uid);
+		    	io.emit('newProposal', doc.uid); 
 
-			//email all members
-			_(members).each(function(member){
-				if (member.email){
-					var key = keys[member.name];
-				
-					console.log('trying to send email to ' + member.email);
-					smtpTrans.sendMail({
-					    from: 'Robot <colabrobot@gmail.com>',
-					    to: member.email,
-					    subject: 'new project proposal for colab',
-					    text: 'text body',
-					    html: "<p>Human,</p><p>A new proposal has been created. Please follow the link below to review everything, and fill in your decision and/or comments. The link was generated specifically for you so don't share. Please reply to me if you have any questions. I am a robot. Thank you.</p><p><a href='http://colablife.info/#/proposal/"+req.body.uid+"/"+key+"'>"+member.name+"'s response</a>"
-					}, function (err, doc){
-					    if(err){ console.log(err); }else{ 
-					    	//email was sent!
-					    	proposalSecrets[req.body.uid].push({name:member.name,key:key});
-					    	console.log('Message sent: ' + doc.response); 
-					    }
-					});
+		    	//email all members
+		    	_(members).each(function(member){
+		    		if (member.email){
+		    			var key = keys[member.name];
+		    		
+		    			console.log('trying to send email to ' + member.email);
+		    			smtpTrans.sendMail({
+		    			    from: 'Robot <colabrobot@gmail.com>',
+		    			    to: member.email,
+		    			    subject: 'new project proposal for colab',
+		    			    text: 'text body',
+		    			    html: "<p>Human,</p><p>A new proposal has been created. Please follow the link below to review everything, and fill in your decision and/or comments. The link was generated specifically for you so don't share. Please reply to me if you have any questions. I am a robot. Thank you.</p><p><a href='http://colablife.info/#/proposal/"+req.body.uid+"/"+key+"'>"+member.name+"'s response</a>"
+		    			}, function (err, doc){
+		    			    if(err){ console.log(err); }else{ 
+		    			    	//email was sent!
+		    			    	proposalSecrets[req.body.uid].push({name:member.name,key:key});
+		    			    	console.log('Message sent: ' + doc.response); 
+		    			    }
+		    			});
 
-				}
-			});
+		    		}
+		    	});
 
-			res.send(doc.uid);
-		} 
-	});
+		    	res.send(doc.uid);
+		    } 
+	    });
 	}
 });
 

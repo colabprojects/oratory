@@ -1,4 +1,5 @@
 var fs = require('fs');
+var r = require('rethinkdb');
 var request = require('request');
 var q = require('q');
 var url = require('url');
@@ -116,15 +117,20 @@ module.exports = {
         historyItem.uid=generateUID();
         historyItem.historical=true;
         historyItem.proposedChanges=false;
+        
         //update and store history
-        db.itemdb.insert({type:'history', forUID:newItem.uid, historyItem:historyItem }, function (err, doc) {});
+        r.tables("history").insert({
+            type:'history', 
+            forUID:newItem.uid, 
+            historyItem:historyItem 
+        }).run(db, function (err, doc) {});
 
         newItem.edited=moment().format();
         if (unlock) { newItem.lock=false; }
         delete newItem._id;
         //check to see if new image was sent
 
-        db.itemdb.update({uid: newItem.uid}, newItem, function (err, doc) {
+        r.table("items").get(newItem.uid).update(newItem).run(db, function (err, doc) {
             if(err){ 
                 console.log('(error updating item) '+err); 
                 saveItemPromise.reject(); 
@@ -167,7 +173,7 @@ module.exports = {
             newItem.image = defaultImage;
             newItem.thumb = defaultImage;
         }
-        db.itemdb.insert(newItem, function (err, doc) { 
+        r.tables("items").insert(newItem).run(db, function (err, doc) { 
             if(err){ 
                 console.log('(error saving item) '+err);
                 saveItemPromise.reject(); 
@@ -275,7 +281,11 @@ module.exports = {
         item.lockChangedBy=who;
         item.lockChangedAt=time;
 
-        db.itemdb.update({uid: item.uid}, {$set:{lock:value, lockChangedBy:who, lockChangedAt:time}}, function (err, doc) {
+        r.tables("items").get(item.uid).update({
+            lock:value, 
+            lockChangedBy:who, 
+            lockChangedAt:time
+        }).run(db, function (err, doc) {
             if(err){ 
                 console.log('(error changing lock on item) '+err); 
                 changeLockPromise.reject();
@@ -297,23 +307,25 @@ module.exports = {
             if (change['what']===what){ staged.changes[i].decision=value; }
         });
 
-        db.itemdb.update({key: staged.key}, {$set:{changes:staged.changes}}, function (err, doc) {
-            if(err){ 
-                console.log('(error changing decisions on item) '+err); 
-                changeDecisionPromise.reject();
-            } else {
-                //success
-                io.emit('decisionChange',staged);
-                changeDecisionPromise.resolve();
-            }
-        });
+        // TODO: is this actually correct?
+        r.tables("items").find({key: staged.key}).update({changes:staged.changes})
+            .run(db, function (err, doc) {
+                if(err){ 
+                    console.log('(error changing decisions on item) '+err); 
+                    changeDecisionPromise.reject();
+                } else {
+                    //success
+                    io.emit('decisionChange',staged);
+                    changeDecisionPromise.resolve();
+                }
+            });
 
         return changeDecisionPromise.promise;
     } ,
 
     findItem : function(uid){
         var p=q.defer();
-        db.itemdb.findOne({uid:uid}, function (err, doc) {
+        r.tables("items").get(uid).run(db, function (err, doc) {
             if(err){ console.log('(error getting item) '+err); p.reject(err); }else{ p.resolve(doc); }
         });
         return p.promise;
