@@ -29,7 +29,7 @@ app.post('/api/requestLock', express.json(), function (req, res){
 		res.send({});
 	} else {
 		var syncLockPromise;
-        r.tables("items").get(req.body.uid)
+        r.table("items").get(req.body.uid)
             .run(db, function (err, item){
 			    if(err||!item){ console.log('(error requesting lock on item) '+err); }
 			    else { 
@@ -63,7 +63,7 @@ app.post('/api/removeLock', express.json(), function (req, res){
 		var syncLockPromise;
 		if (req.body.uid) {
 			console.log('removing lock for item: '+req.body.uid);
-            r.tables("items").find(req.body.uid)
+            r.table("items").find(req.body.uid)
                 .run(db, function (err, item){
 				    if(err||!item){ console.log('(error removing lock on item) '+err); }
 				    else { 
@@ -89,7 +89,7 @@ app.post('/api/pickLock', express.json(), function (req, res){
 	} else {
 		var syncLockPromise;
 		console.log('breaking lock for item: '+req.body.uid);
-        r.tables("items").get(req.body.uid)
+        r.table("items").get(req.body.uid)
             .run(db, function (err, item){
 			    if(err||!item){ console.log('(error removing lock on item) '+err); }
 			    else { 

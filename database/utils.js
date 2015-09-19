@@ -119,7 +119,7 @@ module.exports = {
         historyItem.proposedChanges=false;
         
         //update and store history
-        r.tables("history").insert({
+        r.table("history").insert({
             type:'history', 
             forUID:newItem.uid, 
             historyItem:historyItem 
@@ -173,7 +173,8 @@ module.exports = {
             newItem.image = defaultImage;
             newItem.thumb = defaultImage;
         }
-        r.tables("items").insert(newItem).run(db, function (err, doc) { 
+        console.log(db);
+        r.table("items").insert(newItem).run(db, function (err, doc) { 
             if(err){ 
                 console.log('(error saving item) '+err);
                 saveItemPromise.reject(); 
@@ -281,7 +282,7 @@ module.exports = {
         item.lockChangedBy=who;
         item.lockChangedAt=time;
 
-        r.tables("items").get(item.uid).update({
+        r.table("items").get(item.uid).update({
             lock:value, 
             lockChangedBy:who, 
             lockChangedAt:time
@@ -308,7 +309,7 @@ module.exports = {
         });
 
         // TODO: is this actually correct?
-        r.tables("items").find({key: staged.key}).update({changes:staged.changes})
+        r.table("items").find({key: staged.key}).update({changes:staged.changes})
             .run(db, function (err, doc) {
                 if(err){ 
                     console.log('(error changing decisions on item) '+err); 
@@ -325,7 +326,7 @@ module.exports = {
 
     findItem : function(uid){
         var p=q.defer();
-        r.tables("items").get(uid).run(db, function (err, doc) {
+        r.table("items").get(uid).run(db, function (err, doc) {
             if(err){ console.log('(error getting item) '+err); p.reject(err); }else{ p.resolve(doc); }
         });
         return p.promise;

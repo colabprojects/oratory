@@ -9,26 +9,6 @@ var users = require('./users');
 /**
   * @desc using rethinkdb and express for all the magic
 */
-var r = require('rethinkdb', 'oratory'),
-    db = r.connect(
-        { host: 'localhost', port: 28015, }
-    ).then(function(err, conn) {
-        console.log("Connected to rethinkdb");
-        if (err) {
-            throw(err);
-        }
-        db = conn;
-        r.tableCreate('items', {primaryKey: 'uid'})
-            .run(conn, function(err, stat) {
-                r.tables("items").indexCreate("types")
-                    .run(conn, function(err, stat) { if (err) {throw(err)} });
-            });
-        r.tableCreate('history', {primaryKey: 'key'})
-            .run(conn, function(err, stat) {
-                r.tables("history").indexCreate("forUID")
-                    .run(conn, function(err, stat) { if (err) {throw(err)} });
-            });
-    });
 
 //app engine
 var express = require('express'),
@@ -39,21 +19,24 @@ var express = require('express'),
 */
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var db = require("./database/db");
 
 
 module.exports = {
     express: express,
     app: app,
-    db: db,
     io: io,
+    db: undefined,
 }
 
 //app configuration
 app.use(express.cookieParser());
 app.use(express.session({secret: "This is a secret"}));
+app.use(db.createConnection);
 app.use(app.router);
 app.use(express.static(__dirname + '/www'));
 app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
+app.use(db.closeConnection);
 
 
 //"schema" for database

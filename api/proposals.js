@@ -31,7 +31,7 @@ app.post('/api/proposalResult', express.json(), function (req, res) {
 			}
 		});
 		if(theOne.key===req.body.key) {
-            r.tables("items").get(req.body.uid).run(db, function (err, check) {
+            r.table("items").get(req.body.uid).run(db, function (err, check) {
 				if (!check.length||check[0].uid!==req.body.uid) {
 					return res.send(500);
 				}
@@ -53,7 +53,7 @@ app.post('/api/proposalResult', express.json(), function (req, res) {
 					console.log("approval is currently: "+approved);
 					if (approved){ 
 						//update the item
-                        r.tables("items").get(extendedItem.forUID).run(db,function (err, check2){
+                        r.table("items").get(extendedItem.forUID).run(db,function (err, check2){
 							if(err){ console.log('(error getting item) '+err); }else{ 
 								//clone and add approval
 								var approvalItem = __.cloneDeep(check2[0]);
@@ -92,7 +92,7 @@ app.post('/api/saveProposal', express.json(), function (req, res) {
 			keys[member.name] = generateUID();
 		});
 
-		r.tables("items").insert(req.body)
+		r.table("items").insert(req.body)
             .run(db, function (err, doc) { 
 		    if(err){ 
 		    	console.log('(error saving proposal) '+err);

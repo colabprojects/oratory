@@ -39,8 +39,8 @@ function isEmpty(obj) {
 */
 app.get('/api/getDatabase', function (req, res) {
     r.expr({
-        "items" : r.tables("items"),
-        "history" : r.tables("history"),
+        "items" : r.table("items"),
+        "history" : r.table("history"),
     }).run(db, function(err, docs) {
 		if(err){ console.log('(error getting database) '+err);}else { res.send(docs); }
 	});
@@ -58,8 +58,9 @@ app.get('/api/getDatabase', function (req, res) {
   * @return object - array of "items"
 */
 app.post('/api/getItems', express.json(), function (req, res) {
-    var query = r.tables("items"),
-        fields = _.pick(req.body, 'type', 'forUID', 'forOwner').compactObject();
+    var query = r.table("items");
+        //fields = _.pick(req.body, 'type', 'forUID', 'forOwner').compactObject();
+    var fields = {};
 
     if (isEmpty(fields)) {
         var keys = _(dbInfo.types).map(function(item){ 
@@ -82,7 +83,7 @@ app.post('/api/getItems', express.json(), function (req, res) {
   * @return object - array of history objects
 */
 app.post('/api/getItemHistory', express.json(), function (req, res) {
-	r.tables('history')
+	r.table('history')
         .get_all(req.body.uid, index='forUID')
         .run(db, function (err, docs) {
 		    if(err){ console.log('(error getting item history) '+err); }
@@ -98,7 +99,7 @@ app.post('/api/getItemHistory', express.json(), function (req, res) {
   * @return object - the item that you want
 */
 app.post('/api/getItem', express.json(), function (req, res) {
-    r.tables('items')
+    r.table('items')
         .get(req.body)
         .run(db, 
             function (err, doc) {
@@ -121,7 +122,7 @@ app.post('/api/saveItem', express.json({limit: '50mb'}), function (req, res) {
 	} else {
 		var syncItemPromise;
 		if (req.body.item.uid) {
-            r.tables("items").get(req.body.item.uid)
+            r.table("items").get(req.body.item.uid)
                 .run(db, function (err, check) {
 				    if (!check.length||check[0].uid!==req.body.item.uid) {
 				    	return res.send(500);
@@ -156,7 +157,7 @@ app.post('/api/pushToItem', express.json({limit: '50mb'}), function (req, res) {
 	} else {
 		var syncItemPromise;
 		if (req.body.uid) {
-            r.tables("items").get(req.body.item.uid)
+            r.table("items").get(req.body.item.uid)
 			    .run(db, function (err, check) {
 				    if (!check.length||check[0].uid!==req.body.uid) {
 				    	return res.send(500);
@@ -209,7 +210,7 @@ app.post('/api/decision', express.json(), function (req, res){
 						console.log('more changes...');
 					}
 					//update item
-                    r.tables("items").get(req.body.item.uid)
+                    r.table("items").get(req.body.item.uid)
                         .run(db, function (err, check1) {
 						    if (!check1.length||check1[0].uid!==req.body.item.uid) {
 						    	return res.send(500);
@@ -239,7 +240,7 @@ app.post('/api/deleteItem', express.json(), function (req, res){
 		var syncItemPromise;
 		req.body.oldType = req.body.type;
 		req.body.type = 'deleted';
-        r.tables("items").get(req.body.item.uid)
+        r.table("items").get(req.body.item.uid)
 		    .run(db, function (err, check) {
 			    if (!check.length||check[0].uid!==req.body.uid) {
 			    	return res.send(500);
@@ -264,7 +265,7 @@ app.post('/api/deleteItem', express.json(), function (req, res){
 app.post('/api/stageItemChanges', express.json(), function (req, res) {
 	var newItem=req.body;
 	if (newItem.uid) {
-        r.tables("items").get(newItem.uid)
+        r.table("items").get(newItem.uid)
 		    .run(db, function (err, check) {
 			    if (!check.length||check[0].uid!==newItem.uid) {
 			    	return res.send(500);
@@ -312,7 +313,7 @@ app.post('/api/stageItemChanges', express.json(), function (req, res) {
 			    		_.each(originalItem.owners, function(owner) { 
 			    			var insertFinished=q.defer();
 			    			promises.push(insertFinished.promise);
-                            r.tables("history")
+                            r.table("history")
 			    			    .insert({
                                     type:'staged', 
                                     forUID:newItem.uid, 
@@ -334,7 +335,7 @@ app.post('/api/stageItemChanges', express.json(), function (req, res) {
 			    		});//end map
 
 			    		q.all(promises).then(function(){
-                            r.tables("items").get(newItem.uid)
+                            r.table("items").get(newItem.uid)
                                 .update({proposedChanges:true})
                                 .run(db, function (err, doc2) {
 			    				    if(err){ 
@@ -372,7 +373,7 @@ app.post('/api/setPriority', express.json(), function (req, res){
 		res.send({});
 	} else {
 		var currentPriority;
-        r.tables("items").get(req.body.uid)
+        r.table("items").get(req.body.uid)
             .run(db, function (err, doc) {
 			    if(err){ console.log('(error finding item) '+err); }
 			    else { 
@@ -423,7 +424,7 @@ app.post('/api/addComment', express.json(), function (req, res) {
 	if(!req.session.user){
 		res.send({});
 	} else {
-        r.tables("items").get(reg.body.uid).update(
+        r.table("items").get(reg.body.uid).update(
                 r.row('comments').append({
                     words:req.body.comment, 
                     by:req.body.email, 
