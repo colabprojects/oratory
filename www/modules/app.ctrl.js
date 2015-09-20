@@ -40,6 +40,23 @@ define(['angular', 'socket', 'jquery', 'underscore'], function (angular, io, $, 
                 $scope.sharedData.options = !$scope.sharedData.options;
             };
 
+            $scope.addFilter = function (type) {
+                if (_($scope.sharedData.typeFilter).contains(type)) {
+                    $scope.sharedData.typeFilter = _($scope.sharedData.typeFilter).without(type);
+                } else { $scope.sharedData.typeFilter.push(type); }
+            };
+
+            $scope.typeFilterText = function () {
+                if (!$scope.sharedData.typeFilter.length) { return ''; }
+                return 'searching ' + $scope.sharedData.typeFilter.join(', ');
+            };
+
+            $scope.filterSelected = function (name) {
+                return {
+                    selectedFilter: _($scope.sharedData.typeFilter).contains(name)
+                };
+            };
+
             $scope.addNew = function () {
                 $state.go('new');
             };
@@ -54,14 +71,6 @@ define(['angular', 'socket', 'jquery', 'underscore'], function (angular, io, $, 
 
             $scope.$on('cancelForm', function () {
                 window.history.back();
-            });
-
-            $scope.$watch('sharedData.showDeleted', function (hide) {
-                if (hide) {
-                    master.sharedData.deletedFilter = {};
-                } else {
-                    master.sharedData.deletedFilter = {type: '!deleted'};
-                }
             });
 
             socket.on('new', function (item) {
