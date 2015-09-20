@@ -1,5 +1,10 @@
 <!-- DETAIL -->
 <div class="row">
+	<div class="row margin-bottom">
+		<a ui-sref="edit({uid:item.uid,chain:false})" ng-if="!item.lock&&!item.historical"><button class="btn btn-default opt-button">edit</button></a>
+		<a ui-sref="view({uid:item.uid})" ng-if="!item.historical"><button class="btn btn-default opt-button">view</button></a>
+		<button ng-if="item.lock&&!item.historical" class="btn btn-default opt-button" ng-click="pickLock(item)">pick</button>
+	</div>
 	<div class="col-xs-12 col-md-4 detail-container">
 		<div class="detail-card">
 			<p class="half-bottom detail-header">overview</p>
