@@ -50,6 +50,7 @@ define(['angular', 'socket', 'jquery', 'underscore'], function (angular, io, $, 
             };
 
             $scope.sharedData.typeFilter = function (item) {
+                if (!$scope.sharedData.typeFilterArray.length){ return true; }
                 return _($scope.sharedData.typeFilterArray).contains(item.type);
             }
 
