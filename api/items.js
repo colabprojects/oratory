@@ -1,18 +1,33 @@
 var globalState = require("../server"),
     app = globalState.app, 
-    express = globalState.express,
-    db = globalState.db;
+    express = globalState.express;
 
 /**
   * @desc various dependencies 
 */
 var q = require('q');
+var r = require('rethinkdb');
 var _ = require('underscore');
 var __ = require('lodash');
 
 var dbInfo = require("../database/dbInfo");
-var dbHelper = require("../database/utils");
-__.assign(root, dbHelper);
+var dbUtils = require("../database/utils");
+
+/* UTILS */
+_.mixin({
+  compactObject: function(o) {
+    _.each(o, function(v, k) {
+      if(!v) {
+        delete o[k];
+      }
+    });
+    return o;
+  }
+});
+function isEmpty(obj) {
+  return Object.keys(obj).length === 0;
+}
+
 
 /**
   * @api - get database
@@ -21,9 +36,13 @@ __.assign(root, dbHelper);
   * @return object - full database
 */
 app.get('/api/getDatabase', function (req, res) {
-	db.itemdb.find(function (err, docs) {
-		if(err){ console.log('(error getting database) '+err);}else { res.send(docs); }
-	});
+    r.map(
+        r.table("items"),
+        r.table("history"),
+        function (items, history) { return {items: items, history: history}; }
+    ).run(req.db, function(err, docs) {
+        if(err){ console.log('(error getting database) '+err);}else { res.send(docs.toArray()); }
+    });
 });
 
 
@@ -33,23 +52,33 @@ app.get('/api/getDatabase', function (req, res) {
   * @desc grabs the "items" in the database based on the criteria defined with the parameters - if nothing is provided, it returns all
   * items of with the "types" defined in the dbInfo object (authentication commented out) - used to generate lists of "projects" or "books", etc.
   * @param string type
-  		   string forUID
-  		   string forOwner 
+             string forUID
+             string forOwner 
   * @return object - array of "items"
 */
 app.post('/api/getItems', express.json(), function (req, res) {
-	//if(!req.session.user){
-	//	res.send({});
-	//} else {
-		var query = {};
-		if (req.body.type) { query['type'] = req.body.type; }
-		if (req.body.forUID) { query['forUID'] = req.body.forUID; }
-		if (req.body.forOwner) { query['forOwner'] = req.body.forOwner; }
-		else { query = { $or:_(dbInfo.types).map(function(item){ return {'type':item.name}; }) }; }
-		db.itemdb.find(query,function (err, docs) {
-			if(err){ console.log('(error getting items) '+err); }else{ res.send(docs); }
-		});
-	//} 
+    var fields = _.compactObject(_.pick(req.body, 'type', 'forUID', 'forOwner'));
+
+    if (isEmpty(fields)) {
+        var keys = _(dbInfo.types).map(function(item){ 
+                return item.name; 
+        });
+        r.table("items")
+            .getAll('tool', 'resource', 'project', 'book', 'event', 'deleted', {index:"type"})
+            .run(req.db, function (err, docs) {
+                if(err){ console.log('(error getting items) '+err); }
+                else{ dbUtils.respondCursor(res, docs) }
+            });
+    } else {
+        r.table("items")
+            .filter(fields)
+            .run(req.db, function (err, docs) {
+            if(err){ console.log('(error getting items) '+err); }else{ dbUtils.respondCursor(res, docs) }
+        });
+    }
+    //query.run(req.db, function (err, docs) {
+    //    if(err){ console.log('(error getting items) '+err); }else{ res.send(docs.toArray()); }
+    //});
 });
 
 
@@ -60,11 +89,12 @@ app.post('/api/getItems', express.json(), function (req, res) {
   * @return object - array of history objects
 */
 app.post('/api/getItemHistory', express.json(), function (req, res) {
-	db.itemdb.find({type:'history', forUID:req.body.uid},function (err, docs) {
-		if(err){ console.log('(error getting item history) '+err); }else{ 
-			res.send(docs); 
-		}
-	});
+    r.table('history')
+        .get_all(req.body.uid, index='forUID')
+        .run(req.db, function (err, docs) {
+            if(err){ console.log('(error getting item history) '+err); }
+            else{ dbUtils.respondCursor(res, docs); }
+    });
 
 });
 
@@ -75,9 +105,13 @@ app.post('/api/getItemHistory', express.json(), function (req, res) {
   * @return object - the item that you want
 */
 app.post('/api/getItem', express.json(), function (req, res) {
-	db.itemdb.findOne(req.body, function (err, doc) {
-		if(err){ console.log('(error getting item) '+err); }else{ res.send(doc); }
-	});
+    r.table('items')
+        .get(req.body.uid)
+        .run(req.db, 
+            function (err, doc) {
+                if(err){ console.log('(error getting item) '+err); }
+                else{ res.send(doc); }
+            })
 });
 
 
@@ -89,31 +123,34 @@ app.post('/api/getItem', express.json(), function (req, res) {
   * @return int - 200 (ok) or 500 (error...)
 */
 app.post('/api/saveItem', express.json({limit: '50mb'}), function (req, res) {
-	if(!req.session.user){
-		res.send({});
-	} else {
-		var syncItemPromise;
-		if (req.body.item.uid) {
-			db.itemdb.find({uid:req.body.item.uid}, function (err, check) {
-				if (!check.length||check[0].uid!==req.body.item.uid) {
-					return res.send(500);
-				}
-				//it is there
+    if(!req.session.user){
+        res.send({});
+    } else {
+        var syncItemPromise;
+        if (req.body.item.uid) {
+            console.log("route1");
+            r.table("items").get(req.body.item.uid)
+                .run(req.db, function (err, check) {
+                    if (check.uid!==req.body.item.uid) {
+                        return res.send(500);
+                    }
+                    //it is there
 
-				syncItemPromise=updateItem(req.body.item, check[0], req.body.unlock);
-				q.when(syncItemPromise).then(function(){
-					res.send(200);
-				}); 
-			});
-		} else {
-			//brand new item!!!
-			syncItemPromise=newItem(req.body.item);
-			q.when(syncItemPromise).then(function(){
-				res.send(200);
-			}); 
-			
-		}
-	}
+                    syncItemPromise=dbUtils.updateItem(req.db, req.body.item, check, req.body.unlock);
+                    q.when(syncItemPromise).then(function(){
+                        res.send(200);
+                }); 
+            });
+        } else {
+            console.log("route2");
+            //brand new item!!!
+            syncItemPromise=dbUtils.newItem(req.db, req.body.item);
+            q.when(syncItemPromise).then(function(){
+                res.send(200);
+            }); 
+            
+        }
+    }
 });
 
 /**
@@ -123,26 +160,27 @@ app.post('/api/saveItem', express.json({limit: '50mb'}), function (req, res) {
   * @return int - 200 (ok) or 500 (error...)
 */
 app.post('/api/pushToItem', express.json({limit: '50mb'}), function (req, res) {
-	if(!req.session.user){
-		res.send({});
-	} else {
-		var syncItemPromise;
-		if (req.body.uid) {
-			db.itemdb.find({uid:req.body.uid}, function (err, check) {
-				if (!check.length||check[0].uid!==req.body.uid) {
-					return res.send(500);
-				}
-				//it is there
-				var extendedItem = __.cloneDeep(check[0]);
-				_.extend(extendedItem,req.body);
+    if(!req.session.user){
+        res.send({});
+    } else {
+        var syncItemPromise;
+        if (req.body.uid) {
+            r.table("items").get(req.body.item.uid)
+                .run(req.db, function (err, check) {
+                    if (check.uid!==req.body.uid) {
+                        return res.send(500);
+                    }
+                    //it is there
+                    var extendedItem = __.cloneDeep(check);
+                    _.extend(extendedItem,req.body);
 
-				syncItemPromise=updateItem(extendedItem, check[0]);
-				q.when(syncItemPromise).then(function(){
-					res.send(200);
-				}); 
-			});
-		} else { res.send(500); }
-	}
+                    syncItemPromise=dbUtils.updateItem(req.db, extendedItem, check);
+                    q.when(syncItemPromise).then(function(){
+                        res.send(200);
+                    }); 
+                });
+        } else { res.send(500); }
+    }
 });
 
 
@@ -153,47 +191,48 @@ app.post('/api/pushToItem', express.json({limit: '50mb'}), function (req, res) {
   * @return int - 200 (ok) or 500 (error...)
 */
 app.post('/api/decision', express.json(), function (req, res){
-	if(!req.session.user){
-		res.send({});
-	} else {
-		var syncItemPromise;
-		db.itemdb.find({key:req.body.key, forOwner:req.body.email}, function (err, check) {
-			if (!check.length||check[0].key!==req.body.key) {
-				return res.send(500);
-			}
-			//it is there
-			syncItemPromise=changeDecision(check[0], req.body.email, req.body.field, req.body.decision);
-			q.when(syncItemPromise).then(function(){
+    if(!req.session.user){
+        res.send({});
+    } else {
+        var syncItemPromise;
+        req.db.itemdb.find({key:req.body.key, forOwner:req.body.email}, function (err, check) {
+            if (check.key!==req.body.key) {
+                return res.send(500);
+            }
+            //it is there
+            syncItemPromise=dbUtils.changeDecision(req.db, check, req.body.email, req.body.field, req.body.decision);
+            q.when(syncItemPromise).then(function(){
 
-				//check if all decisions are made
-				db.itemdb.find({key:req.body.key}, function (err, check2) {
-					var done = true;
-					var allDec = check2[0].changes;
-					for (k in allDec) {
-						if (allDec[k].decision==='') { done=false; }
-					}
+                //check if all decisions are made
+                req.db.itemdb.find({key:req.body.key}, function (err, check2) {
+                    var done = true;
+                    var allDec = check2.changes;
+                    for (k in allDec) {
+                        if (allDec[k].decision==='') { done=false; }
+                    }
 
-					if (done) {
-						console.log('all changes are complete');
-						req.body.item.proposedChanges=false;
-					} else {
-						console.log('more changes...');
-					}
-					//update item
-					db.itemdb.find({uid:req.body.item.uid}, function (err, check1) {
-						if (!check1.length||check1[0].uid!==req.body.item.uid) {
-							return res.send(500);
-						}
-						//it is there
-						syncItemPromise=updateItem(req.body.item, check1[0], true);
-						q.when(syncItemPromise).then(function(){
-							res.send(200);
-						});
-					});
-				}); 	
-			}); 
-		});
-	}
+                    if (done) {
+                        console.log('all changes are complete');
+                        req.body.item.proposedChanges=false;
+                    } else {
+                        console.log('more changes...');
+                    }
+                    //update item
+                    r.table("items").get(req.body.item.uid)
+                        .run(req.db, function (err, check1) {
+                            if (check1.uid!==req.body.item.uid) {
+                                return res.send(500);
+                            }
+                            //it is there
+                            syncItemPromise=dbUtils.updateItem(req.db, req.body.item, check1, true);
+                            q.when(syncItemPromise).then(function(){
+                                res.send(200);
+                            });
+                    });
+                });     
+            }); 
+        });
+    }
 });
 
 /**
@@ -203,23 +242,24 @@ app.post('/api/decision', express.json(), function (req, res){
   * @return int - 200 (ok) or 500 (error...)
 */
 app.post('/api/deleteItem', express.json(), function (req, res){
-	if(!req.session.user){
-		res.send({});
-	} else {
-		var syncItemPromise;
-		req.body.oldType = req.body.type;
-		req.body.type = 'deleted';
-		db.itemdb.find({uid:req.body.uid}, function (err, check) {
-			if (!check.length||check[0].uid!==req.body.uid) {
-				return res.send(500);
-			}
-			//it is there
-			syncItemPromise=updateItem(req.body, check[0]);
-			q.when(syncItemPromise).then(function(){
-				res.send(200);
-			}); 
-		});
-	}
+    if(!req.session.user){
+        res.send({});
+    } else {
+        var syncItemPromise;
+        req.body.oldType = req.body.type;
+        req.body.type = 'deleted';
+        r.table("items").get(req.body.item.uid)
+            .run(req.db, function (err, check) {
+                if (check.uid!==req.body.uid) {
+                    return res.send(500);
+                }
+                //it is there
+                syncItemPromise=dbUtils.updateItem(req.db, req.body, check);
+                q.when(syncItemPromise).then(function(){
+                    res.send(200);
+                }); 
+        });
+    }
 
 });
 
@@ -231,89 +271,102 @@ app.post('/api/deleteItem', express.json(), function (req, res){
   * @return int - 200 (ok) or 500 (error...)
 */
 app.post('/api/stageItemChanges', express.json(), function (req, res) {
-	var newItem=req.body;
-	if (newItem.uid) {
-		db.itemdb.find({uid:newItem.uid}, function (err, check) {
-			if (!check.length||check[0].uid!==newItem.uid) {
-				return res.send(500);
-			}
-			//it is there
-			var originalItem=check[0];
-			var proposer = newItem.proposedBy;
-			if(proposer){
-				newKey=generateKey();
-				delete newItem.proposedBy;
+    var newItem=req.body;
+    if (newItem.uid) {
+        r.table("items").get(newItem.uid)
+            .run(req.db, function (err, check) {
+                if (check.uid!==newItem.uid) {
+                    return res.send(500);
+                }
+                //it is there
+                var originalItem=check;
+                var proposer = newItem.proposedBy;
+                if(proposer){
+                    newKey=dbUtils.generateKey();
+                    delete newItem.proposedBy;
 
-				var stagedChanges=[];
+                    var stagedChanges=[];
 
-				//save image if one
-				if (originalItem.imageURL!==newItem.imageURL){
-					console.log('saving new item image')
-					var mediaUID = generateUID();
-					saveImage(newItem.imageURL,mediaUID);
-					newItem.image = 'media/images/'+mediaUID+'/image.jpg';
-					newItem.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
-				}
-				
-				var changeNumber = 0;
-				for (key in newItem){
-					if (JSON.stringify(newItem[key])!==JSON.stringify(originalItem[key])){
-						//console.log('difference in '+key+' is '+JSON.stringify(scope.changed[key])+' -- original:'+JSON.stringify(scope.original[key]));
-						if((key!=='lockChangedBy')&&(key!=='lockChangedAt')&&(key!=='edited')&&(key!=='editedBy')&&(key!=='image')&&(key!=='lock')&&(key!=='imageURL')&&(key!=='owners')) {
-							var aChange = {};
-							aChange['what']=key;
-							aChange['value']=newItem[key];
-							aChange['decision']='';
-							if (key==='thumb'){
-								aChange['image']=newItem['image'];
-								aChange['imageURL']=newItem['imageURL'];
-							}
-							stagedChanges[changeNumber]=aChange;
-							changeNumber++;
-						}
-					}
-				}
+                    //save image if one
+                    if (originalItem.imageURL!==newItem.imageURL){
+                        console.log('saving new item image')
+                        var mediaUID = dbUtils.generateUID();
+                        dbUtils.saveImage(newItem.imageURL,mediaUID);
+                        newItem.image = 'media/images/'+mediaUID+'/image.jpg';
+                        newItem.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
+                    }
+                    
+                    var changeNumber = 0;
+                    for (key in newItem){
+                        if (JSON.stringify(newItem[key])!==JSON.stringify(originalItem[key])){
+                            //console.log('difference in '+key+' is '+JSON.stringify(scope.changed[key])+' -- original:'+JSON.stringify(scope.original[key]));
+                            if((key!=='lockChangedBy')&&(key!=='lockChangedAt')&&(key!=='edited')&&(key!=='editedBy')&&(key!=='image')&&(key!=='lock')&&(key!=='imageURL')&&(key!=='owners')) {
+                                var aChange = {};
+                                aChange['what']=key;
+                                aChange['value']=newItem[key];
+                                aChange['decision']='';
+                                if (key==='thumb'){
+                                    aChange['image']=newItem['image'];
+                                    aChange['imageURL']=newItem['imageURL'];
+                                }
+                                stagedChanges[changeNumber]=aChange;
+                                changeNumber++;
+                            }
+                        }
+                    }
 
-				var promises=[];
-				if (stagedChanges.length!==0){
-					//insert change for every owner to approve
-					_.each(originalItem.owners, function(owner) { 
-						var insertFinished=q.defer();
-						promises.push(insertFinished.promise);
-						db.itemdb.insert({type:'staged', forUID:newItem.uid, key:newKey, proposed:moment().format(), proposedBy:proposer, forOwner:owner, changes:stagedChanges}, function (err, doc) {
-							if(err){ 
-								console.log('(error staging item changes) '+err);
-								insertFinished.reject();
-							}else{ 
-								originalItem.proposedChanges=true;
-								insertFinished.resolve();
-							}
-						});
-					});//end map
+                    var promises=[];
+                    if (stagedChanges.length!==0){
+                        //insert change for every owner to approve
+                        _.each(originalItem.owners, function(owner) { 
+                            var insertFinished=q.defer();
+                            promises.push(insertFinished.promise);
+                            r.table("history")
+                                .insert({
+                                    type:'staged', 
+                                    forUID:newItem.uid, 
+                                    key:newKey, 
+                                    proposed:moment().format(), 
+                                    proposedBy:proposer, 
+                                    forOwner:owner, 
+                                    changes:stagedChanges
+                                })
+                                .run(req.db, function (err, doc) {
+                                    if(err){ 
+                                        console.log('(error staging item changes) '+err);
+                                        insertFinished.reject();
+                                    }else{ 
+                                        originalItem.proposedChanges=true;
+                                        insertFinished.resolve();
+                                    }
+                                });
+                        });//end map
 
-					q.all(promises).then(function(){
-						db.itemdb.update({uid: newItem.uid}, {$set:{proposedChanges:true}}, function (err, doc2) {
-							if(err){ 
-								console.log('(error setting staged changes flag on item) '+err); 
-							} else {
-								//success
-								res.send(200);
-								io.emit('proposedChange',newItem.uid);
-							}
-						});
-					}, function(error) { res.send('one of the promises fucked up'); });
-					
-				} else {
-					//no mods
-				}
+                        q.all(promises).then(function(){
+                            r.table("items").get(newItem.uid)
+                                .update({proposedChanges:true})
+                                .run(req.db, function (err, doc2) {
+                                    if(err){ 
+                                        console.log('(error setting staged changes flag on item) '+err); 
+                                    } else {
+                                        //success
+                                        res.send(200);
+                                        io.emit('proposedChange',newItem.uid);
+                                    }
+                                });
+                        }, function(error) { res.send('one of the promises fucked up'); });
+                        
+                    } else {
+                        //no mods
+                    }
 
-			} else {
-				//fail - no proposedBy
-			}
-		});
-	} else { 
-		//no item found matching that uid
-	}
+                } else {
+                    //fail - no proposedBy
+                }
+        });
+    } else { 
+        //no item found matching that uid
+    }
 });
 
 /**
@@ -324,48 +377,49 @@ app.post('/api/stageItemChanges', express.json(), function (req, res) {
   * @return int - the item
 */
 app.post('/api/setPriority', express.json(), function (req, res){
-	if(!req.session.user){
-		res.send({});
-	} else {
-		var currentPriority;
-		db.itemdb.findOne({uid:req.body.uid},function (err, doc) {
-			if(err){ console.log('(error finding item) '+err); }
-			else { 
-				if (doc.priority){
-					//exists
-					currentPriority=doc.priority;
-				} else {
-					currentPriority=[];
-				}
-				//find if user already added
-				var userPriority = _.findWhere(currentPriority,{email:req.body.email});
-				if (userPriority) {
-			 		var index = currentPriority.indexOf(userPriority);
-			 		var newPriority = currentPriority;
-			 		newPriority[index] = {email:req.body.email, value:req.body.value};
-			 	} else {
-			 		//not added yet
-			 		var newPriority=currentPriority;
-			 		newPriority.push({email:req.body.email, value:req.body.value});
-			 	}
+    if(!req.session.user){
+        res.send({});
+    } else {
+        var currentPriority;
+        r.table("items").get(req.body.uid)
+            .run(req.db, function (err, doc) {
+                if(err){ console.log('(error finding item) '+err); }
+                else { 
+                    if (doc.priority){
+                        //exists
+                        currentPriority=doc.priority;
+                    } else {
+                        currentPriority=[];
+                    }
+                    //find if user already added
+                    var userPriority = _.findWhere(currentPriority,{email:req.body.email});
+                    if (userPriority) {
+                         var index = currentPriority.indexOf(userPriority);
+                         var newPriority = currentPriority;
+                         newPriority[index] = {email:req.body.email, value:req.body.value};
+                     } else {
+                         //not added yet
+                         var newPriority=currentPriority;
+                         newPriority.push({email:req.body.email, value:req.body.value});
+                     }
 
-			 	//add up all priorities:
-			 	var totalPriority = _.reduce(newPriority, function(memo,element){ return memo + element.value; },0);
+                     //add up all priorities:
+                     var totalPriority = _.reduce(newPriority, function(memo,element){ return memo + element.value; },0);
 
-			 	doc.totalPriority = totalPriority;
+                     doc.totalPriority = totalPriority;
 
-			 	if (newPriority){
-			 		doc.priority=newPriority;
-				 	db.itemdb.update({uid:req.body.uid}, {$set:{priority:newPriority, totalPriority:totalPriority}}, function (err,doc2){
-				 		if(err){ console.log('(error updating priority) '+err); }else{ 
-				 			io.emit('priorityChange', doc);
-				 			res.send(doc); 
-				 		}
-				 	});
-				}
-			}
-		});
-	}
+                     if (newPriority){
+                         doc.priority=newPriority;
+                         req.db.itemdb.update({uid:req.body.uid}, {$set:{priority:newPriority, totalPriority:totalPriority}}, function (err,doc2){
+                             if(err){ console.log('(error updating priority) '+err); }else{ 
+                                 io.emit('priorityChange', doc);
+                                 res.send(doc); 
+                             }
+                         });
+                    }
+                }
+            });
+    }
 });
 
 /**
@@ -375,28 +429,23 @@ app.post('/api/setPriority', express.json(), function (req, res){
   * @return int - the item
 */
 app.post('/api/addComment', express.json(), function (req, res) {
-	if(!req.session.user){
-		res.send({});
-	} else {
-		db.itemdb.findOne({uid:req.body.uid}, function (err, item){
-			if(err){ console.log('(error finding item) '+err); }
-			else { 
-				if(!item.comments) { item.comments = []; }
-				var timeTime = moment().format();
-				item.comments.push({words:req.body.comment, by:req.body.email, time:timeTime});
-
-				var pushValue = {};
-				pushValue.$set = {};
-				pushValue.$set['comments'] = item.comments; 
-				db.itemdb.update({uid: req.body.uid}, pushValue, function (err, doc) {
-					if(err){ console.log('(error updating comments) '+err); }else{ 
-						io.emit('comment', item);
-						res.send(doc); 
-					}
-				});
-			}
-		});
-	}
+    if(!req.session.user){
+        res.send({});
+    } else {
+        r.table("items").get(reg.body.uid).update(
+                r.row('comments').append({
+                    words:req.body.comment, 
+                    by:req.body.email, 
+                    time:moment().format(),
+                })
+            ).run(req.db, function (err, item){
+                if(err){ console.log('(error updating comments) '+err); }
+                else{ 
+                    io.emit('comment', item);
+                    res.send(doc); 
+                }
+            });
+    }
 });//end add comment
 
 
