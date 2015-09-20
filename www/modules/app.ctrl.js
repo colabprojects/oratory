@@ -41,19 +41,26 @@ define(['angular', 'socket', 'jquery', 'underscore'], function (angular, io, $, 
             };
 
             $scope.addFilter = function (type) {
-                if (_($scope.sharedData.typeFilter).contains(type)) {
-                    $scope.sharedData.typeFilter = _($scope.sharedData.typeFilter).without(type);
-                } else { $scope.sharedData.typeFilter.push(type); }
+                if (_($scope.sharedData.typeFilterArray).contains(type)) {
+                    $scope.sharedData.typeFilterArray = _($scope.sharedData.typeFilterArray).without(type);
+                } else { 
+                    $scope.sharedData.typeFilterArray.push(type); 
+                }
+
             };
 
+            $scope.sharedData.typeFilter = function (item) {
+                return _($scope.sharedData.typeFilterArray).contains(item.type);
+            }
+
             $scope.typeFilterText = function () {
-                if (!$scope.sharedData.typeFilter.length) { return ''; }
-                return 'searching ' + $scope.sharedData.typeFilter.join(', ');
+                if (!$scope.sharedData.typeFilterArray.length) { return ''; }
+                return 'searching ' + $scope.sharedData.typeFilterArray.join(', ');
             };
 
             $scope.filterSelected = function (name) {
                 return {
-                    selectedFilter: _($scope.sharedData.typeFilter).contains(name)
+                    selectedFilter: _($scope.sharedData.typeFilterArray).contains(name)
                 };
             };
 
