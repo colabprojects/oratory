@@ -6,13 +6,16 @@ r.connect(
 ).then(function(conn) {
     console.log("Connected to rethinkdb");
     r.dbCreate("oratory").run(conn, function(err, status) {
+        conn.use("oratory");
         r.tableCreate('items', {primaryKey: 'uid'})
             .run(conn, function(err, stat) {
+                console.log("Created items: " + err);
                 r.table("items").indexCreate("type", {multi: true})
                     .run(conn, function(err, stat) {});
             });
         r.tableCreate('history', {primaryKey: 'key'})
             .run(conn, function(err, stat) {
+                console.log("Created history: " + err);
                 r.table("history").indexCreate("forUID", {multi: true})
                     .run(conn, function(err, stat) {});
             });
