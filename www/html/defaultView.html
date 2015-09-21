@@ -3,11 +3,9 @@
 	<form class="head-form">
 		<div class="input-group" style="margin-right: -1px;">
 			<div class="input-group-btn">
-				<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-					{{page}} <span class="caret"></span>
-				</button>
+				<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">filters <span class="caret"></span></button>
 				<ul class="dropdown-menu" role="menu">
-					<li ng-repeat="p in sharedData.pages" ng-if="p!==page"><a ng-click="sharedData.changePage(p)">{{p}}</a></li>
+					<li ng-class="filterSelected(t.name)" ng-repeat="t in dbInfo.types"><a ng-click="addFilter(t.name);">{{t.name}}</a></li>
 					<li class="divider"></li>
 					<li><a ng-click="showOptions()">options</a></li>
 				</ul>
@@ -19,26 +17,21 @@
 					<li><a ng-click="addNew()">add new</a></li>
 				</ul>
 			</div>
-			<input type="text" class="form-control translucent" placeholder="search {{page}}" ng-model="sharedData.filter">
+			<input type="text" class="form-control translucent" placeholder="search..." ng-model="sharedData.textFilter">
 			<div class="input-group-btn">
 				<button type="button" class="btn btn-info" ng-click="sharedData.scrollTop()"><span class="glyphicon glyphicon-search"></span></button>
 				<!-- add is showForm() -->
 			</div>
 		</div>
 	</form>
+	<span id="typeFilterText">{{typeFilterText()}}</span>
 </div>
 
 <div class="list-wrapper">
 	<div id="hidden-menu" class="container first-item" ng-show="sharedData.options">
-		<a class="filter-toggle" ng-click="hideFilters=!hideFilters">filters<span class="caret"></span></a>
-		<div class="moreFilters" ng-if="hideFilters">
-			<input type="checkbox" id="showDeletedCheckbox" ng-model="sharedData.showDeleted" ng-change="$emit('showDeleted',showDeleted)" />
-			<span style="color:#777;">show deleted</span>
-		</div>
-		<div class="moreFilters" ng-if="hideFilters">
-			<input type="checkbox" id="showDeletedCheckbox" ng-model="sharedData.showDeleted" ng-change="$emit('showDeleted',showDeleted)" />
-			<span style="color:#777;">show deleted</span>
-		</div>
+		<p>advanced options</p>
+		<!-- could have stuff like: -->
+		<button class="btn btn-default" ng-click="sharedData.changePage('inventory')">go to inventory</button>
 		<p style="color:#777; padding-top:10px;">adding shit as: {{sharedData.email}}</p>
 		<button id="email-button" class="btn btn-default" ng-click="removeUser()">get out...</button>
 		<button class="btn btn-default" ng-click="sharedData.options=false;">hide options</button>
@@ -46,7 +39,7 @@
 	</div>
 
 	<div class="first-item"></div>
-	<list-item ng-repeat="item in items | orderBy:sharedData.orderBy | filter:sharedData.filter | filter:sharedData.pageFilter | filter:sharedData.deletedFilter | filter:sharedData.viewFilter" item="item" page="page" priority="priorityTime" first="$first"></list-item>
+	<list-item ng-repeat="item in items | orderBy:sharedData.orderBy | filter:sharedData.typeFilter | filter:sharedData.textFilter | filter:sharedData.pageFilter | filter:sharedData.viewFilter" item="item" page="page" priority="priorityTime" first="$first"></list-item>
 </div>
 
 

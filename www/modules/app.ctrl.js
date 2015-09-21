@@ -40,6 +40,31 @@ define(['angular', 'socket', 'jquery', 'underscore'], function (angular, io, $, 
                 $scope.sharedData.options = !$scope.sharedData.options;
             };
 
+            $scope.addFilter = function (type) {
+                if (_($scope.sharedData.typeFilterArray).contains(type)) {
+                    $scope.sharedData.typeFilterArray = _($scope.sharedData.typeFilterArray).without(type);
+                } else { 
+                    $scope.sharedData.typeFilterArray.push(type); 
+                }
+
+            };
+
+            $scope.sharedData.typeFilter = function (item) {
+                if (!$scope.sharedData.typeFilterArray.length){ return true; }
+                return _($scope.sharedData.typeFilterArray).contains(item.type);
+            }
+
+            $scope.typeFilterText = function () {
+                if (!$scope.sharedData.typeFilterArray.length) { return ''; }
+                return 'searching ' + $scope.sharedData.typeFilterArray.join(', ');
+            };
+
+            $scope.filterSelected = function (name) {
+                return {
+                    selectedFilter: _($scope.sharedData.typeFilterArray).contains(name)
+                };
+            };
+
             $scope.addNew = function () {
                 $state.go('new');
             };
@@ -54,14 +79,6 @@ define(['angular', 'socket', 'jquery', 'underscore'], function (angular, io, $, 
 
             $scope.$on('cancelForm', function () {
                 window.history.back();
-            });
-
-            $scope.$watch('sharedData.showDeleted', function (hide) {
-                if (hide) {
-                    master.sharedData.deletedFilter = {};
-                } else {
-                    master.sharedData.deletedFilter = {type: '!deleted'};
-                }
             });
 
             socket.on('new', function (item) {

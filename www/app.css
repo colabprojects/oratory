@@ -115,7 +115,9 @@ html, body { height: 100%; }
 .head-pad { padding:0 10px !important; }
 .filter-toggle:hover { text-decoration:none; cursor: pointer; }
 .translucent { background:rgba(255, 255, 255, 0.95); }
-.head-form { margin:15px; max-width:500px; box-shadow: 2px 4px 10px rgba(0,0,0,.4); border-radius: 4px; }
+.head-form { margin:15px 15px 0 15px; max-width:500px; box-shadow: 2px 4px 10px rgba(0,0,0,.4); border-radius: 4px; }
+#typeFilterText { margin-left:138px; color:#5bc0de; font-size:10px; }
+.selectedFilter { background-color:#5bc0de; }
 
 #sidebar-button { 
 	padding: 3px 20px;

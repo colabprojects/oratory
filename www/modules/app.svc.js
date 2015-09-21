@@ -40,6 +40,7 @@ define(['angular', 'jquery', 'underscore', 'jquery.cookie', 'jquery.bootstrap'],
             };
 
             service.saveItem = function (itemToBeSaved, value) {
+                console.log('blah');
                 return $http.post('/api/saveItem', {item: itemToBeSaved, unlock: value});
             };
 
@@ -58,7 +59,8 @@ define(['angular', 'jquery', 'underscore', 'jquery.cookie', 'jquery.bootstrap'],
             //SHARED DATA
             service.sharedData = {};
             service.sharedData.filter = '';
-            service.sharedData.deletedFilter = {};
+            service.sharedData.typeFilter = '';
+            service.sharedData.typeFilterArray = [];
             service.sharedData.showMoreDetail = {};
             if (email) { service.sharedData.email = email; }
             if (token) { service.sharedData.token = token; }
