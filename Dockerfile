@@ -3,11 +3,11 @@ MAINTAINER colab oratory
 
 # the folder is called /vagrant for compatability with vagrant... should
 # probably be called /oratory
-RUN mkdir /vagrant
-WORKDIR /vagrant
-ADD ./oratory/package.json /vagrant/
+RUN mkdir -p /vagrant/oratory/
+WORKDIR /vagrant/oratory/
+ADD ./oratory/package.json /vagrant/oratory/
 
-RUN npm install && \
+RUN npm install -g && \
     npm install -g forever
 
 EXPOSE 80

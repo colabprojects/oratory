@@ -2,9 +2,10 @@ db:
   image: mongo:latest
 web:
   build: .
+  working_dir: /vagrant/oratory/
   command: node server.js
   volumes:
-    - ./oratory:/vagrant
+    - ./oratory/:/vagrant/oratory/
   ports:
     - "55657:80"
   links:

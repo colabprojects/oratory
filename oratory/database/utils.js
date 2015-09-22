@@ -14,8 +14,8 @@ var globalState = require("../server"),
 /**
   * @desc creates the images directory if it does not exist
 */
-if (!fs.existsSync('/vagrant/www/media/images')) {
-	fs.mkdir('/vagrant/www/media/images/');
+if (!fs.existsSync('/vagrant/oratory/www/media/images')) {
+	fs.mkdir('/vagrant/oratory/www/media/images/');
 }
 
 //default item image:
@@ -190,7 +190,7 @@ module.exports = {
         var saveImagePromise = q.defer();
         request.get({url: url.parse(where), encoding: 'binary'}, function (err, response, body) {
             console.log('trying to save image uid: '+theUID);
-            var path = '/vagrant/www/media/images/'+theUID+'/';
+            var path = '/vagrant/oratory/www/media/images/'+theUID+'/';
             fs.mkdir(path, function(err){
                 if (err) {
                     console.log('error saving image: '+err); 
@@ -227,7 +227,7 @@ module.exports = {
         var saveMediaImagePromise = q.defer();
         var matches = rawImage.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
         var image = {};
-        var path = '/vagrant/www/media/images/'+uid+'/';
+        var path = '/vagrant/oratory/www/media/images/'+uid+'/';
         fs.mkdir(path, function(err){
             if (err) {
                 console.log('error saving image: '+err); 
