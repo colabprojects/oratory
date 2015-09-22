@@ -8,7 +8,7 @@ WORKDIR /vagrant/oratory/
 ADD ./oratory/package.json /vagrant/oratory/
 
 RUN npm install -g && \
-    npm install -g forever
+    npm install -g supervisor
 
 EXPOSE 80
 

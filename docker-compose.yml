@@ -3,7 +3,7 @@ db:
 web:
   build: .
   working_dir: /vagrant/oratory/
-  command: node server.js
+  command: supervisor server.js
   volumes:
     - ./oratory/:/vagrant/oratory/
   ports:

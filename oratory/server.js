@@ -1,4 +1,4 @@
-console.log('server running');
+console.log('server starting');
 
 /**
   * @desc contains user information and should definitely be changed - email will not work without the colabrobot gmail creds
