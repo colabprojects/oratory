@@ -1,5 +1,4 @@
 var fs = require('fs');
-var r = require('rethinkdb');
 var request = require('request');
 var q = require('q');
 var url = require('url');
@@ -9,6 +8,7 @@ var moment = require('moment');
 var gm = require('gm').subClass({ imageMagick: true });
 
 var globalState = require("../server"),
+    db = globalState.db,
     io = globalState.io;
 
 /**
@@ -21,28 +21,10 @@ if (!fs.existsSync('/vagrant/www/media/images')) {
 //default item image:
 var defaultImage = 'images/default.jpg';
 
-function generateUID() {
-    return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-        return v.toString(16);
-    });
-}
-
-function generateKey() {
-    return 'xxxxxxxxxxxx-4xxxyxxxxxx99xx-xxxxx00xxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-        return v.toString(16);
-    });
-}
 
 module.exports = {
-    respondCursor : function(res, cursor) {
-        cursor.toArray(function(err, docs) {
-            res.send(docs);
-        });
-    },
     //ITEMS --------------------------------
-    updateItem : function(db, newItem, oldItem, unlock){
+    updateItem : function(newItem, oldItem, unlock){
         //returns a promise
         var saveItemPromise = q.defer();
         var syncImagePromise;
@@ -52,7 +34,7 @@ module.exports = {
         if (oldItem.imageURL!==newItem.imageURL){
             console.log('saving new item image')
                 var mediaUID = generateUID();
-            syncImagePromise = saveImage(db, newItem.imageURL,mediaUID);
+            syncImagePromise = saveImage(newItem.imageURL,mediaUID);
             newItem.image = 'media/images/'+mediaUID+'/image.jpg';
             newItem.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
         }
@@ -66,7 +48,7 @@ module.exports = {
                 console.log('saving new media image')
                     var mediaImageUID=generateUID();
 
-                syncMediaImagePromise = saveMediaImage(db, newMediaImage.rawImage, mediaImageUID);
+                syncMediaImagePromise = saveMediaImage(newMediaImage.rawImage, mediaImageUID);
                 _.each(newItem.media, function (data,index){
                     //find the index and replace with new data
                     if (_.has(data,'rawImage')) {
@@ -87,19 +69,19 @@ module.exports = {
             console.log('remove: '+JSON.stringify(removeLoopUids)+'   add:       '+JSON.stringify(addLoopUids));
 
             _.each(removeLoopUids, function(uid){
-                findItem(db, uid).then(function(item){
+                findItem(uid).then(function(item){
                     var itemCopy = __.cloneDeep(item);
                     itemCopy.parents = _(itemCopy.parents).without(newItem.uid);
-                    updateItem(db, itemCopy,item);
+                    updateItem(itemCopy,item);
                 });
             });
 
             _.each(addLoopUids, function(uid){
-                findItem(db, uid).then(function(item){
+                findItem(uid).then(function(item){
                     var itemCopy = __.cloneDeep(item);
                     itemCopy.parents = itemCopy.parents || [];
                     itemCopy.parents.push(newItem.uid);
-                    updateItem(db, itemCopy,item);
+                    updateItem(itemCopy,item);
                 });
             });
         }
@@ -112,19 +94,19 @@ module.exports = {
             console.log('remove: '+JSON.stringify(removeLoopUids)+'   add:       '+JSON.stringify(addLoopUids));
 
             _.each(removeLoopUids, function(uid){
-                findItem(db, uid).then(function(item){
+                findItem(uid).then(function(item){
                     var itemCopy = __.cloneDeep(item);
                     itemCopy.parents = _(itemCopy.parents).without(newItem.uid);
-                    updateItem(db, itemCopy,item);
+                    updateItem(itemCopy,item);
                 });
             });
 
             _.each(addLoopUids, function(uid){
-                findItem(db, uid).then(function(item){
+                findItem(uid).then(function(item){
                     var itemCopy = __.cloneDeep(item);
                     itemCopy.parents = itemCopy.parents || [];
                     itemCopy.parents.push(newItem.uid);
-                    updateItem(db, itemCopy,item);
+                    updateItem(itemCopy,item);
                 });
             });
         }
@@ -134,22 +116,15 @@ module.exports = {
         historyItem.uid=generateUID();
         historyItem.historical=true;
         historyItem.proposedChanges=false;
-        
-        console.log("updating history");
         //update and store history
-        r.table("history").insert({
-            type:'history', 
-            forUID:newItem.uid, 
-            historyItem:historyItem 
-        }).run(db, function (err, doc) {});
+        db.itemdb.insert({type:'history', forUID:newItem.uid, historyItem:historyItem }, function (err, doc) {});
 
         newItem.edited=moment().format();
         if (unlock) { newItem.lock=false; }
         delete newItem._id;
         //check to see if new image was sent
 
-        console.log("updating item");
-        r.table("items").get(newItem.uid).update(newItem).run(db, function (err, doc) {
+        db.itemdb.update({uid: newItem.uid}, newItem, function (err, doc) {
             if(err){ 
                 console.log('(error updating item) '+err); 
                 saveItemPromise.reject(); 
@@ -168,7 +143,7 @@ module.exports = {
         return saveItemPromise.promise;
     },
 
-    newItem : function(db, newItem){
+    newItem : function(newItem){
         //returns a promise
         var saveItemPromise = q.defer();
         var syncImagePromise;
@@ -184,7 +159,7 @@ module.exports = {
         if (newItem.imageURL) {
             //image url provided
             var mediaUID = generateUID();
-            syncImagePromise = saveImage(db, newItem.imageURL,mediaUID);
+            syncImagePromise = saveImage(newItem.imageURL,mediaUID);
             newItem.image = 'media/images/'+mediaUID+'/image.jpg';
             newItem.thumb = 'media/images/'+mediaUID+'/thumb.jpg';
         }else{
@@ -192,7 +167,7 @@ module.exports = {
             newItem.image = defaultImage;
             newItem.thumb = defaultImage;
         }
-        r.table("items").insert(newItem).run(db, function (err, doc) { 
+        db.itemdb.insert(newItem, function (err, doc) { 
             if(err){ 
                 console.log('(error saving item) '+err);
                 saveItemPromise.reject(); 
@@ -210,7 +185,7 @@ module.exports = {
 
     //IMAGES --------------------------------
     //takes a where (url), a uid to use, and who (opt - used for user added)
-    saveImage : function(db, where,theUID,who) {
+    saveImage : function(where,theUID,who) {
         //returns a promise
         var saveImagePromise = q.defer();
         request.get({url: url.parse(where), encoding: 'binary'}, function (err, response, body) {
@@ -248,7 +223,7 @@ module.exports = {
         return saveImagePromise.promise;
     },
 
-    saveMediaImage : function(db, rawImage, uid) {
+    saveMediaImage : function(rawImage, uid) {
         var saveMediaImagePromise = q.defer();
         var matches = rawImage.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
         var image = {};
@@ -293,18 +268,14 @@ module.exports = {
     },
 
     //LOCKS --------------------------------
-    changeLock : function(db,item,who,value){
+    changeLock : function(item,who,value){
         var changeLockPromise = q.defer();
         var time = moment().format();
         item.lock=value;
         item.lockChangedBy=who;
         item.lockChangedAt=time;
 
-        r.table("items").get(item.uid).update({
-            lock:value, 
-            lockChangedBy:who, 
-            lockChangedAt:time
-        }).run(db, function (err, doc) {
+        db.itemdb.update({uid: item.uid}, {$set:{lock:value, lockChangedBy:who, lockChangedAt:time}}, function (err, doc) {
             if(err){ 
                 console.log('(error changing lock on item) '+err); 
                 changeLockPromise.reject();
@@ -318,7 +289,7 @@ module.exports = {
         return changeLockPromise.promise;
     },
 
-    changeDecision : function(db, staged, who, what, value){
+    changeDecision : function(staged, who, what, value){
         var changeDecisionPromise = q.defer();
         var time = moment().format();
 
@@ -326,31 +297,39 @@ module.exports = {
             if (change['what']===what){ staged.changes[i].decision=value; }
         });
 
-        // TODO: is this actually correct?
-        r.table("items").find({key: staged.key}).update({changes:staged.changes})
-            .run(db, function (err, doc) {
-                if(err){ 
-                    console.log('(error changing decisions on item) '+err); 
-                    changeDecisionPromise.reject();
-                } else {
-                    //success
-                    io.emit('decisionChange',staged);
-                    changeDecisionPromise.resolve();
-                }
-            });
+        db.itemdb.update({key: staged.key}, {$set:{changes:staged.changes}}, function (err, doc) {
+            if(err){ 
+                console.log('(error changing decisions on item) '+err); 
+                changeDecisionPromise.reject();
+            } else {
+                //success
+                io.emit('decisionChange',staged);
+                changeDecisionPromise.resolve();
+            }
+        });
 
         return changeDecisionPromise.promise;
     } ,
 
-    findItem : function(db, uid){
+    findItem : function(uid){
         var p=q.defer();
-        r.table("items").get(uid).run(db, function (err, doc) {
+        db.itemdb.findOne({uid:uid}, function (err, doc) {
             if(err){ console.log('(error getting item) '+err); p.reject(err); }else{ p.resolve(doc); }
         });
         return p.promise;
     },
 
-    generateUID : generateUID,
+    generateUID : function() {
+        return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+            return v.toString(16);
+        });
+    },
 
-    generateKey : generateKey,
+    generateKey : function() {
+        return 'xxxxxxxxxxxx-4xxxyxxxxxx99xx-xxxxx00xxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+            return v.toString(16);
+        });
+    },
 }

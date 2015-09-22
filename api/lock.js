@@ -1,17 +1,18 @@
 var globalState = require("../server"),
     app = globalState.app, 
-    express = globalState.express;
+    express = globalState.express,
+    db = globalState.db;
 
 /**
   * @desc various dependencies 
 */
 var q = require('q');
-var r = require('rethinkdb');
 var _ = require('underscore');
 var __ = require('lodash');
 
 var dbInfo = require("../database/dbInfo");
-var dbUtils = require("../database/utils");
+var dbHelper = require("../database/utils");
+__.assign(root, dbHelper);
 
 
 /**
@@ -27,24 +28,23 @@ app.post('/api/requestLock', express.json(), function (req, res){
 		res.send({});
 	} else {
 		var syncLockPromise;
-        r.table("items").get(req.body.uid)
-            .run(req.db, function (err, item){
-			    if(err||!item){ console.log('(error requesting lock on item) '+err); }
-			    else { 
-			    	if (item.lock){
-			    		//already has a lock
-			    		console.log('we are here....')
-			    		res.send(item);
-			    	} else {
-			    		//does not have lock yet
-			    		syncLockPromise = dbUtils.changeLock(req.db, item,req.body.email, true);
-			    		q.when(syncLockPromise).then(function(){
-			    			res.send(item);
-			    		});
-			    		
-			    	}
-			    }
-		    });
+		db.itemdb.findOne({uid:req.body.uid}, function (err, item){
+			if(err||!item){ console.log('(error requesting lock on item) '+err); }
+			else { 
+				if (item.lock){
+					//already has a lock
+					console.log('we are here....')
+					res.send(item);
+				} else {
+					//does not have lock yet
+					syncLockPromise = changeLock(item,req.body.email, true);
+					q.when(syncLockPromise).then(function(){
+						res.send(item);
+					});
+					
+				}
+			}
+		});
 	}
 });
 
@@ -60,17 +60,16 @@ app.post('/api/removeLock', express.json(), function (req, res){
 	} else {
 		var syncLockPromise;
 		if (req.body.uid) {
-			console.log('removing lock for item: '+req.body.uid);
-            r.table("items").get(req.body.uid)
-                .run(req.db, function (err, item){
-				    if(err||!item){ console.log('(error removing lock on item) '+err); }
-				    else { 
-				    	syncLockPromise = dbUtils.changeLock(req.db, item,req.body.email, false);
-				    	q.when(syncLockPromise).then(function(){
-				    		res.send(item);
-				    	});
-				    }
-			    });
+			console.log('removing lock for item: '+req.body.uid)
+			db.itemdb.findOne({uid:req.body.uid}, function (err, item){
+				if(err||!item){ console.log('(error removing lock on item) '+err); }
+				else { 
+					syncLockPromise = changeLock(item,req.body.email, false);
+					q.when(syncLockPromise).then(function(){
+						res.send(item);
+					});
+				}
+			});
 		}
 	}
 });
@@ -86,21 +85,20 @@ app.post('/api/pickLock', express.json(), function (req, res){
 		res.send({});
 	} else {
 		var syncLockPromise;
-		console.log('breaking lock for item: '+req.body.uid);
-        r.table("items").get(req.body.uid)
-            .run(req.db, function (err, item){
-			    if(err||!item){ console.log('(error removing lock on item) '+err); }
-			    else { 
-			    	if(_.contains(item.owners, req.body.email)){
-			    		syncLockPromise = dbUtils.changeLock(req.db, item,req.body.email, false);
-			    		q.when(syncLockPromise).then(function(){
-			    			res.send(item);
-			    		});
-			    	} else { 
-			    		//send the owner an email 
-			    	}
-			    }
-		    });
+		console.log('breaking lock for item: '+req.body.uid)
+		db.itemdb.findOne({uid:req.body.uid}, function (err, item){
+			if(err||!item){ console.log('(error removing lock on item) '+err); }
+			else { 
+				if(_.contains(item.owners, req.body.email)){
+					syncLockPromise = changeLock(item,req.body.email, false);
+					q.when(syncLockPromise).then(function(){
+						res.send(item);
+					});
+				} else { 
+					//send the owner an email 
+				}
+			}
+		});
 	}
 });
 

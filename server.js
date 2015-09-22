@@ -7,36 +7,27 @@ console.log('server running');
 var users = require('./users');
 
 /**
-  * @desc using rethinkdb and express for all the magic
+  * @desc using mongo db and express for all the magic
 */
-
+var mongojs = require('mongojs');
+var db = module.exports.db = mongojs('mongodb://localhost:27017/itemdb', ['itemdb']);
 //app engine
-var express = require('express'),
-    app = express();
+var express = module.exports.express = require('express'),
+    app = module.exports.app = express();
+
+//app configuration
+app.use(express.cookieParser());
+app.use(express.session({secret: "This is a secret"}));
+app.use(app.router);
+app.use(express.static(__dirname + '/www'));
+app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
+
 
 /**
   * @desc various dependencies 
 */
 var http = require('http').Server(app);
-var io = require('socket.io')(http);
-var db = require("./database/db");
-
-
-module.exports = {
-    express: express,
-    app: app,
-    io: io,
-}
-
-//app configuration
-app.use(express.cookieParser());
-app.use(express.session({secret: "This is a secret"}));
-app.use(db.createConnection);
-app.use(app.router);
-app.use(express.static(__dirname + '/www'));
-app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
-app.use(db.closeConnection);
-
+var io = module.exports.io = require('socket.io')(http);
 
 //"schema" for database
 var dbInfo = require("./database/dbInfo");
