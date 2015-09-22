@@ -3,11 +3,19 @@ cd /vagrant
 echo Provisioning system...
 echo Installing prereq packages...
 export DEBIAN_FRONTEND=noninteractive
-# Mongo
-sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
-echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/mongodb.list
+
+#rethinkdb
+source /etc/lsb-release && echo "deb http://download.rethinkdb.com/apt $DISTRIB_CODENAME main" | sudo tee /etc/apt/sources.list.d/rethinkdb.list
+wget -qO- http://download.rethinkdb.com/apt/pubkey.gpg | sudo apt-key add -
+
 sudo apt-get update
-sudo apt-get install -y python-software-properties gcc make build-essential mongodb-10gen imagemagick
+sudo apt-get install -y \
+    python-software-properties \
+    gcc \
+    make \
+    build-essential \
+    rethinkdb \
+    imagemagick
 
 # Forget about apt packages for node, just grab a local copy of node
 nodeVersion=4.1.0
@@ -41,6 +49,11 @@ echo PATH=\"$PATH\" | sudo tee /etc/environment
 npm install
 
 sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 465 -j REDIRECT --to-port 55465
+
+sudo ln -sf /vagrant/conf/oratory_rethinkdb.conf /etc/rethinkdb/instances.d/oratory.conf
+sudo mkdir /data
+sudo chown -R rethinkdb:rethinkdb /data
+sudo service rethinkdb start
 
 #start the forever server
 sudo npm install -g forever
