@@ -42,7 +42,7 @@ module.exports = {
     },
     
     closeConnection : function(req, res, next) {
-        root.db.close();
+        req.db.close();
         next();
     },
 }
