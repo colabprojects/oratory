@@ -1,0 +1,11 @@
+db:
+  image: mongo:latest
+web:
+  build: .
+  command: node server.js
+  volumes:
+    - ./oratory:/vagrant
+  ports:
+    - "55657:80"
+  links:
+    - db
