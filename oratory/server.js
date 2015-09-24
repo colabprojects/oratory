@@ -1,4 +1,4 @@
-console.log('server running');
+console.log('server starting');
 
 /**
   * @desc contains user information and should definitely be changed - email will not work without the colabrobot gmail creds
@@ -9,9 +9,12 @@ var users = require('./users');
 /**
   * @desc using mongo db and express for all the magic
 */
+console.log("Connecting to mongo");
 var mongojs = require('mongojs');
-var db = module.exports.db = mongojs('mongodb://localhost:27017/itemdb', ['itemdb']);
+var db = module.exports.db = mongojs('mongodb://db:27017/itemdb', ['itemdb']);
+
 //app engine
+console.log("Creating app engine and config");
 var express = module.exports.express = require('express'),
     app = module.exports.app = express();
 
@@ -26,6 +29,7 @@ app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 /**
   * @desc various dependencies 
 */
+console.log("Loading Dependencies");
 var http = require('http').Server(app);
 var io = module.exports.io = require('socket.io')(http);
 
@@ -64,4 +68,5 @@ function isEmpty(obj) {
   return Object.keys(obj).length === 0;
 }
 
+console.log("Listening on port 80");
 http.listen(80);

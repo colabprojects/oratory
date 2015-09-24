@@ -8,6 +8,7 @@ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
 echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/mongodb.list
 sudo apt-get update
 sudo apt-get install -y python-software-properties gcc make build-essential mongodb-10gen imagemagick
+echo "db 127.0.0.1" | sudo tee /etc/hosts #compatability with docker
 
 # Forget about apt packages for node, just grab a local copy of node
 nodeVersion=4.1.0
@@ -38,6 +39,7 @@ sudo ln -s $npmCmd /usr/sbin/npm
 export PATH="$PATH:/opt/node/bin"
 echo PATH=\"$PATH\" | sudo tee /etc/environment
 
+cd oratory
 npm install
 
 sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 465 -j REDIRECT --to-port 55465

@@ -1,0 +1,12 @@
+db:
+  image: mongo:latest
+web:
+  build: .
+  working_dir: /vagrant/oratory/
+  command: supervisor server.js
+  volumes:
+    - ./oratory/:/vagrant/oratory/
+  ports:
+    - "55657:80"
+  links:
+    - db
