@@ -1,0 +1,14 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|  
+  config.vm.box = "ubuntu/vivid64"
+  config.vm.provision "docker"
+  # This is some magic so that vagrant is forced to re-ssh, and then docker commands will work
+  config.vm.provision "shell", inline:
+    "ps aux | grep 'sshd:' | awk '{print $2}' | xargs kill"
+
+  config.vm.network :forwarded_port, guest: 55657, host: 55657
+end

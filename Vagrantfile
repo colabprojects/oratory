@@ -3,7 +3,7 @@
 
 Vagrant.configure("2") do |config|
 	config.vm.define "dockerless", autostart: false do |old|
-		old.vm.box = "ubuntu/trusty64"
+		old.vm.box = "ubuntu/vivid64"
 		
 		old.vm.network :forwarded_port, guest: 80, host: 55657
 		old.vm.network :forwarded_port, guest: 25, host: 55525
@@ -22,19 +22,21 @@ Vagrant.configure("2") do |config|
 	config.vm.define "web" do |web|
 		web.vm.synced_folder ".", "/vagrant", disabled: true
 		web.vm.synced_folder "./oratory", "/vagrant/oratory"
-		web.vm.provider "docker" do |docker|
-			docker.name = "web"
-			docker.build_dir = "."
-			docker.link("db:db")
-			docker.ports = ["55657:80"]
+		web.vm.provider "docker" do |d|
+			d.name = "web"
+			d.build_dir = "."
+			d.link("db:db")
+			d.ports = ["55657:80"]
+			d.vagrant_vagrantfile = "./Vagrantfile.proxy"
 		end
 	end
 
 	config.vm.define "db" do |db|
 		db.vm.synced_folder ".", "/vagrant", disabled: true
-		db.vm.provider "docker" do |docker|
-			docker.name = "db"
-			docker.image = "mongo:latest"
+		db.vm.provider "docker" do |d|
+			d.name = "db"
+			d.image = "mongo:latest"
+			d.vagrant_vagrantfile = "./Vagrantfile.proxy"
 		end
 	end
 end
