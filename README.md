@@ -3,6 +3,16 @@ app for inventory - used to explore mongo and angularJS - initial setup for free
 
 ## Quick Start
 
+### Vagrant + Docker
+No need to install Docker, Vagrant will do that for you!
+
+0. Install [Vagrant](https://www.vagrantup.com/downloads.html)
+1. `git clone https://github.com/colabprojects/oratory`
+2. `cd oratory`
+3. `vagrant up`
+4. wait...
+5. Go to [http://localhost:55657](http://localhost:55657) in your browser
+
 ### Docker
 
 0. Install Docker ([Linux](https://docs.docker.com/installation/), [Win/OSX](https://docker.com/toolbox/))
@@ -19,11 +29,11 @@ app for inventory - used to explore mongo and angularJS - initial setup for free
       [http://192.168.99.100:55657](http://192.168.99.100:55657)
 
 
-### Vagrant
+### Pure Vagrant
 
 0. Install [Vagrant](https://www.vagrantup.com/downloads.html)
 1. `git clone https://github.com/colabprojects/oratory`
 2. `cd oratory`
-3. `vagrant up`
+3. `vagrant up dockerless`
 4. wait...
 5. Go to [http://localhost:55657](http://localhost:55657) in your browser
